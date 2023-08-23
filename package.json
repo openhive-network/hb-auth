@@ -2,6 +2,7 @@
   "name": "@hiveio/hb-auth",
   "version": "1.0.0",
   "description": "Browser and Node.js auth library that uses Beekeeper",
+  "type": "module",
   "main": "dist/hb-auth.js",
   "module": "dist/hb-auth.mjs",
   "typings": "dist/hb-auth.d.ts",

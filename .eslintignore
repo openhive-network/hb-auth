@@ -3,3 +3,6 @@ lib/
 dist/
 .eslintrc.js
 jest.config.*
+rollup.*
+tsconfig.*
+example/

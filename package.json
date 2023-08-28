@@ -13,7 +13,8 @@
     "prebuild": "npm run lint && npm run test",
     "prepack": "npm run build",
     "start:example:node": "npm run build && node ./example/node/app.mjs",
-    "start:example:browser": "npm run build && serve ."
+    "start:example:browser": "npm run build && serve .",
+    "precommit": "npm run build"
   },
   "repository": {
     "type": "git",

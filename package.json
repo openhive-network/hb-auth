@@ -1,20 +1,19 @@
 {
-  "name": "@hiveio/beekeper-js",
+  "name": "@hiveio/hb-auth",
   "version": "1.0.0",
-  "description": "Browser and Node.js library for Beekeeper",
-  "require": {
-    "types": "./lib/cjs/types/index.d.ts",
-    "default": "./lib/cjs/index.js"
-  },
+  "description": "Browser and Node.js auth library that uses Beekeeper",
+  "main": "dist/hb-auth.js",
+  "module": "dist/hb-auth.mjs",
+  "typings": "dist/hb-auth.d.ts",
   "scripts": {
-    "build": "npm run clean && npm run build:esm && npm run build:cjs",
-    "build:esm": "tsc -p ./tsconfig/tsconfig.esm.json && mv ./lib/esm/index.js ./lib/esm/index.mjs",
-    "build:cjs": "tsc -p ./tsconfig/tsconfig.cjs.json",
-    "clean": "rm -rf ./lib",
+    "build": "npm run clean && rollup -c --bundleConfigAsCjs",
+    "clean": "rm -rf ./dist",
     "lint": "eslint . --ext .ts",
     "test": "jest",
     "prebuild": "npm run lint && npm run test",
-    "prepack": "npm run build"
+    "prepack": "npm run build",
+    "start:example:node": "npm run build && node ./example/node/app.mjs",
+    "start:example:browser": "npm run build && serve ."
   },
   "repository": {
     "type": "git",
@@ -58,6 +57,10 @@
     "eslint-plugin-promise": "^6.1.1",
     "jest": "^29.6.2",
     "prettier": "3.0.1",
+    "rollup": "^3.28.1",
+    "rollup-plugin-dts": "^6.0.0",
+    "rollup-plugin-esbuild": "^5.0.0",
+    "serve": "^14.2.1",
     "typescript": "^5.1.6"
   },
   "dependencies": {

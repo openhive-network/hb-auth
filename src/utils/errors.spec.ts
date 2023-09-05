@@ -1,4 +1,4 @@
-import { EscapedError, EnvironmentError, htmlSafe } from "./errors";
+import { EscapedError, htmlSafe } from "./errors";
 
 describe("Errors test", () => {
   test("htmlSafe fn", () => {
@@ -28,15 +28,4 @@ describe("Errors test", () => {
     const err = new EscapedError(`Please show me this error in input <script type="text/javascript">alert(/xss/)</script>.`)
     expect(err.message).toBe(`Please show me this error in input &lt;script type=&quot;text/javascript&quot;&gt;alert(/xss/)&lt;/script&gt;.`)
   })
-
-  test("EnvironmentError", () => {
-    const browser = new EnvironmentError("browser");
-    expect(browser.message).toBe(
-      `This function isn't allowed in browser environment.`,
-    );
-    const node = new EnvironmentError("node");
-    expect(node.message).toBe(
-      `This function isn't allowed in node environment.`,
-    );
-  });
 });

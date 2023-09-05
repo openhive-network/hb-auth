@@ -7,12 +7,6 @@ export class EscapedError extends Error {
   }
 }
 
-export class EnvironmentError extends Error {
-  constructor(environment: string) {
-    super(`This function isn't allowed in ${environment} environment.`);
-  }
-}
-
 export function htmlSafe(str: string): string {
   return str
     ?.replace(/&/g, "&amp;")

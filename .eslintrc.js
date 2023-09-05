@@ -19,5 +19,7 @@ module.exports = {
     project: "tsconfig.eslint.json",
     tsconfigRootDir: __dirname,
   },
-  rules: {},
+  rules: {
+    "n/handle-callback-err": "off"
+  },
 };

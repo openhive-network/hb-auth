@@ -1,9 +1,19 @@
-// That file contains human readable errors
-export class EscapedError extends Error {
+// That file contains generic error constructor and common errors
+export class GenericError extends Error {
+  constructor(
+    public title: string,
+    public description: string,
+  ) {
+    super(description);
+    Object.setPrototypeOf(this, GenericError.prototype);
+  }
+}
+
+export class EscapedError extends GenericError {
   // This is for dynamic errors where the message may be something from the user
   // It will work only in browser environment
-  constructor(message: string) {
-    super(htmlSafe(message));
+  constructor(title: string, description: string) {
+    super(htmlSafe(title), htmlSafe(description));
   }
 }
 

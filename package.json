@@ -15,10 +15,12 @@
     "start:example:node": "npm run build && node ./example/node/app.mjs",
     "start:example:browser": "npm run build && serve ."
   },
-  "pre-commit": ["build"],
+  "pre-commit": [
+    "build"
+  ],
   "repository": {
     "type": "git",
-    "url": "https://gitlab.syncad.com/hive/beekeeper-js"
+    "url": "https://gitlab.syncad.com/hive/hb-auth"
   },
   "keywords": [
     "beekeper",
@@ -66,6 +68,7 @@
     "typescript": "^5.1.6"
   },
   "dependencies": {
-    "@hive/beekeeper": "^0.0.1-alpha.0"
+    "@hive/beekeeper": "^0.0.1-alpha.0",
+    "@hive/wax": "^0.0.1-dev.2b3cbf4"
   }
 }

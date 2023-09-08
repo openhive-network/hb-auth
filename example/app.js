@@ -1,3 +1,5 @@
-import { isSupportWebWorker } from "../dist/hb-auth.mjs";
+import { Client, isSupportWebWorker } from "../dist/hb-auth.mjs";
 
-console.log(isSupportWebWorker);
+const authClient = Client.getClient();
+
+console.log(isSupportWebWorker, authClient);

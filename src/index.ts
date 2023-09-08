@@ -1,3 +1,2 @@
-export * from './utils/environment';
-
-export {};
+export * from './environment';
+export * from './client';

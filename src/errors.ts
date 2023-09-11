@@ -1,7 +1,6 @@
 // That file contains generic error constructor and common errors
 export class GenericError extends Error {
   constructor(
-    public title: string,
     public description: string,
   ) {
     super(description);
@@ -12,8 +11,8 @@ export class GenericError extends Error {
 export class EscapedError extends GenericError {
   // This is for dynamic errors where the message may be something from the user
   // It will work only in browser environment
-  constructor(title: string, description: string) {
-    super(htmlSafe(title), htmlSafe(description));
+  constructor(description: string) {
+    super(htmlSafe(description));
   }
 }
 

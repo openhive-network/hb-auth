@@ -26,11 +26,9 @@ describe("Errors test", () => {
 
   test("EscapedError", () => {
     const err = new EscapedError(
-      "error title",
       `Please show me this error in input <script type="text/javascript">alert(/xss/)</script>.`,
     );
     expect(err).toBeInstanceOf(GenericError);
-    expect(err.title).toBe("error title");
     expect(err.message).toBe(
       `Please show me this error in input &lt;script type=&quot;text/javascript&quot;&gt;alert(/xss/)&lt;/script&gt;.`,
     );

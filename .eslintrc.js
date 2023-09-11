@@ -20,6 +20,7 @@ module.exports = {
     tsconfigRootDir: __dirname,
   },
   rules: {
-    "n/handle-callback-err": "off"
+    "n/handle-callback-err": "off",
+    "@typescript-eslint/strict-boolean-expressions": "off"
   },
 };

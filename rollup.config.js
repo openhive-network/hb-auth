@@ -33,7 +33,7 @@ export default [
     ],
     plugins: [esbuild(), replace({
       "require('worker')": "require('./worker.js')",
-      "from 'worker'": "from './worker.mjs'",
+      "from 'worker'": "from './worker.js'",
       delimiters: ['', ''],
       preventAssignment: true,
     }),],

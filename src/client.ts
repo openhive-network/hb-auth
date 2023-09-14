@@ -14,7 +14,6 @@ export class Client {
   private constructor() {
     if (!isSupportWebWorker) {
       throw new GenericError(
-        "Unsupported browser",
         `WebWorker support is required for running this library.
          Your browser/environment does not support WebWorkers.`,
       );

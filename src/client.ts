@@ -1,7 +1,7 @@
 import { LOCK_TIMEOUT } from "./constants";
 import { GenericError } from "./errors";
 import { isSupportWebWorker } from "./environment";
-import worker from 'worker';
+import workerString from "worker";
 /**
  * Client class is responsible for creating a new
  * auth client, managing the whole auth process (importing keys, verification, validation)
@@ -19,7 +19,15 @@ export class Client {
          Your browser/environment does not support WebWorkers.`,
       );
     }
-    console.log(worker)
+
+    const workerBlob = new Blob([workerString]);
+    const workerUrl = URL.createObjectURL(workerBlob);
+    const worker = new Worker(workerUrl);
+
+    worker.onmessage = (msg) => {
+      console.log("got msg from the worker: ", msg);
+    };
+
     // import("./worker.mjs")
     //   .then((workerStr) => {
     //     console.log(workerStr);
@@ -27,7 +35,6 @@ export class Client {
     //   .catch((err) => {
     //     console.log("cant load worker string", err);
     //   });
-
   }
 
   public static getClient(): Client {

@@ -6,13 +6,11 @@
       "DOM"
     ],
     "target": "ES2022",
-    "module": "ESNext",
-    "moduleResolution": "NodeNext",
-    "outDir": "../lib/esm",
-    "declarationDir": "../lib/esm/types",
+    "moduleResolution": "Node",
   },
   "include": [
     "./src/index.ts",
+    "./src/worker.ts",
     "./index.d.ts"
   ],
 }

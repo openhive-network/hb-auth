@@ -1,38 +1,47 @@
 /* eslint-disable @typescript-eslint/no-dynamic-delete */
 // Add message type strictly here
 // type MessageType = any;
-// interface Message {}
+interface Message {
+  type: string;
+  payload: any;
+}
 
 export class WorkerMessageHandler {
-    private static idCount = 0
-    private resolvers = {}
-    private rejectors = {}
+  private static idCount = 0;
 
-    constructor(private readonly worker: Worker) {
-        this.worker = worker;
+  private get nextId(): number {
+    return WorkerMessageHandler.idCount++;
+  }
 
-        this.worker.onmessage = ({ data }) => {
-            const { payload, error, messageId } = data;
+  private resolvers: Record<number, any> = {};
+  private rejectors: Record<number, any> = {};
 
-            if (error) {
-                this.rejectors[messageId](error)
-            } else {
-                this.resolvers[messageId](payload)
-            }
+  constructor(private readonly worker: Worker) {
+    this.worker = worker;
+    this.worker.onmessage = this.onWorkerMessage.bind(this);
+  }
 
-            delete this.resolvers[messageId];
-            delete this.rejectors[messageId];
-        }
+  private onWorkerMessage({ data }: MessageEvent): void {
+    const { payload, error, id } = data;
+    if (error) {
+      this.rejectors[id](error);
+    } else {
+      this.resolvers[id](payload);
     }
 
-    public async call(args: any): Promise<any> {
-        const messageId = WorkerMessageHandler.idCount++;
+    delete this.resolvers[id];
+    delete this.rejectors[id];
+  }
 
-        this.worker.postMessage({ ...args, messageId });
+  public async call({ type, payload }: Message): Promise<any> {
+    const messageId = this.nextId;
 
-        return await new Promise((resolve, reject) => {
-            this.resolvers[messageId] = resolve;
-            this.rejectors[messageId] = reject;
-        })
-    }
+    this.worker.postMessage({ type, payload, id: messageId });
+
+    // eslint-disable-next-line @typescript-eslint/return-await
+    return new Promise((resolve, reject) => {
+      this.resolvers[messageId] = resolve;
+      this.rejectors[messageId] = reject;
+    });
+  }
 }

@@ -11,4 +11,8 @@
     "outDir": "../lib/esm",
     "declarationDir": "../lib/esm/types",
   },
+  "include": [
+    "./src/index.ts",
+    "./index.d.ts"
+  ],
 }

@@ -9,6 +9,18 @@ const dts = _dts?.default ?? _dts;
 
 const name = require("./package.json").main.replace(/\.js$/, "");
 
+function escape (str) {
+  return str
+    .replace(/[\\]/g, '\\\\')
+    .replace(/[\"]/g, '\\\"')
+    .replace(/[\/]/g, '\\/')
+    .replace(/[\b]/g, '\\b')
+    .replace(/[\f]/g, '\\f')
+    .replace(/[\n]/g, '\\n')
+    .replace(/[\r]/g, '\\r')
+    .replace(/[\t]/g, '\\t');
+};
+
 const bundle = (config) => ({
   ...config,
   input: ["src/index.ts"],
@@ -29,12 +41,15 @@ export default [
         sourcemap: true,
       },
     ],
-    plugins: [esbuild(), replace({
-      "require('worker')": "require('./worker.js')",
-      "from 'worker'": "from './worker.js'",
-      delimiters: ['', ''],
-      preventAssignment: true,
-    }),],
+    plugins: [
+      esbuild(),
+      replace({
+        "require('worker')": "require('./worker.js')",
+        "from 'worker'": "from './worker.js'",
+        delimiters: ["", ""],
+        preventAssignment: true,
+      }),
+    ],
   }),
   bundle({
     plugins: [dts()],
@@ -63,9 +78,9 @@ export default [
       {
         name: "worker-to-string",
         renderChunk(str) {
-          return `export default '${str}'`;
+          return `export default "${escape(str)}"`;
         },
-      },
+      }
     ],
   },
 ];

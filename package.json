@@ -22,8 +22,8 @@
     "url": "https://gitlab.syncad.com/hive/hb-auth"
   },
   "keywords": [
-    "beekeper",
-    "beekeper-js",
+    "beekeeper",
+    "beekeeper-js",
     "blockchain",
     "hive"
   ],
@@ -32,18 +32,6 @@
   "files": [
     "lib/**/*"
   ],
-  "exports": {
-    ".": {
-      "import": {
-        "types": "./lib/esm/types/index.d.ts",
-        "default": "./lib/esm/index.mjs"
-      },
-      "require": {
-        "types": "./lib/cjs/types/index.d.ts",
-        "default": "./lib/cjs/index.js"
-      }
-    }
-  },
   "devDependencies": {
     "@babel/core": "^7.22.9",
     "@babel/preset-env": "^7.22.9",

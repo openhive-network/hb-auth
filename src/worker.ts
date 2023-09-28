@@ -1,3 +1,16 @@
+import MainModule from '@hive/beekeeper'
+
+async function init(): Promise<void> {
+  const module = await MainModule();
+  const api = new module.beekeeper_api(new module.StringList());
+  const resp = api.init();
+  console.log(resp);
+}
+
+init().catch((err) => {
+  console.log(err)
+})
+
 self.onmessage = (msg) => {
   console.log("got message", msg.data);
 

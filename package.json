@@ -59,6 +59,6 @@
   },
   "dependencies": {
     "@hive/beekeeper": "^1.27.5-rc0-1b670bc89",
-    "@hive/wax": "^0.0.1-stable.f650c37"
+    "@hive/wax": "^0.0.2-9029f55"
   }
 }

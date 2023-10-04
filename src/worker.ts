@@ -15,7 +15,7 @@ interface CreateWalletResponse {
 }
 
 // TODO: Move out basic logger later
-const DEBUG = true;
+const DEBUG = false;
 const log = (message: string, type: 'log' | 'error' | 'info' = 'log'): void => {
   if (DEBUG) {
     console[type](message);
@@ -56,8 +56,13 @@ class AuthWorker {
 
     // Prepare params and create an API
     const params = new this.wasm.StringList();
+    // Set wallet directory
     params.push_back('--wallet-dir');
     params.push_back(this.storage);
+    // Enable/disable logging
+    params.push_back('--enable-logs');
+    params.push_back(Boolean(DEBUG).toString());
+
     this.api = new this.wasm.beekeeper_api(params);
 
     // Initialize
@@ -73,13 +78,13 @@ class AuthWorker {
     this.api.set_timeout(this.token, Infinity);
 
     // Wallet setup
-    this.setupWallet();
-    await this.sync(false);
+    await this.setupWallet();
   }
 
-  private setupWallet(): void {
+  private async setupWallet(): Promise<void> {
     const { password } = this.parse<CreateWalletResponse>(this.api.create(this.token, this.wallet) as string);
     log(password);
+    await this.sync(false);
   }
 
   private parse<R>(obj: string): R {

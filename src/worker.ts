@@ -1,84 +1,117 @@
-import WasmModule, { type MainModule } from "@hive/beekeeper";
+import WasmModule, { type FileSystemType, type beekeeper_api } from "@hive/beekeeper";
+import { GenericError } from "./errors";
 
-const STORAGE_ROOT = "/storage_root";
-
-let module: MainModule;
-
-async function initWasmModule(): Promise<MainModule> {
-  module = await WasmModule();
-  const FS = (module as any).FS;
-  FS.mkdir(STORAGE_ROOT);
-  FS.mount(FS.filesystems.IDBFS, {}, STORAGE_ROOT);
-  return await new Promise((resolve, reject) => {
-    FS.syncfs(true, (err: any) => {
-      if (err) {
-        reject(err);
-      }
-
-      resolve(module);
-    });
-  });
+interface InitResponse {
+  status: boolean;
+  version: string;
 }
 
-async function sync(): Promise<any> {
-  return await new Promise((resolve, reject) => {
-    (module as any).FS.syncfs((err: any) => {
-      if (err) reject(err);
-
-      resolve(null);
-    });
-  });
+interface TokenResponse {
+  token: string;
 }
 
-async function init(): Promise<void> {
-  const mod = (await initWasmModule()) as any;
-  console.log("ALL synced on initialization!");
-
-  mod.FS.writeFile("/storage_root/my-file.txt", "hello");
-  console.log(
-    mod.FS.readFile("/storage_root/my-file.txt", { encoding: "utf8" }),
-  );
-
-  const params = new module.StringList();
-  params.push_back("--wallet-dir");
-  params.push_back(STORAGE_ROOT);
-  const api = new module.beekeeper_api(params);
-  const resp = api.init();
-  console.log(resp);
-  const result = api.create_session("abc") as string;
-  const _result = JSON.parse(result);
-  const token = JSON.parse(_result.result).token;
-  console.log("session token", token);
-  const wallet = api.create(token, "default");
-  console.log("auto generated wallet password", wallet);
-  console.log(api.list_wallets(token));
-  console.log(
-    mod.FS.readFile("/storage_root/default.wallet", { encoding: "utf8" }),
-  );
-
-  await sync();
-
-  console.log("ALL synced after initialization!");
+interface CreateWalletResponse {
+  password: string;
 }
 
-init().catch((err) => {
-  console.log(err);
-});
-
-self.onmessage = (msg) => {
-  console.log("got message", msg.data);
-
-  switch (msg.data.type) {
-    case "ping":
-      self.postMessage({
-        ...msg.data,
-        // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
-        payload: `Your payload was: ${msg.data?.payload}`,
-      });
-      break;
-
-    default:
-      self.postMessage({ error: " This is error !! ", id: msg.data.id });
-      break;
+// TODO: Move out basic logger later
+const DEBUG = true;
+const log = (message: string, type: 'log' | 'error' | 'info' = 'log'): void => {
+  if (DEBUG) {
+    console[type](message);
   }
 };
+
+// eslint-disable-next-line @typescript-eslint/no-extraneous-class
+class AuthWorker {
+  public readonly run: Promise<void>;
+
+  private wasm!: Awaited<ReturnType<typeof WasmModule>>;
+  private api!: beekeeper_api;
+  private readonly lockTimeout: number = 10 * 1000;
+  private readonly storage: string = "/storage_root";
+  private readonly wallet: string = "default";
+  private token!: string;
+
+  constructor() {
+    // Use readiness here to wait until wasm module is loaded.
+    this.run = new Promise((resolve, reject) => {
+      WasmModule()
+        .then(async (module) => {
+          this.wasm = module;
+          await this.setup();
+          resolve();
+        })
+        .catch((err) => {
+          reject(err);
+        });
+    });
+  }
+
+  private async setup(): Promise<void> {
+    // Setup storage and sync IDB to WASM MEM
+    this.wasm.FS.mkdir(this.storage);
+    this.wasm.FS.mount(this.wasm.FS.filesystems.IDBFS as FileSystemType, {}, this.storage);
+    await this.sync();
+
+    // Prepare params and create an API
+    const params = new this.wasm.StringList();
+    params.push_back('--wallet-dir');
+    params.push_back(this.storage);
+    this.api = new this.wasm.beekeeper_api(params);
+
+    // Initialize
+    const { status, version } = this.parse<InitResponse>(this.api.init() as string);
+    if (status)
+      log(`beekeeper API initialized with version: ${version}`, 'info');
+    else
+      log('Something unexpected happenned while initializing beekeeper API')
+
+    // Session creation
+    this.token = this.parse<TokenResponse>(this.api.create_session('') as string).token;
+    log(`Token: ${this.token}`);
+    this.api.set_timeout(this.token, Infinity);
+
+    // Wallet setup
+    this.setupWallet();
+    await this.sync(false);
+  }
+
+  private setupWallet(): void {
+    const { password } = this.parse<CreateWalletResponse>(this.api.create(this.token, this.wallet) as string);
+    log(password);
+  }
+
+  private parse<R>(obj: string): R {
+    const resp = JSON.parse(obj);
+
+    if ('error' in resp) {
+      throw new GenericError(JSON.parse(resp.error))
+    } else {
+      return JSON.parse(resp.result)
+    }
+  }
+
+  // Sync storage after changes
+  // toWasm = true means that we sync IDB to Wasm memory
+  // toWasm = false means that we sync from Wasm memory to IDB
+  private async sync(toWasm: boolean = true): Promise<any> {
+    return await new Promise((resolve, reject) => {
+      this.wasm.FS.syncfs(toWasm, (err) => {
+        if (err) reject(err)
+        else resolve(null)
+      })
+    })
+  }
+}
+
+new AuthWorker().run
+  .then(() => {
+    if (DEBUG) {
+      log("module is ready for processing tasks.");
+    }
+  })
+  .catch((err) => {
+    // TODO: what to do in this case??
+    log(`error occurred while loading auth module \n${err as string}`, 'error');
+  });

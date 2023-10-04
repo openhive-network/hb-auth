@@ -1,6 +1,8 @@
 import WasmModule, { type FileSystemType, type beekeeper_api } from "@hive/beekeeper";
 import { GenericError } from "./errors";
 
+type Result = Parameters<beekeeper_api['create_session']>[0]
+
 interface InitResponse {
   status: boolean;
   version: string;
@@ -14,8 +16,15 @@ interface CreateWalletResponse {
   password: string;
 }
 
+interface ListWalletsResponse {
+  wallets: Array<{
+    name: string;
+    unlocked: boolean;
+  }>
+}
+
 // TODO: Move out basic logger later
-const DEBUG = false;
+const DEBUG = true;
 const log = (message: string, type: 'log' | 'error' | 'info' = 'log'): void => {
   if (DEBUG) {
     console[type](message);
@@ -66,14 +75,14 @@ class AuthWorker {
     this.api = new this.wasm.beekeeper_api(params);
 
     // Initialize
-    const { status, version } = this.parse<InitResponse>(this.api.init() as string);
+    const { status, version } = this.parse<InitResponse>(this.api.init());
     if (status)
       log(`beekeeper API initialized with version: ${version}`, 'info');
     else
       log('Something unexpected happenned while initializing beekeeper API')
 
     // Session creation
-    this.token = this.parse<TokenResponse>(this.api.create_session('') as string).token;
+    this.token = this.parse<TokenResponse>(this.api.create_session('')).token;
     log(`Token: ${this.token}`);
     this.api.set_timeout(this.token, Infinity);
 
@@ -82,13 +91,16 @@ class AuthWorker {
   }
 
   private async setupWallet(): Promise<void> {
-    const { password } = this.parse<CreateWalletResponse>(this.api.create(this.token, this.wallet) as string);
+    this.api.open(this.token, this.wallet)
+    const resp = this.parse<ListWalletsResponse>(this.api.list_wallets(this.token));
+    console.log(resp)
+    const { password } = this.parse<CreateWalletResponse>(this.api.create(this.token, this.wallet));
     log(password);
     await this.sync(false);
   }
 
-  private parse<R>(obj: string): R {
-    const resp = JSON.parse(obj);
+  private parse<T>(obj: Result): T {
+    const resp = JSON.parse(obj as string);
 
     if ('error' in resp) {
       throw new GenericError(JSON.parse(resp.error))

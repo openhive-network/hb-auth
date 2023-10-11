@@ -1,6 +1,6 @@
+import { wrap } from "../node_modules/comlink/dist/esm/comlink";
 import { GenericError } from "./errors";
 import { isSupportWebWorker } from "./environment";
-import { WorkerMessageHandler } from "./message";
 import workerString from "worker";
 /**
  * Client class is responsible for creating a new
@@ -23,25 +23,9 @@ export class Client {
     const workerBlob = new Blob([workerString]);
     const workerUrl = URL.createObjectURL(workerBlob);
     const worker = new Worker(workerUrl);
-    const messageHandler = new WorkerMessageHandler(worker);
+    const wrapped = wrap(worker) as unknown as any;
 
-    messageHandler
-      .call({ type: "ping", payload: "something" })
-      .then((res) => {
-        console.log('responseFromWorker', res);
-      })
-      .catch((err) => {
-        console.log("an error occurred", err);
-      });
-
-    messageHandler
-      .call({ type: "", payload: null })
-      .then((res) => {
-        console.log('another response', res);
-      })
-      .catch((err) => {
-        console.log("an error occurred", err);
-      });
+    console.log(wrapped);
   }
 
   public static getClient(): Client {

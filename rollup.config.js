@@ -9,25 +9,26 @@ const dts = _dts?.default ?? _dts;
 
 const name = require("./package.json").main.replace(/\.js$/, "");
 
-function escape (str) {
+function escape(str) {
   return str
-    .replace(/[\\]/g, '\\\\')
-    .replace(/[\"]/g, '\\\"')
-    .replace(/[\/]/g, '\\/')
-    .replace(/[\b]/g, '\\b')
-    .replace(/[\f]/g, '\\f')
-    .replace(/[\n]/g, '\\n')
-    .replace(/[\r]/g, '\\r')
-    .replace(/[\t]/g, '\\t');
-};
+    .replace(/[\\]/g, "\\\\")
+    .replace(/[\"]/g, '\\"')
+    .replace(/[\/]/g, "\\/")
+    .replace(/[\b]/g, "\\b")
+    .replace(/[\f]/g, "\\f")
+    .replace(/[\n]/g, "\\n")
+    .replace(/[\r]/g, "\\r")
+    .replace(/[\t]/g, "\\t");
+}
 
 const bundle = (config) => ({
   ...config,
   input: ["src/index.ts"],
-  external: (id) => !/^[./]/.test(id),
+  external: (id) => !/^[./]/.test(id)
 });
 
 export default [
+  
   bundle({
     output: [
       {
@@ -68,7 +69,9 @@ export default [
     ],
     plugins: [
       esbuild(),
-      resolve(),
+      resolve({
+        moduleDirectories: ['node_modules']
+      }),
       terser({
         warnings: true,
         mangle: {
@@ -80,7 +83,7 @@ export default [
         renderChunk(str) {
           return `export default "${escape(str)}"`;
         },
-      }
+      },
     ],
   },
 ];

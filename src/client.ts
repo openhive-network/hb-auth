@@ -9,30 +9,48 @@ import workerString from "worker";
  * and some helpers like (signing transactions as an authorised user)
  */
 // eslint-disable-next-line @typescript-eslint/no-extraneous-class
-export class Client {
-  private static instance: Client | undefined;
+export interface ClientOptions {
+  something?: number;
+}
+class Client {
+  #worker: any; // type this
+  #options: ClientOptions = {};
 
-  private constructor() {
+  public set options(options: ClientOptions) {
+    this.#options = { ...this.#options, ...options };
+  }
+
+  public get options(): ClientOptions {
+    return this.#options;
+  }
+
+  constructor() {
     if (!isSupportWebWorker) {
       throw new GenericError(
         `WebWorker support is required for running this library.
          Your browser/environment does not support WebWorkers.`,
       );
     }
+    // load worker
+    this.loadWebWorker();
+  }
+
+  private loadWebWorker(): void {
+    if (this.#worker) return;
 
     const workerBlob = new Blob([workerString]);
     const workerUrl = URL.createObjectURL(workerBlob);
     const worker = new Worker(workerUrl);
-    const wrapped = wrap(worker) as unknown as any;
-
-    console.log(wrapped);
+    this.#worker = wrap(worker) as unknown as any;
   }
 
-  public static getClient(): Client {
-    if (Client.instance === undefined) {
-      Client.instance = new Client();
-    }
+  public async initialize(): Promise<any> {
+    await this.#worker.initialize();
 
-    return Client.instance;
+    return await Promise.resolve("works, module is ready");
   }
 }
+
+const client = new Client();
+
+export { client };

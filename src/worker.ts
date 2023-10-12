@@ -174,7 +174,6 @@ class AuthWorker {
   }
 }
 
-
 new AuthWorker().run
   .then((authWorker) => {
     log("module is ready for processing tasks.");
@@ -184,6 +183,17 @@ new AuthWorker().run
     log(`error occurred while loading auth module \n${err as string}`, "error");
   });
 
+const processTask = async (time: any): Promise<any> => {
+  return await new Promise((resolve) => {
+    setTimeout(() => {
+      resolve(`you got answer, ${time as string}`);
+    }, time * 3);
+  });
+};
+
+const initialize = async (): Promise<void> => {
+  await new AuthWorker().run;
+} 
 
 declare const Comlink: any;
-Comlink.expose({});
+Comlink.expose({ processTask, initialize });

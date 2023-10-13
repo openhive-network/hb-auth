@@ -2,6 +2,7 @@ import WasmModule, {
   type FileSystemType,
   type beekeeper_api,
 } from "@hive/beekeeper";
+import { GenericError } from "./errors";
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment, @typescript-eslint/prefer-ts-expect-error
 // @ts-ignore
@@ -34,7 +35,12 @@ interface ListWalletsResponse extends Response {
 }
 
 interface OpenWalletResponse extends Response {}
+interface LockWalletResponse extends Response {}
+interface UnlokcWalletResponse extends Response {}
 
+interface ImportKeyResponse extends Response {
+  public_key: string;
+}
 // type Callable = (...args: any[]) => any;
 
 // TODO: Move out basic logger later
@@ -134,6 +140,26 @@ class AuthWorker {
     }
   }
 
+  public unlock(password: string): void {
+    if (!password) throw new GenericError("Password is required.");
+
+    this.api.unlock(this.token, this.wallet, password);
+  }
+
+  public lock(): void {
+    this.api.lock(this.token, this.wallet);
+  }
+
+  public importKey(wifKey: string): ImportKeyResponse {
+    const { error, public_key } = this.parse<ImportKeyResponse>(
+      this.api.import_key(this.token, this.wallet, wifKey),
+    );
+
+    if (error) throw new GenericError(error);
+
+    return { public_key };
+  }
+
   private parse<T>(obj: Result): T {
     const resp = JSON.parse(obj as string);
 
@@ -174,26 +200,40 @@ class AuthWorker {
   }
 }
 
-new AuthWorker().run
-  .then((authWorker) => {
-    log("module is ready for processing tasks.");
-  })
-  .catch((err) => {
-    // TODO: what to do in this case??
-    log(`error occurred while loading auth module \n${err as string}`, "error");
-  });
+let worker: AuthWorker;
 
-const processTask = async (time: any): Promise<any> => {
-  return await new Promise((resolve) => {
-    setTimeout(() => {
-      resolve(`you got answer, ${time as string}`);
-    }, time * 3);
-  });
+// get chainID here
+// make this implicit maybe,
+const initialize = async (): Promise<void> => {
+  if (!worker) {
+    worker = await new AuthWorker().run;
+  }
 };
 
-const initialize = async (): Promise<void> => {
-  await new AuthWorker().run;
-} 
+export interface AuthResult<T> {
+  reuslt?: T;
+  error?: GenericError;
+}
+
+// const login = async (): Promise<AuthResult> => {
+//   // 1. make sure worker is initialized
+//   // 2. make sure wallet is unlocked to interact with keys
+//   // 3. if not unlock the wallet
+//   // 4. import keys but show it like seamless
+//   // 5. when all data saving is done, sign a sample transaction to verify if credentials are valid
+// };
+
+// const logout = async (): Promise<AuthResult> => {
+//   // require wallet password,
+//   // remove all keys from the wallet
+//   // emit result
+// };
+
+// const authorize = async (): Promise<AuthResult> => {
+//   // Check if user is auhtorized
+//   // if wallet is locked, request for unlock
+//   // return authorisation result from a result of credentials verification
+// };
 
 declare const Comlink: any;
-Comlink.expose({ processTask, initialize });
+Comlink.expose({ initialize });

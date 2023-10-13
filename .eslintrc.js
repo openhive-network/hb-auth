@@ -22,6 +22,7 @@ module.exports = {
   rules: {
     "n/handle-callback-err": "off",
     "@typescript-eslint/strict-boolean-expressions": "off",
-    "new-cap": "off"
+    "new-cap": "off",
+    "@typescript-eslint/naming-convention": "off"
   },
 };

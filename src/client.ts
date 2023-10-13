@@ -10,11 +10,12 @@ import workerString from "worker";
  */
 // eslint-disable-next-line @typescript-eslint/no-extraneous-class
 export interface ClientOptions {
-  something?: number;
+  chainId: string;
 }
+
 class Client {
   #worker: any; // type this
-  #options: ClientOptions = {};
+  #options!: ClientOptions;
 
   public set options(options: ClientOptions) {
     this.#options = { ...this.#options, ...options };
@@ -44,7 +45,8 @@ class Client {
     this.#worker = wrap(worker) as unknown as any;
   }
 
-  public async initialize(): Promise<any> {
+  public async initialize(options: ClientOptions): Promise<any> {
+    this.options = options;
     await this.#worker.initialize();
 
     return await Promise.resolve("works, module is ready");

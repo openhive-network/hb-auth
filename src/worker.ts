@@ -200,19 +200,20 @@ class AuthWorker {
   }
 }
 
-let worker: AuthWorker;
+class Auth {
+  private static worker: AuthWorker;
+  constructor(private readonly chainId: string) {}
 
-// get chainID here
-// make this implicit maybe,
-const initialize = async (): Promise<void> => {
-  if (!worker) {
-    worker = await new AuthWorker().run;
+  public async initialize(): Promise<void> {
+    if (!Auth.worker) {
+      Auth.worker = await new AuthWorker().run;
+      console.log("initialized and chain id is!", this.chainId);
+    }
   }
-};
 
-export interface AuthResult<T> {
-  reuslt?: T;
-  error?: GenericError;
+  public login(): void {}
+  public logout(): void {}
+  public authorize(): void {}
 }
 
 // const login = async (): Promise<AuthResult> => {
@@ -236,4 +237,6 @@ export interface AuthResult<T> {
 // };
 
 declare const Comlink: any;
-Comlink.expose({ initialize });
+Comlink.expose({ Auth });
+
+export type { Auth };

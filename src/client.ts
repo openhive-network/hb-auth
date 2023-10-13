@@ -2,6 +2,7 @@ import { wrap } from "../node_modules/comlink/dist/esm/comlink";
 import { GenericError } from "./errors";
 import { isSupportWebWorker } from "./environment";
 import workerString from "worker";
+import { type Auth } from "./worker";
 /**
  * Client class is responsible for creating a new
  * auth client, managing the whole auth process (importing keys, verification, validation)
@@ -16,6 +17,7 @@ export interface ClientOptions {
 class Client {
   #worker: any; // type this
   #options!: ClientOptions;
+  #auth!: Auth;
 
   public set options(options: ClientOptions) {
     this.#options = { ...this.#options, ...options };
@@ -47,7 +49,8 @@ class Client {
 
   public async initialize(options: ClientOptions): Promise<any> {
     this.options = options;
-    await this.#worker.initialize();
+    this.#auth = await new this.#worker.Auth(this.options.chainId);
+    await this.#auth.initialize();
 
     return await Promise.resolve("works, module is ready");
   }

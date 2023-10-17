@@ -36,12 +36,15 @@ interface ListWalletsResponse extends Response {
 
 interface OpenWalletResponse extends Response {}
 interface LockWalletResponse extends Response {}
-interface UnlokcWalletResponse extends Response {}
+interface UnlockWalletResponse extends Response {}
+
+interface GetPublicKeysResponse extends Response {
+  keys: Array<{ public_key: string }>;
+}
 
 interface ImportKeyResponse extends Response {
   public_key: string;
 }
-// type Callable = (...args: any[]) => any;
 
 // TODO: Move out basic logger later
 const DEBUG = true;
@@ -112,38 +115,35 @@ class AuthWorker {
     this.token = this.parse<TokenResponse>(this.api.create_session("")).token;
     log(`Token: ${this.token}`);
     this.api.set_timeout(this.token, Infinity);
-
-    // Wallet setup
-    await this.setupWallet();
   }
 
-  private async setupWallet(): Promise<void> {
+  public async createWallet(password: string): Promise<void> {
+    if (this.isWalletExist()) return; // TODO: what in this case?
+    // First time, there is no wallet, so create
+    log("Wallet doesn't exists, so create one.");
+    const resp = this.parse<CreateWalletResponse>(
+      this.api.create(this.token, this.wallet, password),
+    );
+    log(resp);
+    await this.sync(false);
+  }
+
+  public isWalletExist(): boolean {
     const { error } = this.parse<OpenWalletResponse>(
       this.api.open(this.token, this.wallet),
     );
 
-    if (error) {
-      // First time, there is no wallet, so create
-      log("Wallet doesn't exists, so create one.");
-      const { password } = this.parse<CreateWalletResponse>(
-        this.api.create(this.token, this.wallet),
-      );
-      log(password);
-      await this.sync(false);
-    } else {
-      // Use existing one if already there
-      const { wallets } = this.parse<ListWalletsResponse>(
-        this.api.list_wallets(this.token),
-      );
+    if (error) return false;
 
-      log(`Existing wallets: ${JSON.stringify(wallets)}`);
-    }
+    return true;
   }
 
   public unlock(password: string): void {
     if (!password) throw new GenericError("Password is required.");
 
-    this.api.unlock(this.token, this.wallet, password);
+    const result = this.api.unlock(this.token, this.wallet, password);
+    console.log("unlock result", result);
+    console.log(this.api.list_wallets(this.token));
   }
 
   public lock(): void {
@@ -160,6 +160,12 @@ class AuthWorker {
     return { public_key };
   }
 
+  public getPublicKeys(): GetPublicKeysResponse {
+    return this.parse<GetPublicKeysResponse>(
+      this.api.get_public_keys(this.token),
+    );
+  }
+
   private parse<T>(obj: Result): T {
     const resp = JSON.parse(obj as string);
 
@@ -169,23 +175,6 @@ class AuthWorker {
       return JSON.parse(resp.result);
     }
   }
-
-  // private call<Call extends Callable>(
-  //   f: Call,
-  //   ...args: Parameters<Call>
-  //   // eslint-disable-next-line @typescript-eslint/no-invalid-void-type
-  // ): ReturnType<Call> | void {
-  //   return this.parse(f(...args));
-  // }
-
-  // TODO: return to this in spare time
-  // hint instead of Parameters type ArgsType<T> = T extends (...args: infer U) => any ? U : never;
-  // private call<T, Name extends keyof beekeeper_api, P extends Array<Parameters<beekeeper_api[Name]>>>(func: Name, ...args: P): T {
-  //   type ArgsType<T> = T extends (...args: infer U) => any ? U : never;
-  //   type Params = ArgsType<keyof beekeeper_api>
-
-  //   return this.parse<T>(this.api[func](...args));
-  // }
 
   // Sync storage after changes
   // toWasm = true means that we sync IDB to Wasm memory
@@ -211,30 +200,36 @@ class Auth {
     }
   }
 
-  public login(): void {}
-  public logout(): void {}
-  public authorize(): void {}
+  public async register(password: string, wifKey: string): Promise<void> {
+    await this.initialize();
+    await Auth.worker.createWallet(password);
+
+    const resp = Auth.worker.importKey(wifKey);
+    console.log("keys are imported ", resp);
+    console.log(Auth.worker.getPublicKeys());
+  }
+
+  // get key or keys here
+  public async authorize(password: string): Promise<void> {
+    await this.initialize();
+
+    if (Auth.worker.isWalletExist()) {
+      Auth.worker.unlock(password); // handle unlock response
+      // Authorise internally with registered key,
+      // return auth response
+    } else {
+      throw new GenericError("No user exist, please register first.");
+    }
+  }
+
+  public async logout(): Promise<void> {
+    await this.initialize();
+  }
+
+  public async sign(): Promise<void> {
+    await this.initialize();
+  }
 }
-
-// const login = async (): Promise<AuthResult> => {
-//   // 1. make sure worker is initialized
-//   // 2. make sure wallet is unlocked to interact with keys
-//   // 3. if not unlock the wallet
-//   // 4. import keys but show it like seamless
-//   // 5. when all data saving is done, sign a sample transaction to verify if credentials are valid
-// };
-
-// const logout = async (): Promise<AuthResult> => {
-//   // require wallet password,
-//   // remove all keys from the wallet
-//   // emit result
-// };
-
-// const authorize = async (): Promise<AuthResult> => {
-//   // Check if user is auhtorized
-//   // if wallet is locked, request for unlock
-//   // return authorisation result from a result of credentials verification
-// };
 
 declare const Comlink: any;
 Comlink.expose({ Auth });

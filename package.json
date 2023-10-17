@@ -12,7 +12,7 @@
     "test": "jest",
     "prebuild": "npm run lint && npm run test",
     "prepack": "npm run build",
-    "start:example": "npm run build && serve ."
+    "start:example": "npm run build --ignore-scripts && npx parcel example/index.html --no-cache --log-level=\"error\""
   },
   "pre-commit": [
     "build"

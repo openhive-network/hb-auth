@@ -1,12 +1,61 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Library Example Usage</title>
-</head>
-<body>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div id="status" class="box">
+      Authorization status: <span>Unauthorized</span>
+    </div>
 
+    <div class="title">Authorize new user</div>
+
+    <div class="column is-half">
+      <form id="reg-form">
+        <div class="field">
+          <label class="label">Password</label>
+          <div class="control">
+            <input
+              name="password"
+              class="input"
+              type="text"
+              placeholder="Your auth password"
+            />
+          </div>
+        </div>
+
+        <div class="field">
+          <label class="label">Key Type</label>
+          <div class="select">
+            <select name="type">
+              <option value="" selected disabled>Key Type</option>
+              <option value="posting">Posting</option>
+              <option value="active">Active</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="field">
+          <label class="label">Private Key</label>
+          <div class="control">
+            <input
+              name="key"
+              class="input"
+              type="text"
+              placeholder="Your private key"
+            />
+          </div>
+        </div>
+
+        <button class="button is-primary" style="float: right;" type="submit">Authorize</button>
+      </form>
+    </div>
+
+
+    
     <script type="module" src="./app.js"></script>
-</body>
+  </body>
 </html>

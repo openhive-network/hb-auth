@@ -14,6 +14,8 @@ export interface ClientOptions {
   chainId: string;
 }
 
+export type KeyAuthorityType = "posting" | "active";
+
 class Client {
   #worker: any; // type this
   #options!: ClientOptions;
@@ -47,12 +49,35 @@ class Client {
     this.#worker = wrap(worker) as unknown as any;
   }
 
-  public async initialize(options: ClientOptions): Promise<any> {
+  public async initialize(options: ClientOptions): Promise<Client> {
     this.options = options;
     this.#auth = await new this.#worker.Auth(this.options.chainId);
-    await this.#auth.initialize();
 
-    return await Promise.resolve("works, module is ready");
+    return await Promise.resolve(this);
+  }
+
+  public async register(
+    password: string,
+    wifKey: string,
+    keyType: KeyAuthorityType,
+  ): Promise<{ ok: boolean }> {
+    await this.#auth.register(password, wifKey)
+    return await Promise.resolve({ ok: false });
+  }
+
+  public async authorize(
+    password: string,
+    keyType: KeyAuthorityType,
+  ): Promise<{ ok: boolean }> {
+    return await Promise.resolve({ ok: false });
+  }
+
+  public async logout(): Promise<{ ok: boolean }> {
+    return await Promise.resolve({ ok: false });
+  }
+
+  public async sign(): Promise<{ ok: boolean }> {
+    return await Promise.resolve({ ok: false });
   }
 }
 

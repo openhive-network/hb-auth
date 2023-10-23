@@ -60,6 +60,7 @@
   "dependencies": {
     "@hive/beekeeper": "^1.27.5-rc0-1b670bc89",
     "@hive/wax": "^0.0.2-9029f55",
-    "comlink": "^4.4.1"
+    "comlink": "^4.4.1",
+    "idb": "^7.1.1"
   }
 }

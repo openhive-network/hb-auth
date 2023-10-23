@@ -55,12 +55,14 @@ class Client {
     password: string,
     wifKey: string,
     keyType: KeyAuthorityType,
+    username: string
   ): Promise<{ ok: boolean }> {
-    await this.#auth.register(password, wifKey)
+    await this.#auth.register(password, wifKey, `${username}:${keyType}`);
     return await Promise.resolve({ ok: false });
   }
 
   public async authorize(
+    username: string,
     password: string,
     keyType: KeyAuthorityType,
   ): Promise<{ ok: boolean }> {

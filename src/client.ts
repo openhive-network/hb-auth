@@ -69,8 +69,9 @@ class Client {
     return await Promise.resolve({ ok: false });
   }
 
-  public async logout(): Promise<{ ok: boolean }> {
-    return await Promise.resolve({ ok: false });
+  public async logout(): Promise<void> {
+    // add feedback
+    await this.#auth.logout();
   }
 
   public async sign(): Promise<{ ok: boolean }> {

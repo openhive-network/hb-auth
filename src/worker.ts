@@ -13,7 +13,8 @@ class AuthWorker {
   private api!: IBeekeeperInstance;
   private session!: IBeekeeperSession;
   private readonly lockTimeout: number = 10 * 1000;
-  private readonly storage: string = "/storage_root";
+  private readonly storage = "/storage_root";
+  private readonly aliasStorage = 'Aliases';
   private readonly wallet: string = "default";
 
   constructor() {
@@ -52,12 +53,20 @@ class AuthWorker {
     }
   }
 
+  public async unregister(): Promise<void> {
+    await this.session.lockAll();
+    await this.api.delete();
+    self.indexedDB.deleteDatabase(this.storage)
+    self.indexedDB.deleteDatabase(this.aliasStorage);
+  }
+
   private async addAlias(alias: string, pubKey: string): Promise<void> {
     const db = await this.getAliasDb();
     const tx = db.transaction(['aliases'], 'readwrite');
     const store = tx.objectStore('aliases');
     await store.add({ pubKey, alias });
     await tx.done
+    db.close()
   }
 
   private async removeAlias(alias: string): Promise<void> {
@@ -66,10 +75,11 @@ class AuthWorker {
     const store = tx.objectStore('aliases');
     await store.delete(alias);
     await tx.done;
+    db.close()
   }
 
   private async getAliasDb(): Promise<IDBPDatabase> {
-    const db = await openDB('Aliases', 1, {
+    const db = await openDB(this.aliasStorage, 1, {
       upgrade(db) {
         if (!db.objectStoreNames.contains('aliases')) {
           const store = db.createObjectStore('aliases', { keyPath: 'alias' })
@@ -118,6 +128,7 @@ class Auth {
 
   public async logout(): Promise<void> {
     await this.initialize();
+    await Auth.worker.unregister();
   }
 
   public async sign(): Promise<void> {

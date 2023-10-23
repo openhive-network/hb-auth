@@ -20,7 +20,7 @@
     </div>
     
     <div id="login" class="tab column is-half">
-      <form id="reg-form">
+      <form id="login-form">
         <div class="field">
           <label class="label">Username</label>
           <div class="control">
@@ -103,7 +103,11 @@
     </div>
 
     <div id="logout" class="tab column is-half hidden">
-      Process logout
+      <div class="block">
+        Process logout; clicking this button you will be logged out, your keys will be cleared,
+        so you will need to go through auth registration process again.
+      </div>
+      <button id="logout" class="button is-danger">Logout</button>
     </div>
     
     <script type="module" src="./app.js"></script>

@@ -1,15 +1,10 @@
-import { wrap } from "../node_modules/comlink/dist/esm/comlink";
+import { wrap, type Remote, type Local } from "../node_modules/comlink/dist/esm/comlink";
 import { GenericError } from "./errors";
 import { isSupportWebWorker } from "./environment";
 import workerString from "worker";
-import { type Auth } from "./worker";
-/**
- * Client class is responsible for creating a new
- * auth client, managing the whole auth process (importing keys, verification, validation)
- * also provides auth related functions (auth check, unlock, logout/destroy auth)
- * and some helpers like (signing transactions as an authorised user)
- */
-// eslint-disable-next-line @typescript-eslint/no-extraneous-class
+import type { Auth, WorkerExpose } from "./worker";
+
+
 export interface ClientOptions {
   chainId: string;
 }
@@ -17,9 +12,9 @@ export interface ClientOptions {
 export type KeyAuthorityType = "posting" | "active";
 
 class Client {
-  #worker: any; // type this
+  #worker!: Remote<WorkerExpose>;
   #options!: ClientOptions;
-  #auth!: Auth;
+  #auth!: Local<Auth>;
 
   public set options(options: ClientOptions) {
     this.#options = { ...this.#options, ...options };
@@ -46,12 +41,12 @@ class Client {
     const workerBlob = new Blob([workerString]);
     const workerUrl = URL.createObjectURL(workerBlob);
     const worker = new Worker(workerUrl);
-    this.#worker = wrap(worker) as unknown as any;
+    this.#worker = wrap<WorkerExpose>(worker)
   }
 
   public async initialize(options: ClientOptions): Promise<Client> {
     this.options = options;
-    this.#auth = await new this.#worker.Auth(this.options.chainId);
+    this.#auth = await new this.#worker.Auth(options.chainId)
 
     return await Promise.resolve(this);
   }

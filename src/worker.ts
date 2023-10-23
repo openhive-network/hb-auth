@@ -231,7 +231,12 @@ class Auth {
   }
 }
 
-declare const Comlink: any;
-Comlink.expose({ Auth });
+const exports = {
+  Auth
+}
 
-export type { Auth };
+declare const Comlink: any;
+Comlink.expose(exports);
+
+export type WorkerExpose = typeof exports;
+export type { Auth }

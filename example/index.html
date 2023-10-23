@@ -8,13 +8,61 @@
   </head>
   <body>
     <div id="status" class="box">
-      Authorization status: <span>Unauthorized</span>
+      Authorization status: <span id="auth-status">Unauthorized</span>
     </div>
 
-    <div class="title">Authorize new user</div>
-
-    <div class="column is-half">
+    <div class="tabs">
+      <ul>
+        <li class="is-active"><a onclick="onTabSelect(this, 'login')">Login</a></li>
+        <li><a onclick="onTabSelect(this, 'register')">Authorize new user</a></li>
+        <li><a onclick="onTabSelect(this, 'logout')">Logout</a></li>
+      </ul>
+    </div>
+    
+    <div id="login" class="tab column is-half">
       <form id="reg-form">
+        <div class="field">
+          <label class="label">Username</label>
+          <div class="control">
+            <input
+              name="username"
+              class="input"
+              type="text"
+              placeholder="Hive username"
+            />
+          </div>
+        </div>
+
+        <div class="field">
+          <label class="label">Password</label>
+          <div class="control">
+            <input
+              name="password"
+              class="input"
+              type="text"
+              placeholder="Your password"
+            />
+          </div>
+        </div>
+
+        <button class="button is-primary" style="float: right;" type="submit">Login</button>
+      </form>
+    </div>
+
+    <div id="register" class="tab column is-half hidden">
+      <form id="reg-form">
+        <div class="field">
+          <label class="label">Username</label>
+          <div class="control">
+            <input
+              name="username"
+              class="input"
+              type="text"
+              placeholder="Hive username"
+            />
+          </div>
+        </div>
+
         <div class="field">
           <label class="label">Password</label>
           <div class="control">
@@ -54,8 +102,11 @@
       </form>
     </div>
 
-
+    <div id="logout" class="tab column is-half hidden">
+      Process logout
+    </div>
     
     <script type="module" src="./app.js"></script>
+    <script src="./controller.js"></script>
   </body>
 </html>

@@ -1,11 +1,18 @@
 import { type IDBPDatabase, openDB } from 'idb'
-import createBeekeeperApp, { type IBeekeeperSession, type IBeekeeperInstance } from "@hive/beekeeper";
+import createBeekeeperApp, { type IBeekeeperSession, type IBeekeeperInstance, type IBeekeeperWallet } from "@hive/beekeeper";
+import { GenericError } from './errors';
+
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment, @typescript-eslint/prefer-ts-expect-error
 // @ts-ignore
 importScripts("https://unpkg.com/comlink/dist/umd/comlink.js");
 
 const BEEKEEPER_LOGS = true;
+
+export interface AuthUser {
+  username: string;
+  authorized: boolean;
+}
 
 class AuthWorker {
   public readonly run: Promise<AuthWorker>;
@@ -23,7 +30,6 @@ class AuthWorker {
       createBeekeeperApp({ enableLogs: BEEKEEPER_LOGS, storageRoot: this.storage }).then(async (api) => {
         this.api = api;
         this.session = await api.createSession('banana')
-        await this.removeAlias('lehche:posting');
         resolve(this)
       }).catch((err) => {
         reject(err)
@@ -31,30 +37,40 @@ class AuthWorker {
     });
   }
 
-  public async getList(): Promise<void> {
-    const wallets = await this.session.listWallets()
-    console.log(wallets);
-  }
-
+  // todo, alias -> username!
+  // timeout handling no timers
+  // request auth
   public async authorizeNewUser(password: string, wifKey: string, alias?: string): Promise<void> {
     try {
-      await this.getList()
       const unlocked = await this.session.createWallet(this.wallet, password);
-      await unlocked.importKey(wifKey);
+      const pubKey = await unlocked.wallet.importKey(wifKey);
 
-      await this.getList()
-      const [pubKey] = await this.session.getPublicKeys()
       if (alias) {
-        console.log(alias, pubKey);
         await this.addAlias(alias, pubKey);
       }
     } catch (error) {
-      console.log('here??', error)
+      throw new GenericError('Authorization error')
     }
   }
 
+  public async authorize(wallet: string, password: string): Promise<void> {
+    const w = await this.getExistingWallet();
+
+    if (w) {
+      const unlocked = await w.unlock(password)
+      console.log('this wallet is exist!', unlocked.name)
+    } else {
+      console.log('error!')
+    }
+  }
+
+  public async getExistingWallet(): Promise<IBeekeeperWallet | null> {
+    const [wallet] = await this.session.listWallets();
+
+    return wallet || null;
+  }
+
   public async unregister(): Promise<void> {
-    await this.session.lockAll();
     await this.api.delete();
     self.indexedDB.deleteDatabase(this.storage)
     self.indexedDB.deleteDatabase(this.aliasStorage);
@@ -107,23 +123,11 @@ class Auth {
   public async register(password: string, wifKey: string, alias?: string): Promise<void> {
     await this.initialize();
     await Auth.worker.authorizeNewUser(password, wifKey, alias);
-
-    // const resp = Auth.worker.importKey(wifKey);
-    // console.log("keys are imported ", resp);
-    // console.log(Auth.worker.getPublicKeys());
   }
 
-  // get key or keys here
-  public async authorize(password: string): Promise<void> {
+  public async authorize(username: string, password: string): Promise<void> {
     await this.initialize();
-
-    // if (Auth.worker.isWalletExist()) {
-    //   Auth.worker.unlock(password); // handle unlock response
-    //   // Authorise internally with registered key,
-    //   // return auth response
-    // } else {
-    //   throw new GenericError("No user exist, please register first.");
-    // }
+    await Auth.worker.authorize(username, password);
   }
 
   public async logout(): Promise<void> {
@@ -133,6 +137,19 @@ class Auth {
 
   public async sign(): Promise<void> {
     await this.initialize();
+  }
+
+  public async getCurrentAuth(): Promise<AuthUser | null> {
+    await this.initialize();
+
+    const wallet = await Auth.worker.getExistingWallet();
+    
+    if (!wallet) return null;
+
+    return {
+      authorized: !!wallet.unlocked,
+      username: wallet.name
+    }
   }
 }
 

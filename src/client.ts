@@ -2,7 +2,7 @@ import { wrap, type Remote, type Local } from "../node_modules/comlink/dist/esm/
 import { GenericError } from "./errors";
 import { isSupportWebWorker } from "./environment";
 import workerString from "worker";
-import type { Auth, WorkerExpose } from "./worker";
+import type { Auth, WorkerExpose, AuthUser } from "./worker";
 
 
 export interface ClientOptions {
@@ -51,6 +51,10 @@ class Client {
     return await Promise.resolve(this);
   }
 
+  public async getCurrentAuth(): Promise<AuthUser | null> {
+    return await this.#auth.getCurrentAuth();
+  }
+
   public async register(
     password: string,
     wifKey: string,
@@ -66,6 +70,7 @@ class Client {
     password: string,
     keyType: KeyAuthorityType,
   ): Promise<{ ok: boolean }> {
+    await this.#auth.authorize(username, password);
     return await Promise.resolve({ ok: false });
   }
 

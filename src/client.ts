@@ -1,12 +1,17 @@
-import { wrap, type Remote, type Local } from "../node_modules/comlink/dist/esm/comlink";
+import {
+  proxy,
+  wrap,
+  type Remote,
+  type Local,
+} from "../node_modules/comlink/dist/esm/comlink";
 import { GenericError } from "./errors";
 import { isSupportWebWorker } from "./environment";
 import workerString from "worker";
 import type { Auth, WorkerExpose, AuthUser } from "./worker";
 
-
 export interface ClientOptions {
   chainId: string;
+  onSessionEnd: () => Promise<void>;
 }
 
 export type KeyAuthorityType = "posting" | "active";
@@ -41,12 +46,13 @@ class Client {
     const workerBlob = new Blob([workerString]);
     const workerUrl = URL.createObjectURL(workerBlob);
     const worker = new Worker(workerUrl);
-    this.#worker = wrap<WorkerExpose>(worker)
+    this.#worker = wrap<WorkerExpose>(worker);
   }
 
   public async initialize(options: ClientOptions): Promise<Client> {
     this.options = options;
-    this.#auth = await new this.#worker.Auth(options.chainId)
+    this.#auth = await new this.#worker.Auth(options.chainId);
+    await this.#auth.setSessionEndCallback(proxy(options.onSessionEnd));
 
     return await Promise.resolve(this);
   }
@@ -59,7 +65,7 @@ class Client {
     password: string,
     wifKey: string,
     keyType: KeyAuthorityType,
-    username: string
+    username: string,
   ): Promise<{ ok: boolean }> {
     await this.#auth.register(password, wifKey, username, keyType);
     return await Promise.resolve({ ok: false });

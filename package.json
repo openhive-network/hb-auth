@@ -58,7 +58,7 @@
     "typescript": "^5.1.6"
   },
   "dependencies": {
-    "@hive/beekeeper": "^1.27.5-rc0-1b670bc89",
+    "@hive/beekeeper": "^1.27.5-rc0-stable.e7190f69e",
     "@hive/wax": "^0.0.2-9029f55",
     "comlink": "^4.4.1",
     "idb": "^7.1.1"

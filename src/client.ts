@@ -61,7 +61,7 @@ class Client {
     keyType: KeyAuthorityType,
     username: string
   ): Promise<{ ok: boolean }> {
-    await this.#auth.register(password, wifKey, `${username}:${keyType}`);
+    await this.#auth.register(password, wifKey, username, keyType);
     return await Promise.resolve({ ok: false });
   }
 

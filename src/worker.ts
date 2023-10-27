@@ -1,4 +1,4 @@
-import { type IDBPDatabase, openDB } from 'idb'
+import { type IDBPDatabase, openDB, deleteDB } from 'idb'
 import createBeekeeperApp, { type IBeekeeperSession, type IBeekeeperInstance, type IBeekeeperWallet } from "@hive/beekeeper";
 import { GenericError } from './errors';
 
@@ -15,72 +15,67 @@ export interface AuthUser {
 }
 
 class AuthWorker {
-  public readonly run: Promise<AuthWorker>;
-
+  public readonly Ready: Promise<AuthWorker>;
   private api!: IBeekeeperInstance;
   private session!: IBeekeeperSession;
-  private readonly lockTimeout: number = 10 * 1000;
   private readonly storage = "/storage_root";
-  private readonly aliasStorage = 'Aliases';
-  private readonly wallet: string = "default";
+  private readonly aliasStorage = '/aliases';
 
   constructor() {
-    // Use readiness here to wait until wasm module is loaded.
-    this.run = new Promise<AuthWorker>((resolve, reject) => {
-      createBeekeeperApp({ enableLogs: BEEKEEPER_LOGS, storageRoot: this.storage }).then(async (api) => {
-        this.api = api;
-        this.session = await api.createSession('banana')
-        resolve(this)
-      }).catch((err) => {
-        reject(err)
-      })
-    });
+    this.Ready = new Promise((resolve, reject) => {
+      this.initializeBeekeeperApp().then(() => {
+        resolve(this);
+      }).catch(reject)
+    })
   }
 
-  // todo, alias -> username!
-  // timeout handling no timers
-  // request auth
-  public async authorizeNewUser(password: string, wifKey: string, alias?: string): Promise<void> {
+  private async initializeBeekeeperApp(): Promise<void> {
+    this.api = await createBeekeeperApp({ enableLogs: BEEKEEPER_LOGS, storageRoot: this.storage })
+    this.session = await this.api.createSession(self.crypto.randomUUID());
+  }
+
+  public async authorizeNewUser(password: string, wifKey: string, username: string, keyType: string): Promise<void> {
     try {
-      const unlocked = await this.session.createWallet(this.wallet, password);
+      const unlocked = await this.session.createWallet(username, password);
       const pubKey = await unlocked.wallet.importKey(wifKey);
 
-      if (alias) {
-        await this.addAlias(alias, pubKey);
+      if (username) {
+        await this.addAlias(username, pubKey, keyType);
       }
     } catch (error) {
       throw new GenericError('Authorization error')
     }
   }
 
-  public async authorize(wallet: string, password: string): Promise<void> {
+  public async authorize(username: string, password: string): Promise<void> {
     const w = await this.getExistingWallet();
 
-    if (w) {
+    if (w && w.name === username) {
       const unlocked = await w.unlock(password)
       console.log('this wallet is exist!', unlocked.name)
     } else {
-      console.log('error!')
+      throw new GenericError("Invalid Credentials")
     }
   }
 
-  public async getExistingWallet(): Promise<IBeekeeperWallet | null> {
+  public async getExistingWallet(): Promise<IBeekeeperWallet | undefined> {
     const [wallet] = await this.session.listWallets();
 
-    return wallet || null;
+    return wallet
   }
 
   public async unregister(): Promise<void> {
     await this.api.delete();
-    self.indexedDB.deleteDatabase(this.storage)
-    self.indexedDB.deleteDatabase(this.aliasStorage);
+    const storage = openDB(this.storage);
+    await (await storage).clear("FILE_DATA");
+    await deleteDB(this.aliasStorage);
   }
 
-  private async addAlias(alias: string, pubKey: string): Promise<void> {
+  private async addAlias(alias: string, pubKey: string, keyType: string): Promise<void> {
     const db = await this.getAliasDb();
     const tx = db.transaction(['aliases'], 'readwrite');
     const store = tx.objectStore('aliases');
-    await store.add({ pubKey, alias });
+    await store.add({ pubKey, alias: `${alias}@${keyType}` });
     await tx.done
     db.close()
   }
@@ -110,45 +105,44 @@ class AuthWorker {
 }
 
 class Auth {
-  private static worker: AuthWorker;
+  #worker: AuthWorker | undefined;
   constructor(private readonly chainId: string) { }
 
-  public async initialize(): Promise<void> {
-    if (!Auth.worker) {
-      Auth.worker = await new AuthWorker().run;
-      console.log("initialized and chain id is!", this.chainId);
-    }
+  private async getWorker(): Promise<AuthWorker> {
+    if (this.#worker !== undefined) return this.#worker;
+
+    this.#worker = await new AuthWorker().Ready;
+    return this.#worker;
   }
 
-  public async register(password: string, wifKey: string, alias?: string): Promise<void> {
-    await this.initialize();
-    await Auth.worker.authorizeNewUser(password, wifKey, alias);
+  public async register(password: string, wifKey: string, username: string, keyType: string): Promise<void> {
+    await (await this.getWorker()).authorizeNewUser(password, wifKey, username, keyType);
   }
 
   public async authorize(username: string, password: string): Promise<void> {
-    await this.initialize();
-    await Auth.worker.authorize(username, password);
+    await (await this.getWorker()).authorize(username, password);
   }
 
   public async logout(): Promise<void> {
-    await this.initialize();
-    await Auth.worker.unregister();
+    await (await this.getWorker()).unregister();
+    this.#worker = undefined;
   }
 
   public async sign(): Promise<void> {
-    await this.initialize();
   }
 
   public async getCurrentAuth(): Promise<AuthUser | null> {
-    await this.initialize();
+    try {
+      const wallet = await (await this.getWorker()).getExistingWallet();
 
-    const wallet = await Auth.worker.getExistingWallet();
-    
-    if (!wallet) return null;
+      if (!wallet) return null;
 
-    return {
-      authorized: !!wallet.unlocked,
-      username: wallet.name
+      return {
+        authorized: !!wallet.unlocked,
+        username: wallet.name
+      }
+    } catch (err) {
+      return null;
     }
   }
 }

@@ -52,6 +52,7 @@ class Client {
   public async initialize(options: ClientOptions): Promise<Client> {
     this.options = options;
     this.#auth = await new this.#worker.Auth(options.chainId);
+    // TODO: refactor this, preserve callback after re-initialization
     await this.#auth.setSessionEndCallback(proxy(options.onSessionEnd));
 
     return await Promise.resolve(this);

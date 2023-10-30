@@ -7,10 +7,7 @@ const CHAIN_ID =
 
 client
   .initialize({
-    chainId: CHAIN_ID,
-    onSessionEnd: () => {
-      console.log("called when session end");
-    },
+    chainId: CHAIN_ID
   })
 .then(async (authClient) => {
     // display auth status

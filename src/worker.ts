@@ -12,7 +12,7 @@ importScripts("https://unpkg.com/comlink/dist/umd/comlink.js");
 
 const BEEKEEPER_LOGS = true;
 const SESSION_HEALTH_CHECK = 3000;
-const noop = async (): Promise<void> => {};
+const noop = async (): Promise<void> => { };
 
 export interface AuthUser {
   username: string;
@@ -71,14 +71,17 @@ class AuthWorker {
     }
   }
 
-  public async authorize(username: string, password: string): Promise<void> {
-    const w = await this.getExistingWallet();
+  public async authenticate(username: string, password: string): Promise<void> {
+    try {
+      const w = await this.getExistingWallet();
 
-    if (w && w.name === username) {
-      const unlocked = await w.unlock(password);
-      console.log("this wallet is exist!", unlocked.name);
-    } else {
-      throw new GenericError("Invalid Credentials");
+      if (w && w.name === username) {
+         await w.unlock(password);
+      } else {
+        throw new GenericError("Invalid Credentials");
+      }
+    } catch (error) {
+      throw new GenericError("Invalid Credentials")
     }
   }
 
@@ -132,7 +135,7 @@ class AuthWorker {
 
 class Auth {
   #worker: AuthWorker | undefined;
-  constructor(private readonly chainId: string) {}
+  constructor(private readonly chainId: string) { }
 
   private async getWorker(): Promise<AuthWorker> {
     if (this.#worker !== undefined) return this.#worker;
@@ -152,8 +155,8 @@ class Auth {
     ).authorizeNewUser(password, wifKey, username, keyType);
   }
 
-  public async authorize(username: string, password: string): Promise<void> {
-    await (await this.getWorker()).authorize(username, password);
+  public async authenticate(username: string, password: string): Promise<void> {
+    await (await this.getWorker()).authenticate(username, password);
   }
 
   public async logout(): Promise<void> {
@@ -167,7 +170,7 @@ class Auth {
     (await this.getWorker()).setSessionEndCallback(callback);
   }
 
-  public async sign(): Promise<void> {}
+  public async sign(): Promise<void> { }
 
   public async getCurrentAuth(): Promise<AuthUser | null> {
     try {

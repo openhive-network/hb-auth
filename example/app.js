@@ -12,8 +12,11 @@ client
 .then(async (authClient) => {
     // display auth status
     const statusEl = document.getElementById("auth-status");
+    const errorEl = document.getElementById("error");
+    errorEl.style.color = 'red';
 
     const updateStatus = async () => {
+      errorEl.innerText = "";
       await authClient.getCurrentAuth().then((auth) => {
         if (!auth) {
           statusEl.innerText = "There is no registered user";
@@ -45,9 +48,15 @@ client
         data[key] = val;
       }
       console.log("form data ", data);
-      authClient.authorize(data.username, data.password).then(() => {
-        updateStatus();
-      });
+      authClient.authenticate(data.username, data.password).then((status) => {
+        if (status.ok) {
+          updateStatus();
+        } else {
+          console.log("here should be rr?")
+        }
+      }).catch((err) => {
+        errorEl.innerText = err.message;
+      })
     };
 
     // handle registration form submit
@@ -65,7 +74,9 @@ client
         .register(data.password, data.key, data.type, data.username)
         .then(() => {
           updateStatus();
-        });
+        }).catch((err) => {
+          errorEl.innerText = err.message;
+        })
     };
 
     // handle logout

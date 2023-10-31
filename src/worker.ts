@@ -87,8 +87,20 @@ class AuthWorker {
 
   public async getExistingWallet(): Promise<IBeekeeperWallet | undefined> {
     const [wallet] = await this.session.listWallets();
-
     return wallet;
+  }
+
+  public async sign(digest: string, keyType?: string): Promise<string> {
+    try {
+      const wallet = await this.getExistingWallet();
+      if (!wallet?.unlocked) throw new GenericError("Not authorized");
+      // refactor this to select from multiple type of keys owner/active
+      const [pubKey] = await wallet.unlocked.getPublicKeys();
+      const signed = await wallet.unlocked.signDigest(digest, pubKey)
+      return signed;
+    } catch (err: any) {
+      throw new GenericError(err.message)
+    }
   }
 
   public async unregister(): Promise<void> {
@@ -170,7 +182,9 @@ class Auth {
     (await this.getWorker()).setSessionEndCallback(callback);
   }
 
-  public async sign(): Promise<void> { }
+  public async sign(digest: string, keyType: string): Promise<string> { 
+    return await (await this.getWorker()).sign(digest, keyType);
+  }
 
   public async getCurrentAuth(): Promise<AuthUser | null> {
     try {

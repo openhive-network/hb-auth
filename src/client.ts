@@ -83,19 +83,19 @@ abstract class Client {
   }
 
   public async register(
+    username: string,
     password: string,
     wifKey: string,
     keyType: KeyAuthorityType,
-    username: string,
   ): Promise<{ ok: boolean }> {
-    await this.#auth.register(password, wifKey, username, keyType);
+    await this.#auth.register(username, password, wifKey, keyType);
 
     const authenticated = await this.authorize(username, password, keyType);
 
     if (authenticated) {
       return await Promise.resolve({ ok: true });
     } else {
-      await this.#auth.logout();
+      await this.#auth.unregister(username, keyType);
       return await Promise.resolve({ ok: false });
     }
   }
@@ -114,7 +114,7 @@ abstract class Client {
         return await Promise.resolve({ ok: true });
       } else {
         // TODO: return reason here
-        await this.#auth.lock()
+        await this.#auth.logout()
         return await Promise.resolve({ ok: false });
       }
     } catch (err) {

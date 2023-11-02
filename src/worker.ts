@@ -1,4 +1,4 @@
-import { type IDBPDatabase, openDB, deleteDB } from "idb";
+import { type IDBPDatabase, openDB } from "idb";
 import createBeekeeperApp, {
   type IBeekeeperSession,
   type IBeekeeperInstance,
@@ -52,9 +52,9 @@ class AuthWorker {
   }
 
   public async authorizeNewUser(
+    username: string,
     password: string,
     wifKey: string,
-    username: string,
     keyType: string,
   ): Promise<void> {
     try {
@@ -102,15 +102,14 @@ class AuthWorker {
     }
   }
 
-  public async lockAll(): Promise<void> {
-    await this.session.lockAll();
+  public async lock(): Promise<void> {
+    await this.api.delete();
+    await this.sessionEndCallback();
   }
 
-  public async unregister(): Promise<void> {
+  public async unregister(username: string, keyType: string): Promise<void> {
     await this.api.delete();
-    const storage = openDB(this.storage);
-    await (await storage).clear("FILE_DATA");
-    await deleteDB(this.aliasStorage);
+    await this.removeAlias(`${username}@${keyType}`);
     // clearInterval(this._interval);
   }
 
@@ -161,26 +160,26 @@ class Auth {
   }
 
   public async register(
+    username: string,
     password: string,
     wifKey: string,
-    username: string,
     keyType: string,
   ): Promise<void> {
     await (
       await this.getWorker()
-    ).authorizeNewUser(password, wifKey, username, keyType);
+    ).authorizeNewUser(username, password, wifKey, keyType);
+  }
+
+  public async unregister(username: string, keyType: string): Promise<void> {
+    await (await this.getWorker()).unregister(username, keyType);
   }
 
   public async authenticate(username: string, password: string): Promise<void> {
     await (await this.getWorker()).authenticate(username, password);
   }
 
-  public async lock(): Promise<void> {
-    await (await this.getWorker()).lockAll();
-  }
-
   public async logout(): Promise<void> {
-    await (await this.getWorker()).unregister();
+    await (await this.getWorker()).lock();
     this.#worker = undefined;
   }
 

@@ -1,19 +1,17 @@
-import { client, isSupportWebWorker } from "../dist/hb-auth.mjs";
-
-console.log(isSupportWebWorker, client);
+import { OnlineClient, isSupportWebWorker } from "../dist/hb-auth.mjs";
 
 const CHAIN_ID =
   "beeab0de00000000000000000000000000000000000000000000000000000000";
 
+const client = new OnlineClient();
+
 client
-  .initialize({
-    chainId: CHAIN_ID
-  })
-.then(async (authClient) => {
+  .initialize()
+  .then(async (authClient) => {
     // display auth status
     const statusEl = document.getElementById("auth-status");
     const errorEl = document.getElementById("error");
-    errorEl.style.color = 'red';
+    errorEl.style.color = "red";
 
     const updateStatus = async () => {
       errorEl.innerText = "";
@@ -36,6 +34,10 @@ client
 
     // get initial status
     await updateStatus();
+    
+    await authClient.setSessionEndCallback(async () => {
+      await updateStatus();
+    })
 
     // handle login form submit
     const loginForm = document.getElementById("login-form");
@@ -48,15 +50,19 @@ client
         data[key] = val;
       }
       console.log("form data ", data);
-      authClient.authenticate(data.username, data.password).then((status) => {
-        if (status.ok) {
-          updateStatus();
-        } else {
-          console.log("here should be rr?")
-        }
-      }).catch((err) => {
-        errorEl.innerText = err.message;
-      })
+      authClient
+        .authenticate(data.username, data.password, data.type)
+        .then((status) => {
+          if (status.ok) {
+            updateStatus();
+          } else {
+            updateStatus();
+            errorEl.innerText = "Not authorized: Invalid credentials"
+          }
+        })
+        .catch((err) => {
+          errorEl.innerText = err.message;
+        });
     };
 
     // handle registration form submit
@@ -69,14 +75,20 @@ client
       for (const [key, val] of formData.entries()) {
         data[key] = val;
       }
-      console.log("form data ", data);
+
       authClient
         .register(data.password, data.key, data.type, data.username)
-        .then(() => {
-          updateStatus();
-        }).catch((err) => {
-          errorEl.innerText = err.message;
+        .then((status) => {
+          if (status.ok) {
+            updateStatus();
+          } else {
+            updateStatus();
+            errorEl.innerText = "Not authorized: Invalid credentials"
+          }
         })
+        .catch((err) => {
+          errorEl.innerText = err.message;
+        });
     };
 
     // handle logout

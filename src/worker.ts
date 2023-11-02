@@ -11,7 +11,7 @@ import { GenericError } from "./errors";
 importScripts("https://unpkg.com/comlink/dist/umd/comlink.js");
 
 const BEEKEEPER_LOGS = true;
-const SESSION_HEALTH_CHECK = 3000;
+// const SESSION_HEALTH_CHECK = 2000;
 const noop = async (): Promise<void> => { };
 
 export interface AuthUser {
@@ -26,6 +26,7 @@ class AuthWorker {
   private readonly storage = "/storage_root";
   private readonly aliasStorage = "/aliases";
   private sessionEndCallback = noop;
+  // private _interval!: ReturnType<typeof setInterval>;
 
   constructor() {
     this.Ready = new Promise((resolve, reject) => {
@@ -41,12 +42,9 @@ class AuthWorker {
     this.api = await createBeekeeperApp({
       enableLogs: BEEKEEPER_LOGS,
       storageRoot: this.storage,
-      unlockTimeout: 30
+      unlockTimeout: 900 // TODO: handle timeout properly for opened wallets
     });
     this.session = await this.api.createSession(self.crypto.randomUUID());
-    setTimeout(() => {
-      this.sessionEndCallback().catch(console.error)
-    }, 1000);
   }
 
   public setSessionEndCallback(callback: () => Promise<void> = noop): void {
@@ -76,7 +74,7 @@ class AuthWorker {
       const w = await this.getExistingWallet();
 
       if (w && w.name === username) {
-         await w.unlock(password);
+        await w.unlock(password);
       } else {
         throw new GenericError("Invalid Credentials");
       }
@@ -96,11 +94,16 @@ class AuthWorker {
       if (!wallet?.unlocked) throw new GenericError("Not authorized");
       // refactor this to select from multiple type of keys owner/active
       const [pubKey] = await wallet.unlocked.getPublicKeys();
-      const signed = await wallet.unlocked.signDigest(digest, pubKey)
+
+      const signed = await wallet.unlocked.signDigest(pubKey, digest)
       return signed;
     } catch (err: any) {
       throw new GenericError(err.message)
     }
+  }
+
+  public async lockAll(): Promise<void> {
+    await this.session.lockAll();
   }
 
   public async unregister(): Promise<void> {
@@ -108,6 +111,7 @@ class AuthWorker {
     const storage = openDB(this.storage);
     await (await storage).clear("FILE_DATA");
     await deleteDB(this.aliasStorage);
+    // clearInterval(this._interval);
   }
 
   private async addAlias(
@@ -171,6 +175,10 @@ class Auth {
     await (await this.getWorker()).authenticate(username, password);
   }
 
+  public async lock(): Promise<void> {
+    await (await this.getWorker()).lockAll();
+  }
+
   public async logout(): Promise<void> {
     await (await this.getWorker()).unregister();
     this.#worker = undefined;
@@ -182,7 +190,7 @@ class Auth {
     (await this.getWorker()).setSessionEndCallback(callback);
   }
 
-  public async sign(digest: string, keyType: string): Promise<string> { 
+  public async sign(digest: string, keyType?: string): Promise<string> {
     return await (await this.getWorker()).sign(digest, keyType);
   }
 

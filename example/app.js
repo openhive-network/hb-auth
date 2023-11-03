@@ -2,6 +2,7 @@ import { OnlineClient, isSupportWebWorker } from "../dist/hb-auth.mjs";
 
 const CHAIN_ID =
   "beeab0de00000000000000000000000000000000000000000000000000000000";
+const MY_USER = "guest4test";
 
 const client = new OnlineClient();
 
@@ -13,7 +14,7 @@ client.initialize().then(async (authClient) => {
 
   const updateStatus = async () => {
     errorEl.innerText = "";
-    await authClient.getCurrentAuth().then((auth) => {
+    await authClient.getAuthByUser(MY_USER).then((auth) => {
       if (!auth) {
         statusEl.innerText = "There is no registered user";
         statusEl.style.color = "grey";

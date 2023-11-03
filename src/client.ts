@@ -78,8 +78,12 @@ abstract class Client {
     await this.#auth.setSessionEndCallback(proxy(this.#sessionEndCallback));
   }
 
-  public async getCurrentAuth(): Promise<AuthUser | null> {
-    return await this.#auth.getCurrentAuth();
+  public async getAuths(): Promise<AuthUser[]> {
+    return await this.#auth.getAuths();
+  }
+
+  public async getAuthByUser(username: string): Promise<AuthUser | null> {
+    return await this.#auth.getAuthByUser(username);
   }
 
   public async register(
@@ -134,9 +138,9 @@ abstract class Client {
 
 class OfflineClient extends Client {
   // simple auth based on wallet auth status
-  protected async authorize(): Promise<boolean> {
+  protected async authorize(username: string): Promise<boolean> {
     try {
-      const authStatus = await this.getCurrentAuth();
+      const authStatus = await this.getAuthByUser(username);
       if (authStatus?.authorized) {
         return true;
       } else {
@@ -186,7 +190,7 @@ class OnlineClient extends Client {
       console.log('fatal error')
     }
 
-    const signature = await this.getAuthInstance().sign(digest as string);
+    const signature = await this.getAuthInstance().sign(username, digest as string);
 
     return await this.verify(username, digest as string, signature, keyType);
   }

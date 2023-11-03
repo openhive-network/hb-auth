@@ -12,7 +12,7 @@ importScripts("https://unpkg.com/comlink/dist/umd/comlink.js");
 
 const BEEKEEPER_LOGS = true;
 // const SESSION_HEALTH_CHECK = 2000;
-const noop = async (): Promise<void> => { };
+const noop = async (): Promise<void> => {};
 
 export interface AuthUser {
   username: string;
@@ -42,7 +42,7 @@ class AuthWorker {
     this.api = await createBeekeeperApp({
       enableLogs: BEEKEEPER_LOGS,
       storageRoot: this.storage,
-      unlockTimeout: 900 // TODO: handle timeout properly for opened wallets
+      unlockTimeout: 900, // TODO: handle timeout properly for opened wallets
     });
     this.session = await this.api.createSession(self.crypto.randomUUID());
   }
@@ -71,7 +71,7 @@ class AuthWorker {
 
   public async authenticate(username: string, password: string): Promise<void> {
     try {
-      const w = await this.getExistingWallet();
+      const w = await this.getWallet(username);
 
       if (w && w.name === username) {
         await w.unlock(password);
@@ -79,26 +79,34 @@ class AuthWorker {
         throw new GenericError("Invalid Credentials");
       }
     } catch (error) {
-      throw new GenericError("Invalid Credentials")
+      throw new GenericError("Invalid Credentials");
     }
   }
 
-  public async getExistingWallet(): Promise<IBeekeeperWallet | undefined> {
-    const [wallet] = await this.session.listWallets();
-    return wallet;
+  public async getWallet(name: string): Promise<IBeekeeperWallet | undefined> {
+    const wallets = await this.getWallets();
+    return wallets.find((wallet) => wallet.name === name);
   }
 
-  public async sign(digest: string, keyType?: string): Promise<string> {
+  public async getWallets(): Promise<IBeekeeperWallet[]> {
+    return await this.session.listWallets();
+  }
+
+  public async sign(
+    username: string,
+    digest: string,
+    keyType?: string,
+  ): Promise<string> {
     try {
-      const wallet = await this.getExistingWallet();
+      const wallet = await this.getWallet(username);
       if (!wallet?.unlocked) throw new GenericError("Not authorized");
       // refactor this to select from multiple type of keys owner/active
       const [pubKey] = await wallet.unlocked.getPublicKeys();
 
-      const signed = await wallet.unlocked.signDigest(pubKey, digest)
+      const signed = await wallet.unlocked.signDigest(pubKey, digest);
       return signed;
     } catch (err: any) {
-      throw new GenericError(err.message)
+      throw new GenericError(err.message);
     }
   }
 
@@ -150,7 +158,7 @@ class AuthWorker {
 
 class Auth {
   #worker: AuthWorker | undefined;
-  constructor(private readonly chainId: string) { }
+  constructor(private readonly chainId: string) {}
 
   private async getWorker(): Promise<AuthWorker> {
     if (this.#worker !== undefined) return this.#worker;
@@ -189,13 +197,19 @@ class Auth {
     (await this.getWorker()).setSessionEndCallback(callback);
   }
 
-  public async sign(digest: string, keyType?: string): Promise<string> {
-    return await (await this.getWorker()).sign(digest, keyType);
+  public async sign(
+    username: string,
+    digest: string,
+    keyType?: string,
+  ): Promise<string> {
+    return await (await this.getWorker()).sign(username, digest, keyType);
   }
 
-  public async getCurrentAuth(): Promise<AuthUser | null> {
+  public async getAuthByUser(
+    username: string,
+  ): Promise<AuthUser | null> {
     try {
-      const wallet = await (await this.getWorker()).getExistingWallet();
+      const wallet = await (await this.getWorker()).getWallet(username);
 
       if (!wallet) return null;
 
@@ -204,7 +218,20 @@ class Auth {
         username: wallet.name,
       };
     } catch (err) {
-      return null;
+      throw new GenericError(`Internal error: \n${err as string}`);
+    }
+  }
+
+  public async getAuths(): Promise<AuthUser[]> {
+    try {
+      const wallets = await (await this.getWorker()).getWallets();
+
+      return wallets.map(({ unlocked, name }) => ({
+        authorized: !!unlocked,
+        username: name,
+      }));
+    } catch (err) {
+      throw new GenericError(`Internal error: \n${err as string}`);
     }
   }
 }

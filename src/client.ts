@@ -8,14 +8,12 @@ import {
 import { GenericError } from "./errors";
 import { isSupportWebWorker } from "./environment";
 import workerString from "worker";
-import type { Auth, WorkerExpose, AuthUser } from "./worker";
+import type { Auth, WorkerExpose, AuthUser, KeyAuthorityType } from "./worker";
 
 export interface ClientOptions {
   chainId: string;
   node: string;
 }
-
-export type KeyAuthorityType = "posting" | "active";
 
 const defaultOptions: ClientOptions = {
   chainId: 'beeab0de00000000000000000000000000000000000000000000000000000000',
@@ -68,7 +66,7 @@ abstract class Client {
   }
 
   public async initialize(): Promise<Client> {
-    this.#auth = await new this.#worker.Auth(this.options.chainId);
+    this.#auth = await new this.#worker.Auth();
 
     return await Promise.resolve(this);
   }
@@ -110,7 +108,7 @@ abstract class Client {
     keyType: KeyAuthorityType,
   ): Promise<{ ok: boolean }> {
     try {
-      await this.#auth.authenticate(username, password);
+      await this.#auth.authenticate(username, password, keyType);
 
       const authenticated = await this.authorize(username, password, keyType);
 
@@ -190,7 +188,7 @@ class OnlineClient extends Client {
       console.log('fatal error')
     }
 
-    const signature = await this.getAuthInstance().sign(username, digest as string);
+    const signature = await this.getAuthInstance().sign(username, digest as string, keyType);
 
     return await this.verify(username, digest as string, signature, keyType);
   }

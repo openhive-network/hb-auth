@@ -19,7 +19,6 @@ client.initialize().then(async (authClient) => {
         statusEl.innerText = "There is no registered user";
         statusEl.style.color = "grey";
       } else {
-        console.log(auth);
         if (auth.authorized) {
           statusEl.innerHTML = `Authorized with username: <b>${auth.username}</b>`;
           statusEl.style.color = "green";
@@ -61,6 +60,7 @@ client.initialize().then(async (authClient) => {
         }
       })
       .catch((err) => {
+        console.log(err);
         errorEl.innerText = err.message;
       });
   };
@@ -87,6 +87,7 @@ client.initialize().then(async (authClient) => {
         }
       })
       .catch((err) => {
+        console.log(err);
         errorEl.innerText = err.message;
       });
   };

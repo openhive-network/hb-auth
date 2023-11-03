@@ -4,15 +4,18 @@ import createBeekeeperApp, {
   type IBeekeeperInstance,
   type IBeekeeperWallet,
 } from "@hive/beekeeper";
-import { GenericError } from "./errors";
+import { AuthorizationError, GenericError, InternalError } from "./errors";
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment, @typescript-eslint/prefer-ts-expect-error
 // @ts-ignore
 importScripts("https://unpkg.com/comlink/dist/umd/comlink.js");
 
 const BEEKEEPER_LOGS = true;
+const KEY_TYPES = ["active", "posting"] as const;
 // const SESSION_HEALTH_CHECK = 2000;
 const noop = async (): Promise<void> => {};
+
+export type KeyAuthorityType = (typeof KEY_TYPES)[number];
 
 export interface AuthUser {
   username: string;
@@ -55,31 +58,49 @@ class AuthWorker {
     username: string,
     password: string,
     wifKey: string,
-    keyType: string,
+    keyType: KeyAuthorityType,
   ): Promise<void> {
+    if (!username || !password || !wifKey || !keyType) {
+      throw new AuthorizationError("Empty field");
+    }
+
+    this.checkKeyType(keyType);
+
     try {
       const unlocked = await this.session.createWallet(username, password);
       const pubKey = await unlocked.wallet.importKey(wifKey);
 
-      if (username) {
-        await this.addAlias(username, pubKey, keyType);
-      }
+      await this.addAlias(username, pubKey, keyType);
     } catch (error) {
-      throw new GenericError("Authorization error");
+      if (String(error).includes("key")) {
+        throw new AuthorizationError("Invalid key or key format");
+      } else {
+        throw new AuthorizationError("Invalid credentials");
+      }
     }
   }
 
-  public async authenticate(username: string, password: string): Promise<void> {
+  public async authenticate(username: string, password: string, keyType: KeyAuthorityType): Promise<void> {
+    if (!username || !password || !keyType) {
+      throw new AuthorizationError("Empty field");
+    }
+
+    this.checkKeyType(keyType)
+
     try {
       const w = await this.getWallet(username);
 
       if (w && w.name === username) {
         await w.unlock(password);
       } else {
-        throw new GenericError("Invalid Credentials");
+        throw new AuthorizationError("User not found");
       }
     } catch (error) {
-      throw new GenericError("Invalid Credentials");
+      if (error instanceof AuthorizationError) {
+        throw new AuthorizationError(error.message)
+      } else {
+        throw new InternalError(error);
+      }
     }
   }
 
@@ -95,18 +116,19 @@ class AuthWorker {
   public async sign(
     username: string,
     digest: string,
-    keyType?: string,
+    keyType: KeyAuthorityType,
   ): Promise<string> {
     try {
       const wallet = await this.getWallet(username);
-      if (!wallet?.unlocked) throw new GenericError("Not authorized");
-      // refactor this to select from multiple type of keys owner/active
+      if (!wallet?.unlocked) throw new AuthorizationError("Not authorized");
+      // TODO: refactor this to select from multiple type of keys owner/active
       const [pubKey] = await wallet.unlocked.getPublicKeys();
-
+      // TODO: find pubkey here for given keytype and alias
+      console.log(pubKey);
       const signed = await wallet.unlocked.signDigest(pubKey, digest);
       return signed;
-    } catch (err: any) {
-      throw new GenericError(err.message);
+    } catch (error) {
+      throw new InternalError(error);
     }
   }
 
@@ -115,7 +137,10 @@ class AuthWorker {
     await this.sessionEndCallback();
   }
 
-  public async unregister(username: string, keyType: string): Promise<void> {
+  public async unregister(
+    username: string,
+    keyType: KeyAuthorityType,
+  ): Promise<void> {
     await this.api.delete();
     await this.removeAlias(`${username}@${keyType}`);
     // clearInterval(this._interval);
@@ -124,7 +149,7 @@ class AuthWorker {
   private async addAlias(
     alias: string,
     pubKey: string,
-    keyType: string,
+    keyType: KeyAuthorityType,
   ): Promise<void> {
     const db = await this.getAliasDb();
     const tx = db.transaction(["aliases"], "readwrite");
@@ -154,36 +179,50 @@ class AuthWorker {
     });
     return db;
   }
+
+  private checkKeyType(keyType: KeyAuthorityType): void {
+    if (!KEY_TYPES.includes(keyType)) {
+      throw new AuthorizationError(
+        "Invalid key type. Only 'active' or 'posting' key supported",
+      );
+    }
+  }
 }
 
 class Auth {
   #worker: AuthWorker | undefined;
-  constructor(private readonly chainId: string) {}
 
   private async getWorker(): Promise<AuthWorker> {
-    if (this.#worker !== undefined) return this.#worker;
+    try {
+      if (this.#worker !== undefined) return this.#worker;
 
-    this.#worker = await new AuthWorker().Ready;
-    return this.#worker;
+      this.#worker = await new AuthWorker().Ready;
+      return this.#worker;
+    } catch (error) {
+      throw new InternalError(error);
+    }
   }
 
   public async register(
     username: string,
     password: string,
     wifKey: string,
-    keyType: string,
+    keyType: KeyAuthorityType,
   ): Promise<void> {
     await (
       await this.getWorker()
     ).authorizeNewUser(username, password, wifKey, keyType);
   }
 
-  public async unregister(username: string, keyType: string): Promise<void> {
+  public async unregister(
+    username: string,
+    keyType: KeyAuthorityType,
+  ): Promise<void> {
     await (await this.getWorker()).unregister(username, keyType);
   }
 
-  public async authenticate(username: string, password: string): Promise<void> {
-    await (await this.getWorker()).authenticate(username, password);
+  public async authenticate(username: string, password: string, keyType: KeyAuthorityType): Promise<void> {
+    await (await this.getWorker()).authenticate(username, password, keyType);
   }
 
   public async logout(): Promise<void> {
@@ -200,14 +239,12 @@ class Auth {
   public async sign(
     username: string,
     digest: string,
-    keyType?: string,
+    keyType: KeyAuthorityType,
   ): Promise<string> {
     return await (await this.getWorker()).sign(username, digest, keyType);
   }
 
-  public async getAuthByUser(
-    username: string,
-  ): Promise<AuthUser | null> {
+  public async getAuthByUser(username: string): Promise<AuthUser | null> {
     try {
       const wallet = await (await this.getWorker()).getWallet(username);
 
@@ -217,8 +254,8 @@ class Auth {
         authorized: !!wallet.unlocked,
         username: wallet.name,
       };
-    } catch (err) {
-      throw new GenericError(`Internal error: \n${err as string}`);
+    } catch (error) {
+      throw new GenericError(`Internal error: \n${error as string}`);
     }
   }
 
@@ -230,8 +267,8 @@ class Auth {
         authorized: !!unlocked,
         username: name,
       }));
-    } catch (err) {
-      throw new GenericError(`Internal error: \n${err as string}`);
+    } catch (error) {
+      throw new GenericError(`Internal error: \n${error as string}`);
     }
   }
 }

@@ -1,10 +1,22 @@
 // That file contains generic error constructor and common errors
 export class GenericError extends Error {
-  constructor(
-    public description: string,
-  ) {
+  constructor(public description: string) {
     super(description);
     Object.setPrototypeOf(this, GenericError.prototype);
+  }
+}
+
+export class AuthorizationError extends Error {
+  constructor(public message: any) {
+    super(message);
+    this.name = "AuthorizationError";
+  }
+}
+
+export class InternalError extends Error {
+  constructor(public message: any) {
+    super(message);
+    this.name = "InternalError";
   }
 }
 

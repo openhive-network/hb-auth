@@ -1,4 +1,4 @@
-import { type IDBPDatabase, openDB } from "idb";
+import { type IDBPDatabase, openDB, deleteDB } from "idb";
 import createBeekeeperApp, {
   type IBeekeeperSession,
   type IBeekeeperInstance,
@@ -20,6 +20,40 @@ export type KeyAuthorityType = (typeof KEY_TYPES)[number];
 export interface AuthUser {
   username: string;
   authorized: boolean;
+}
+
+// This class is used to initiate new wasm application while registering a new user
+// It deals with signing process during first authorization phase
+class Registration {
+  private api!: IBeekeeperInstance;
+  private session!: IBeekeeperSession;
+  private readonly storage = "/registration";
+
+  public async request(
+    username: string,
+    wifKey: string,
+    digest: string,
+  ): Promise<string> {
+    this.api = await createBeekeeperApp({
+      unlockTimeout: 10,
+      storageRoot: this.storage,
+    });
+    this.session = await this.api.createSession(self.crypto.randomUUID());
+    const wallet = await this.session.createWallet(username);
+    await wallet.wallet.importKey(wifKey);
+    const [pubKey] = await wallet.wallet.getPublicKeys();
+
+    const signed = await wallet.wallet.signDigest(pubKey, digest);
+
+    await this.clear();
+
+    return signed;
+  }
+
+  private async clear(): Promise<void> {
+    await this.api.delete();
+    await deleteDB(this.storage);
+  }
 }
 
 class AuthWorker {

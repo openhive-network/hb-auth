@@ -80,12 +80,16 @@ class AuthWorker {
     }
   }
 
-  public async authenticate(username: string, password: string, keyType: KeyAuthorityType): Promise<void> {
+  public async authenticate(
+    username: string,
+    password: string,
+    keyType: KeyAuthorityType,
+  ): Promise<void> {
     if (!username || !password || !keyType) {
       throw new AuthorizationError("Empty field");
     }
 
-    this.checkKeyType(keyType)
+    this.checkKeyType(keyType);
 
     try {
       const w = await this.getWallet(username);
@@ -97,7 +101,7 @@ class AuthWorker {
       }
     } catch (error) {
       if (error instanceof AuthorizationError) {
-        throw new AuthorizationError(error.message)
+        throw new AuthorizationError(error.message);
       } else {
         throw new InternalError(error);
       }
@@ -133,17 +137,25 @@ class AuthWorker {
   }
 
   public async lock(): Promise<void> {
-    await this.api.delete();
-    await this.sessionEndCallback();
+    try {
+      await this.api.delete();
+      await this.sessionEndCallback();
+    } catch (error) {
+      throw new InternalError(error);
+    }
   }
 
   public async unregister(
     username: string,
     keyType: KeyAuthorityType,
   ): Promise<void> {
-    await this.api.delete();
-    await this.removeAlias(`${username}@${keyType}`);
-    // clearInterval(this._interval);
+    try {
+      await this.api.delete();
+      await this.removeAlias(`${username}@${keyType}`);
+      // clearInterval(this._interval);
+    } catch (error) {
+      throw new InternalError(error);
+    }
   }
 
   private async addAlias(
@@ -221,7 +233,11 @@ class Auth {
     await (await this.getWorker()).unregister(username, keyType);
   }
 
-  public async authenticate(username: string, password: string, keyType: KeyAuthorityType): Promise<void> {
+  public async authenticate(
+    username: string,
+    password: string,
+    keyType: KeyAuthorityType,
+  ): Promise<void> {
     await (await this.getWorker()).authenticate(username, password, keyType);
   }
 

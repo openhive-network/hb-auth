@@ -211,8 +211,8 @@ class AuthWorker {
 
   public async lock(): Promise<void> {
     try {
-      await this.api.delete();
       await this.sessionEndCallback();
+      await this.api.delete();
     } catch (error) {
       throw new InternalError(error);
     }

@@ -2,7 +2,7 @@ import { OnlineClient, isSupportWebWorker } from "../dist/hb-auth.mjs";
 
 const CHAIN_ID =
   "beeab0de00000000000000000000000000000000000000000000000000000000";
-const MY_USER = "guest4test";
+const MY_USER = "ngc1559";
 
 const client = new OnlineClient();
 

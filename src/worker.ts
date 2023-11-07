@@ -103,8 +103,12 @@ class AuthWorker {
 
       // later register new user
       yield await this.saveUser(username, password, wifKey, keyType);
-    } catch (error) {
-      throw new InternalError(`Registration failed: ${error as string}`)
+    } catch (error: any) {
+      if (error instanceof AuthorizationError) {
+        throw new AuthorizationError(error.message);
+      } else {
+        throw new InternalError(error);
+      }
     }
   }
 
@@ -127,17 +131,32 @@ class AuthWorker {
     keyType: KeyAuthorityType,
   ): Promise<string> {
     try {
-      const unlocked = await this.session.createWallet(username, password);
-      const pubKey = await unlocked.wallet.importKey(wifKey);
+      const wallets = await this.getWallets();
+      const exist = wallets.find((wallet) => wallet.name === username);
 
-      await this.addAlias(username, pubKey, keyType);
+      if (exist) {
+        const alias = await this.getAlias(`${username}@${keyType}`);
+        if (alias?.alias) throw new AuthorizationError(`This user is already registered with '${keyType}' authority`);
+
+        const unlocked = await exist.unlock(password);
+        const pubKey = await unlocked.importKey(wifKey);
+        await this.addAlias(username, pubKey, keyType);
+      } else {
+        const unlocked = await this.session.createWallet(username, password);
+        const pubKey = await unlocked.wallet.importKey(wifKey);
+        await this.addAlias(username, pubKey, keyType);
+      }
 
       return 'success';
     } catch (error) {
-      if (String(error).includes("key")) {
-        throw new AuthorizationError("Invalid key or key format");
+      if (error instanceof AuthorizationError) {
+        throw new AuthorizationError(error.message);
       } else {
-        throw new AuthorizationError("Invalid credentials");
+        if (String(error).includes("key")) {
+          throw new AuthorizationError("Invalid key or key format");
+        } else {
+          throw new AuthorizationError("Invalid credentials");
+        }
       }
     }
   }

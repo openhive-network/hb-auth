@@ -189,14 +189,23 @@ class AuthWorker {
     try {
       const wallet = await this.getWallet(username);
       if (!wallet?.unlocked) throw new AuthorizationError("Not authorized");
-      // TODO: refactor this to select from multiple type of keys owner/active
-      const [pubKey] = await wallet.unlocked.getPublicKeys();
-      // TODO: find pubkey here for given keytype and alias
-      console.log(pubKey);
-      const signed = await wallet.unlocked.signDigest(pubKey, digest);
+      const keys = await wallet.unlocked.getPublicKeys();
+      const alias = await this.getAlias(`${username}@${keyType}`);
+      const foundKey = keys.find((key) => key === alias?.pubKey);
+
+      if (!foundKey) {
+        await wallet.unlocked?.lock();
+        throw new AuthorizationError('Not authorized, missing authority');
+      }
+
+      const signed = await wallet.unlocked.signDigest(foundKey, digest);
       return signed;
     } catch (error) {
-      throw new InternalError(error);
+      if (error instanceof AuthorizationError) {
+        throw new AuthorizationError(error.message);
+      } else {
+        throw new InternalError(error);
+      }
     }
   }
 
@@ -233,6 +242,11 @@ class AuthWorker {
     await store.add({ pubKey, alias: `${alias}@${keyType}` });
     await tx.done;
     db.close();
+  }
+
+  private async getAlias(alias: string): Promise<{ alias: string, pubKey: string }> {
+    const db = await this.getAliasDb();
+    return await db.get('aliases', alias);
   }
 
   private async removeAlias(alias: string): Promise<void> {

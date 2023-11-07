@@ -104,10 +104,17 @@ class AuthWorker {
       // later register new user
       yield await this.saveUser(username, password, wifKey, keyType);
     } catch (error: any) {
+      // clear registration on error
+      await this._registration?.clear();
+
       if (error instanceof AuthorizationError) {
         throw new AuthorizationError(error.message);
       } else {
-        throw new InternalError(error);
+        if (String(error).includes("key")) {
+          throw new AuthorizationError("Invalid key or key format");
+        } else {
+          throw new AuthorizationError("Invalid credentials");
+        }
       }
     }
   }
@@ -130,35 +137,23 @@ class AuthWorker {
     wifKey: string,
     keyType: KeyAuthorityType,
   ): Promise<string> {
-    try {
-      const wallets = await this.getWallets();
-      const exist = wallets.find((wallet) => wallet.name === username);
+    const wallets = await this.getWallets();
+    const exist = wallets.find((wallet) => wallet.name === username);
 
-      if (exist) {
-        const alias = await this.getAlias(`${username}@${keyType}`);
-        if (alias?.alias) throw new AuthorizationError(`This user is already registered with '${keyType}' authority`);
+    if (exist) {
+      const alias = await this.getAlias(`${username}@${keyType}`);
+      if (alias?.alias) throw new AuthorizationError(`This user is already registered with '${keyType}' authority`);
 
-        const unlocked = await exist.unlock(password);
-        const pubKey = await unlocked.importKey(wifKey);
-        await this.addAlias(username, pubKey, keyType);
-      } else {
-        const unlocked = await this.session.createWallet(username, password);
-        const pubKey = await unlocked.wallet.importKey(wifKey);
-        await this.addAlias(username, pubKey, keyType);
-      }
-
-      return 'success';
-    } catch (error) {
-      if (error instanceof AuthorizationError) {
-        throw new AuthorizationError(error.message);
-      } else {
-        if (String(error).includes("key")) {
-          throw new AuthorizationError("Invalid key or key format");
-        } else {
-          throw new AuthorizationError("Invalid credentials");
-        }
-      }
+      const unlocked = await exist.unlock(password);
+      const pubKey = await unlocked.importKey(wifKey);
+      await this.addAlias(username, pubKey, keyType);
+    } else {
+      const unlocked = await this.session.createWallet(username, password);
+      const pubKey = await unlocked.wallet.importKey(wifKey);
+      await this.addAlias(username, pubKey, keyType);
     }
+
+    return 'success';
   }
 
   public async authenticate(

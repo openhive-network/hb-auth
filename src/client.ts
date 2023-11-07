@@ -99,8 +99,8 @@ abstract class Client {
     const op = keyType === 'posting' ? operation.create({
       vote: {
         voter: username,
-        author: 'ngc1559', // change this
-        permlink: 'hello-people-of-the-planet-hive',
+        author: 'author',
+        permlink: 'permlink',
         weight: 10000
       }
     }) : operation.create({ limit_order_cancel: { owner: username, orderid: 0 } })

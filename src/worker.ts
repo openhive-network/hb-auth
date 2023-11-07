@@ -1,4 +1,4 @@
-import { type IDBPDatabase, openDB, deleteDB } from "idb";
+import { type IDBPDatabase, openDB } from "idb";
 import createBeekeeperApp, {
   type IBeekeeperSession,
   type IBeekeeperInstance,
@@ -13,7 +13,7 @@ importScripts("https://unpkg.com/comlink/dist/umd/comlink.js");
 const BEEKEEPER_LOGS = true;
 const KEY_TYPES = ["active", "posting"] as const;
 // const SESSION_HEALTH_CHECK = 2000;
-const noop = async (): Promise<void> => {};
+const noop = async (): Promise<void> => { };
 
 export type KeyAuthorityType = (typeof KEY_TYPES)[number];
 
@@ -44,15 +44,13 @@ class Registration {
     const [pubKey] = await wallet.wallet.getPublicKeys();
 
     const signed = await wallet.wallet.signDigest(pubKey, digest);
-
-    await this.clear();
-
     return signed;
   }
 
-  private async clear(): Promise<void> {
+  public async clear(): Promise<void> {
     await this.api.delete();
-    await deleteDB(this.storage);
+    const db = await openDB(this.storage);
+    await db.clear("FILE_DATA")
   }
 }
 
@@ -63,6 +61,8 @@ class AuthWorker {
   private readonly storage = "/storage_root";
   private readonly aliasStorage = "/aliases";
   private sessionEndCallback = noop;
+  private _generator!: AsyncGenerator<string, string>;
+  private _registration: Registration | undefined;
   // private _interval!: ReturnType<typeof setInterval>;
 
   constructor() {
@@ -88,23 +88,51 @@ class AuthWorker {
     this.sessionEndCallback = callback;
   }
 
-  public async authorizeNewUser(
-    username: string,
-    password: string,
-    wifKey: string,
-    keyType: KeyAuthorityType,
-  ): Promise<void> {
+  public async onAuthComplete(): Promise<void> {
+    await this._registration?.clear();
+    this._registration = undefined;
+    await this._generator.next()
+  }
+
+  private async * processNewRegistration(username: string, password: string, wifKey: string, keyType: KeyAuthorityType, digest: string): AsyncGenerator<any> {
+    try {
+      this._registration = new Registration();
+      const signed = await this._registration.request(username, wifKey, digest);
+      // first yield signed transaction
+      yield await Promise.resolve(signed);
+
+      // later register new user
+      yield await this.saveUser(username, password, wifKey, keyType);
+    } catch (error) {
+      throw new InternalError(`Registration failed: ${error as string}`)
+    }
+  }
+
+  public async registerUser(username: string, password: string, wifKey: string, keyType: KeyAuthorityType, digest: string): Promise<string> {
     if (!username || !password || !wifKey || !keyType) {
       throw new AuthorizationError("Empty field");
     }
 
     this.checkKeyType(keyType);
 
+    this._generator = this.processNewRegistration(username, password, wifKey, keyType, digest);
+
+    return (await this._generator.next()).value
+  }
+
+  public async saveUser(
+    username: string,
+    password: string,
+    wifKey: string,
+    keyType: KeyAuthorityType,
+  ): Promise<string> {
     try {
       const unlocked = await this.session.createWallet(username, password);
       const pubKey = await unlocked.wallet.importKey(wifKey);
 
       await this.addAlias(username, pubKey, keyType);
+
+      return 'success';
     } catch (error) {
       if (String(error).includes("key")) {
         throw new AuthorizationError("Invalid key or key format");
@@ -118,7 +146,8 @@ class AuthWorker {
     username: string,
     password: string,
     keyType: KeyAuthorityType,
-  ): Promise<void> {
+    digest: string
+  ): Promise<string> {
     if (!username || !password || !keyType) {
       throw new AuthorizationError("Empty field");
     }
@@ -130,6 +159,7 @@ class AuthWorker {
 
       if (w && w.name === username) {
         await w.unlock(password);
+        return await this.sign(username, digest, keyType);
       } else {
         throw new AuthorizationError("User not found");
       }
@@ -254,10 +284,15 @@ class Auth {
     password: string,
     wifKey: string,
     keyType: KeyAuthorityType,
-  ): Promise<void> {
-    await (
+    digest: string
+  ): Promise<string> {
+    return await (
       await this.getWorker()
-    ).authorizeNewUser(username, password, wifKey, keyType);
+    ).registerUser(username, password, wifKey, keyType, digest);
+  }
+
+  public async onAuthComplete(): Promise<void> {
+    await (await this.getWorker()).onAuthComplete();
   }
 
   public async unregister(
@@ -271,8 +306,9 @@ class Auth {
     username: string,
     password: string,
     keyType: KeyAuthorityType,
-  ): Promise<void> {
-    await (await this.getWorker()).authenticate(username, password, keyType);
+    digest: string
+  ): Promise<string> {
+    return await (await this.getWorker()).authenticate(username, password, keyType, digest);
   }
 
   public async logout(): Promise<void> {

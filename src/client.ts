@@ -5,7 +5,7 @@ import {
   type Remote,
   type Local,
 } from "../node_modules/comlink/dist/esm/comlink";
-import { GenericError } from "./errors";
+import { GenericError, InternalError } from "./errors";
 import { isSupportWebWorker } from "./environment";
 import workerString from "worker";
 import type { Auth, WorkerExpose, AuthUser, KeyAuthorityType } from "./worker";
@@ -38,7 +38,7 @@ abstract class Client {
    * Authentication method to implement in derived classes 
    * based on authentication type
    */
-  protected abstract authorize(username: string, password: string, keyType?: KeyAuthorityType): Promise<boolean>;
+  protected abstract authorize(username: string, digest: string, signature: string, keyType: KeyAuthorityType): Promise<boolean>;
 
   constructor(private readonly clientOptions: ClientOptions = defaultOptions) {
     this.options = clientOptions
@@ -84,20 +84,60 @@ abstract class Client {
     return await this.#auth.getAuthByUser(username);
   }
 
+  private async getVerificationDigest(username: string, keyType: KeyAuthorityType): Promise<string> {
+    const wax = await Wax();
+    const proto = new wax.proto_protocol();
+
+    const dynamicGlobalProps = await fetch(this.options.node, {
+      method: 'post',
+      body: JSON.stringify({ "jsonrpc": "2.0", "method": "database_api.get_dynamic_global_properties", "id": 1 })
+    })
+    const { result: globalProps } = await dynamicGlobalProps.json()
+    const ref_block_num = globalProps.head_block_number & 0xffff
+    const ref_block_prefix = Buffer.from(globalProps.head_block_id, 'hex').readUInt32LE(4)
+
+    const op = keyType === 'posting' ? operation.create({
+      vote: {
+        voter: username,
+        author: 'ngc1559', // change this
+        permlink: 'hello-people-of-the-planet-hive',
+        weight: 10000
+      }
+    }) : operation.create({ limit_order_cancel: { owner: username, orderid: 0 } })
+
+    const tx = transaction.create({
+      ref_block_num,
+      ref_block_prefix,
+      expiration: new Date(Date.now() + (1000 * 60)).toISOString().slice(0, -5),
+      operations: [{
+        ...op
+      }],
+      extensions: []
+    })
+
+    const { content: digest, exception_message } = proto.cpp_calculate_sig_digest(JSON.stringify(transaction.toJSON(tx)), this.options.chainId);
+
+    if (exception_message) {
+      throw new InternalError(exception_message);
+    }
+
+    return digest as string;
+  }
+
   public async register(
     username: string,
     password: string,
     wifKey: string,
     keyType: KeyAuthorityType,
   ): Promise<{ ok: boolean }> {
-    await this.#auth.register(username, password, wifKey, keyType);
-
-    const authenticated = await this.authorize(username, password, keyType);
+    const digest = await this.getVerificationDigest(username, keyType);
+    const signature = await this.#auth.register(username, password, wifKey, keyType, digest);
+    const authenticated = await this.authorize(username, digest, signature, keyType);
 
     if (authenticated) {
+      await this.#auth.onAuthComplete()
       return await Promise.resolve({ ok: true });
     } else {
-      await this.#auth.unregister(username, keyType);
       return await Promise.resolve({ ok: false });
     }
   }
@@ -108,9 +148,9 @@ abstract class Client {
     keyType: KeyAuthorityType,
   ): Promise<{ ok: boolean }> {
     try {
-      await this.#auth.authenticate(username, password, keyType);
-
-      const authenticated = await this.authorize(username, password, keyType);
+      const digest = await this.getVerificationDigest(username, keyType);
+      const signature = await this.#auth.authenticate(username, password, keyType, digest);
+      const authenticated = await this.authorize(username, digest, signature, keyType);
 
       if (authenticated) {
         return await Promise.resolve({ ok: true });
@@ -151,46 +191,8 @@ class OfflineClient extends Client {
 }
 
 class OnlineClient extends Client {
-  protected async authorize(username: string, password: string, keyType: KeyAuthorityType): Promise<boolean> {
-    const wax = await Wax();
-    const proto = new wax.proto_protocol();
-
-    const dynamicGlobalProps = await fetch(this.options.node, {
-      method: 'post',
-      body: JSON.stringify({ "jsonrpc": "2.0", "method": "database_api.get_dynamic_global_properties", "id": 1 })
-    })
-    const { result: globalProps } = await dynamicGlobalProps.json()
-    const ref_block_num = globalProps.head_block_number & 0xffff
-    const ref_block_prefix = Buffer.from(globalProps.head_block_id, 'hex').readUInt32LE(4)
-
-    const op = keyType === 'posting' ? operation.create({
-      vote: {
-        voter: username,
-        author: 'ngc1559',
-        permlink: 'hello-people-of-the-planet-hive',
-        weight: 10000
-      }
-    }) : operation.create({ limit_order_cancel: { owner: username, orderid: 0 } })
-
-    const tx = transaction.create({
-      ref_block_num,
-      ref_block_prefix,
-      expiration: new Date(Date.now() + (1000 * 60)).toISOString().slice(0, -5),
-      operations: [{
-        ...op
-      }],
-      extensions: []
-    })
-
-    const { content: digest, exception_message } = proto.cpp_calculate_sig_digest(JSON.stringify(transaction.toJSON(tx)), this.options.chainId);
-
-    if (exception_message) {
-      console.log('fatal error')
-    }
-
-    const signature = await this.getAuthInstance().sign(username, digest as string, keyType);
-
-    return await this.verify(username, digest as string, signature, keyType);
+  protected async authorize(username: string, digest: string, signature: string, keyType: KeyAuthorityType): Promise<boolean> {
+    return await this.verify(username, digest, signature, keyType);
   }
 
   private async verify(username: string, digest: string, signature: string, keyType: KeyAuthorityType): Promise<boolean> {

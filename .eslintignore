@@ -6,3 +6,4 @@ jest.config.*
 rollup.*
 tsconfig.*
 example/
+index.d.ts

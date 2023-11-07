@@ -19,5 +19,10 @@ module.exports = {
     project: "tsconfig.eslint.json",
     tsconfigRootDir: __dirname,
   },
-  rules: {},
+  rules: {
+    "n/handle-callback-err": "off",
+    "@typescript-eslint/strict-boolean-expressions": "off",
+    "new-cap": "off",
+    "@typescript-eslint/naming-convention": "off"
+  },
 };

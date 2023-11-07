@@ -12,16 +12,18 @@
     "test": "jest",
     "prebuild": "npm run lint && npm run test",
     "prepack": "npm run build",
-    "start:example:node": "npm run build && node ./example/node/app.mjs",
-    "start:example:browser": "npm run build && serve ."
+    "start:example": "npm run build --ignore-scripts && npx parcel example/index.html --no-cache --log-level=\"error\""
   },
+  "pre-commit": [
+    "build"
+  ],
   "repository": {
     "type": "git",
-    "url": "https://gitlab.syncad.com/hive/beekeeper-js"
+    "url": "https://gitlab.syncad.com/hive/hb-auth"
   },
   "keywords": [
-    "beekeper",
-    "beekeper-js",
+    "beekeeper",
+    "beekeeper-js",
     "blockchain",
     "hive"
   ],
@@ -30,25 +32,17 @@
   "files": [
     "lib/**/*"
   ],
-  "exports": {
-    ".": {
-      "import": {
-        "types": "./lib/esm/types/index.d.ts",
-        "default": "./lib/esm/index.mjs"
-      },
-      "require": {
-        "types": "./lib/cjs/types/index.d.ts",
-        "default": "./lib/cjs/index.js"
-      }
-    }
-  },
   "devDependencies": {
     "@babel/core": "^7.22.9",
     "@babel/preset-env": "^7.22.9",
     "@babel/preset-typescript": "^7.22.5",
+    "@rollup/plugin-node-resolve": "^15.2.1",
+    "@rollup/plugin-replace": "^5.0.2",
+    "@rollup/plugin-terser": "^0.4.3",
     "@types/jest": "^29.5.3",
     "@typescript-eslint/eslint-plugin": "^5.62.0",
     "babel-jest": "^29.6.2",
+    "buffer": "^6.0.3",
     "eslint": "^8.46.0",
     "eslint-config-prettier": "^8.10.0",
     "eslint-config-standard-with-typescript": "^37.0.0",
@@ -56,6 +50,7 @@
     "eslint-plugin-n": "^16.0.1",
     "eslint-plugin-promise": "^6.1.1",
     "jest": "^29.6.2",
+    "pre-commit": "^1.2.2",
     "prettier": "3.0.1",
     "rollup": "^3.28.1",
     "rollup-plugin-dts": "^6.0.0",
@@ -64,6 +59,9 @@
     "typescript": "^5.1.6"
   },
   "dependencies": {
-    "@hive/beekeeper": "^0.0.1-alpha.0"
+    "@hive/beekeeper": "^1.27.5-rc0-stable.e7190f69e",
+    "@hive/wax": "^0.0.2-stable.b9b87d9",
+    "comlink": "^4.4.1",
+    "idb": "^7.1.1"
   }
 }

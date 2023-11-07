@@ -169,8 +169,8 @@ abstract class Client {
     await this.#auth.logout();
   }
 
-  public async sign(): Promise<{ ok: boolean }> {
-    return await Promise.resolve({ ok: false });
+  public async sign(username: string, transactionDigest: string, keyType: KeyAuthorityType): Promise<string> {
+    return await this.#auth.sign(username, transactionDigest, keyType);
   }
 }
 

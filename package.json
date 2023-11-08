@@ -1,5 +1,5 @@
 {
-  "name": "@hiveio/hb-auth",
+  "name": "@hive/hb-auth",
   "version": "1.0.0",
   "description": "Browser and Node.js auth library that uses Beekeeper",
   "main": "dist/hb-auth.js",
@@ -56,6 +56,7 @@
     "rollup-plugin-dts": "^6.0.0",
     "rollup-plugin-esbuild": "^5.0.0",
     "serve": "^14.2.1",
+    "typedoc-plugin-markdown": "^3.17.1",
     "typescript": "^5.1.6"
   },
   "dependencies": {

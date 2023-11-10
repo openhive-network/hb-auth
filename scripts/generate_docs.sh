@@ -13,6 +13,7 @@ pushd "${PROJECT_DIR}"
 mkdir -vp build
 npm exec -- typedoc --plugin typedoc-plugin-markdown --theme markdown --excludeInternal --hideBreadcrumbs --hideInPageTOC --tsconfig tsconfig.docs.json --out build/docs dist/hb-auth.d.ts
 mv build/docs/modules.md build/docs/_modules.md
+rm build/docs/README.md
 npm exec -- concat-md --decrease-title-levels build/docs > api.md
 popd
 

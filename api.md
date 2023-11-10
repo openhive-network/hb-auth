@@ -1,9 +1,4 @@
 
-<a name="readmemd"></a>
-
-
-
-
 <a name="_modulesmd"></a>
 
 # @hive/hb-auth

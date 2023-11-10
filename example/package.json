@@ -1,8 +1,18 @@
 {
-  "name": "hb-auth-example",
-  "description": "hb-auth example app",
-  "version": "0.0.0",
+  "name": "example",
+  "version": "1.0.0",
+  "description": "",
+  "source": "index.html",
+  "scripts": {
+    "start": "parcel",
+    "build": "parcel build --dist-dir dist"
+  },
+  "keywords": [],
+  "author": "",
   "dependencies": {
-
+    "@hive/hb-auth": "file:../"
+  },
+  "devDependencies": {
+    "parcel": "^2.10.2"
   }
 }

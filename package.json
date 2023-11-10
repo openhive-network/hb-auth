@@ -1,36 +1,40 @@
 {
-  "name": "@hiveio/hb-auth",
-  "version": "1.0.0",
-  "description": "Browser and Node.js auth library that uses Beekeeper",
+  "name": "@hive/hb-auth",
+  "version": "0.0.1-LastGitTagPlaceholder.GitHashPlaceholder",
+  "description": "Auth library for browser applications that uses Beekeeper",
+  "license": "SEE LICENSE IN LICENSE.md",
   "main": "dist/hb-auth.js",
   "module": "dist/hb-auth.mjs",
-  "typings": "dist/hb-auth.d.ts",
+  "types": "dist/hb-auth.d.ts",
   "scripts": {
     "build": "npm run clean && rollup -c --bundleConfigAsCjs",
     "clean": "rm -rf ./dist",
     "lint": "eslint . --ext .ts",
     "test": "jest",
-    "prebuild": "npm run lint && npm run test",
-    "prepack": "npm run build",
-    "start:example": "npm run build --ignore-scripts && npx parcel example/index.html --no-cache --log-level=\"error\""
+    "prebuild": "npm run husky && npm run lint",
+    "husky": "husky install ./.husky"
   },
-  "pre-commit": [
-    "build"
-  ],
   "repository": {
     "type": "git",
     "url": "https://gitlab.syncad.com/hive/hb-auth"
   },
+  "publishConfig": {
+    "registry": "https://RegistryPlaceholder",
+    "tag": "DistTagPlaceholder"
+  },
   "keywords": [
     "beekeeper",
-    "beekeeper-js",
+    "hb-auth",
     "blockchain",
     "hive"
   ],
-  "author": "",
-  "license": "",
   "files": [
-    "lib/**/*"
+    "LICENSE.md",
+    "README.md",
+    "api.md",
+    "dist/**/*.d.ts",
+    "dist/**/*.js",
+    "dist/**/*.mjs"
   ],
   "devDependencies": {
     "@babel/core": "^7.22.9",
@@ -43,19 +47,21 @@
     "@typescript-eslint/eslint-plugin": "^5.62.0",
     "babel-jest": "^29.6.2",
     "buffer": "^6.0.3",
+    "concat-md": "^0.5.1",
     "eslint": "^8.46.0",
     "eslint-config-prettier": "^8.10.0",
     "eslint-config-standard-with-typescript": "^37.0.0",
     "eslint-plugin-import": "^2.28.0",
     "eslint-plugin-n": "^16.0.1",
     "eslint-plugin-promise": "^6.1.1",
+    "husky": "^8.0.3",
     "jest": "^29.6.2",
-    "pre-commit": "^1.2.2",
     "prettier": "3.0.1",
     "rollup": "^3.28.1",
     "rollup-plugin-dts": "^6.0.0",
     "rollup-plugin-esbuild": "^5.0.0",
-    "serve": "^14.2.1",
+    "typedoc": "^0.25.3",
+    "typedoc-plugin-markdown": "^3.17.1",
     "typescript": "^5.1.6"
   },
   "dependencies": {

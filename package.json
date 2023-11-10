@@ -43,6 +43,7 @@
     "@typescript-eslint/eslint-plugin": "^5.62.0",
     "babel-jest": "^29.6.2",
     "buffer": "^6.0.3",
+    "concat-md": "^0.5.1",
     "eslint": "^8.46.0",
     "eslint-config-prettier": "^8.10.0",
     "eslint-config-standard-with-typescript": "^37.0.0",
@@ -56,6 +57,7 @@
     "rollup-plugin-dts": "^6.0.0",
     "rollup-plugin-esbuild": "^5.0.0",
     "serve": "^14.2.1",
+    "typedoc": "^0.25.3",
     "typedoc-plugin-markdown": "^3.17.1",
     "typescript": "^5.1.6"
   },

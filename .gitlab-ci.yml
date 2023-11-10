@@ -1,0 +1,55 @@
+stages:
+  - test
+  - build
+  - publish
+
+variables:
+  GIT_DEPTH: 0
+  GIT_STRATEGY: clone
+  GIT_SUBMODULE_STRATEGY: recursive
+  NPM_TOKEN: $CI_JOB_TOKEN
+
+test_hb_auth:
+  stage: test
+  script:
+    - echo "TODO run tests"
+    # - pnpm run test
+  tags:
+    - public-runner-docker
+
+build_hb_auth:
+  stage: build
+  image: ${EMSCRIPTEN_IMAGE}
+  before_script:
+    - npm ci
+  script:
+    - npm run build
+  needs:
+    - job: test_hb_auth
+  tags:
+    - public-runner-docker
+  artifacts:
+    paths:
+      - "$CI_PROJECT_DIR/package.json"
+      - "$CI_PROJECT_DIR/dist"
+      - "$CI_PROJECT_DIR/README.md"
+      - "$CI_PROJECT_DIR/api.md"
+      - "$CI_PROJECT_DIR/LICENSE.md"
+    expire_in: "15 mins"
+
+publish_hb_auth:
+  stage: publish
+  image: ${EMSCRIPTEN_IMAGE}
+  variables:
+    PUBLISH_TOKEN: "$NPM_TOKEN"
+    NPM_SCOPE: "@hive"
+    NPM_REGISTRY: "gitlab.syncad.com/api/v4/projects/${CI_PROJECT_ID}/packages/npm/"
+  script:
+    - scripts/ci-helpers/bump_npm_version.sh "$PUBLISH_TOKEN" "$NPM_SCOPE" "$NPM_REGISTRY"
+    - scripts/ci-helpers/npm_publish.sh
+  needs:
+    - job: test_hb_auth
+    - job: build_hb_auth
+      artifacts: true
+  tags:
+    - public-runner-docker

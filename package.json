@@ -35,7 +35,8 @@
     "README.md",
     "api.md",
     "dist/**/*.d.ts",
-    "dist/**/*.(js|mjs)"
+    "dist/**/*.js",
+    "dist/**/*.mjs"
   ],
   "devDependencies": {
     "@babel/core": "^7.22.9",

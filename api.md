@@ -59,12 +59,6 @@ hb-auth.d.ts:4
 
 # Class: OfflineClient
 
-**`Description`**
-
-Auth client that doesn't
-verify user's authority through the network. So, user has resposibility
-for imported keys' validity.
-
 ## Hierarchy
 
 - `Client`
@@ -86,10 +80,6 @@ for imported keys' validity.
 #### Returns
 
 [`OfflineClient`](#classesofflineclientmd)
-
-**`Description`**
-
-Additional options for auth client
 
 #### Inherited from
 
@@ -117,23 +107,19 @@ hb-auth.d.ts:63
 
 ### authenticate
 
-▸ **authenticate**(`username`, `password`, `keyType`): `Promise`\<[`AuthStatus`](#interfacesauthstatusmd)\>
+▸ **authenticate**(`username`, `password`, `keyType`): `Promise`\<\{ `ok`: `boolean`  }\>
 
 #### Parameters
 
-| Name | Type | Description |
-| :------ | :------ | :------ |
-| `username` | `string` | Username |
-| `password` | `string` | Password |
-| `keyType` | ``"active"`` \| ``"posting"`` | Key authority type |
+| Name | Type |
+| :------ | :------ |
+| `username` | `string` |
+| `password` | `string` |
+| `keyType` | ``"active"`` \| ``"posting"`` |
 
 #### Returns
 
-`Promise`\<[`AuthStatus`](#interfacesauthstatusmd)\>
-
-**`Description`**
-
-Method that authenticates an already registered user.
+`Promise`\<\{ `ok`: `boolean`  }\>
 
 #### Inherited from
 
@@ -175,18 +161,13 @@ ___
 
 #### Parameters
 
-| Name | Type | Description |
-| :------ | :------ | :------ |
-| `username` | `string` | Username |
+| Name | Type |
+| :------ | :------ |
+| `username` | `string` |
 
 #### Returns
 
 `Promise`\<``null`` \| [`AuthUser`](#interfacesauthusermd)\>
-
-**`Description`**
-
-Method to get auth status for a given user.
-If there is no user it will return null.
 
 #### Inherited from
 
@@ -206,11 +187,6 @@ ___
 
 `Promise`\<[`AuthUser`](#interfacesauthusermd)[]\>
 
-**`Description`**
-
-Method to get all registered users with their active auth status.
-If there is no user registered, it will return an empty array.
-
 #### Inherited from
 
 Client.getAuths
@@ -228,11 +204,6 @@ ___
 #### Returns
 
 `Promise`\<[`OfflineClient`](#classesofflineclientmd)\>
-
-**`Description`**
-
-Async method that prepares client to run.
-That method should be called first before calling other methods.
 
 #### Inherited from
 
@@ -252,15 +223,6 @@ ___
 
 `Promise`\<`void`\>
 
-**`Description`**
-
-Method that ends existing user session.
-When this is called any callback set via
-
-**`See`**
-
-will fire.
-
 #### Inherited from
 
 Client.logout
@@ -273,25 +235,20 @@ ___
 
 ### register
 
-▸ **register**(`username`, `password`, `wifKey`, `keyType`): `Promise`\<[`AuthStatus`](#interfacesauthstatusmd)\>
+▸ **register**(`username`, `password`, `wifKey`, `keyType`): `Promise`\<\{ `ok`: `boolean`  }\>
 
 #### Parameters
 
-| Name | Type | Description |
-| :------ | :------ | :------ |
-| `username` | `string` | Username |
-| `password` | `string` | Password |
-| `wifKey` | `string` | Private key |
-| `keyType` | ``"active"`` \| ``"posting"`` | Key authority type |
+| Name | Type |
+| :------ | :------ |
+| `username` | `string` |
+| `password` | `string` |
+| `wifKey` | `string` |
+| `keyType` | ``"active"`` \| ``"posting"`` |
 
 #### Returns
 
-`Promise`\<[`AuthStatus`](#interfacesauthstatusmd)\>
-
-**`Description`**
-
-Method that registers a new user or adding
-another key with different authority to existing user.
+`Promise`\<\{ `ok`: `boolean`  }\>
 
 #### Inherited from
 
@@ -309,17 +266,13 @@ ___
 
 #### Parameters
 
-| Name | Type | Description |
-| :------ | :------ | :------ |
-| `cb` | () => `Promise`\<`void`\> | Async callback function that fires on session end |
+| Name | Type |
+| :------ | :------ |
+| `cb` | () => `Promise`\<`void`\> |
 
 #### Returns
 
 `Promise`\<`void`\>
-
-**`Description`**
-
-Method to set callback for being notified on session and or logout action.
 
 #### Inherited from
 
@@ -337,21 +290,15 @@ ___
 
 #### Parameters
 
-| Name | Type | Description |
-| :------ | :------ | :------ |
-| `username` | `string` | Username |
-| `transactionDigest` | `string` | Transaction digest string |
-| `keyType` | ``"active"`` \| ``"posting"`` | Key authority type |
+| Name | Type |
+| :------ | :------ |
+| `username` | `string` |
+| `transactionDigest` | `string` |
+| `keyType` | ``"active"`` \| ``"posting"`` |
 
 #### Returns
 
 `Promise`\<`string`\>
-
-Signature
-
-**`Description`**
-
-Method that signs given transaction as an authorized user based on selected authority type.
 
 #### Inherited from
 
@@ -365,11 +312,6 @@ hb-auth.d.ts:142
 <a name="classesonlineclientmd"></a>
 
 # Class: OnlineClient
-
-**`Description`**
-
-Auth client that additionally authorizes
-user by verifying user's signature through the network.
 
 ## Hierarchy
 
@@ -392,10 +334,6 @@ user by verifying user's signature through the network.
 #### Returns
 
 [`OnlineClient`](#classesonlineclientmd)
-
-**`Description`**
-
-Additional options for auth client
 
 #### Inherited from
 
@@ -433,23 +371,19 @@ hb-auth.d.ts:158
 
 ### authenticate
 
-▸ **authenticate**(`username`, `password`, `keyType`): `Promise`\<[`AuthStatus`](#interfacesauthstatusmd)\>
+▸ **authenticate**(`username`, `password`, `keyType`): `Promise`\<\{ `ok`: `boolean`  }\>
 
 #### Parameters
 
-| Name | Type | Description |
-| :------ | :------ | :------ |
-| `username` | `string` | Username |
-| `password` | `string` | Password |
-| `keyType` | ``"active"`` \| ``"posting"`` | Key authority type |
+| Name | Type |
+| :------ | :------ |
+| `username` | `string` |
+| `password` | `string` |
+| `keyType` | ``"active"`` \| ``"posting"`` |
 
 #### Returns
 
-`Promise`\<[`AuthStatus`](#interfacesauthstatusmd)\>
-
-**`Description`**
-
-Method that authenticates an already registered user.
+`Promise`\<\{ `ok`: `boolean`  }\>
 
 #### Inherited from
 
@@ -494,18 +428,13 @@ ___
 
 #### Parameters
 
-| Name | Type | Description |
-| :------ | :------ | :------ |
-| `username` | `string` | Username |
+| Name | Type |
+| :------ | :------ |
+| `username` | `string` |
 
 #### Returns
 
 `Promise`\<``null`` \| [`AuthUser`](#interfacesauthusermd)\>
-
-**`Description`**
-
-Method to get auth status for a given user.
-If there is no user it will return null.
 
 #### Inherited from
 
@@ -525,11 +454,6 @@ ___
 
 `Promise`\<[`AuthUser`](#interfacesauthusermd)[]\>
 
-**`Description`**
-
-Method to get all registered users with their active auth status.
-If there is no user registered, it will return an empty array.
-
 #### Inherited from
 
 Client.getAuths
@@ -547,11 +471,6 @@ ___
 #### Returns
 
 `Promise`\<[`OnlineClient`](#classesonlineclientmd)\>
-
-**`Description`**
-
-Async method that prepares client to run.
-That method should be called first before calling other methods.
 
 #### Inherited from
 
@@ -571,15 +490,6 @@ ___
 
 `Promise`\<`void`\>
 
-**`Description`**
-
-Method that ends existing user session.
-When this is called any callback set via
-
-**`See`**
-
-will fire.
-
 #### Inherited from
 
 Client.logout
@@ -592,25 +502,20 @@ ___
 
 ### register
 
-▸ **register**(`username`, `password`, `wifKey`, `keyType`): `Promise`\<[`AuthStatus`](#interfacesauthstatusmd)\>
+▸ **register**(`username`, `password`, `wifKey`, `keyType`): `Promise`\<\{ `ok`: `boolean`  }\>
 
 #### Parameters
 
-| Name | Type | Description |
-| :------ | :------ | :------ |
-| `username` | `string` | Username |
-| `password` | `string` | Password |
-| `wifKey` | `string` | Private key |
-| `keyType` | ``"active"`` \| ``"posting"`` | Key authority type |
+| Name | Type |
+| :------ | :------ |
+| `username` | `string` |
+| `password` | `string` |
+| `wifKey` | `string` |
+| `keyType` | ``"active"`` \| ``"posting"`` |
 
 #### Returns
 
-`Promise`\<[`AuthStatus`](#interfacesauthstatusmd)\>
-
-**`Description`**
-
-Method that registers a new user or adding
-another key with different authority to existing user.
+`Promise`\<\{ `ok`: `boolean`  }\>
 
 #### Inherited from
 
@@ -628,17 +533,13 @@ ___
 
 #### Parameters
 
-| Name | Type | Description |
-| :------ | :------ | :------ |
-| `cb` | () => `Promise`\<`void`\> | Async callback function that fires on session end |
+| Name | Type |
+| :------ | :------ |
+| `cb` | () => `Promise`\<`void`\> |
 
 #### Returns
 
 `Promise`\<`void`\>
-
-**`Description`**
-
-Method to set callback for being notified on session and or logout action.
 
 #### Inherited from
 
@@ -656,21 +557,15 @@ ___
 
 #### Parameters
 
-| Name | Type | Description |
-| :------ | :------ | :------ |
-| `username` | `string` | Username |
-| `transactionDigest` | `string` | Transaction digest string |
-| `keyType` | ``"active"`` \| ``"posting"`` | Key authority type |
+| Name | Type |
+| :------ | :------ |
+| `username` | `string` |
+| `transactionDigest` | `string` |
+| `keyType` | ``"active"`` \| ``"posting"`` |
 
 #### Returns
 
 `Promise`\<`string`\>
-
-Signature
-
-**`Description`**
-
-Method that signs given transaction as an authorized user based on selected authority type.
 
 #### Inherited from
 

@@ -11,11 +11,12 @@ variables:
 
 include:
   - project: 'hive/common-ci-configuration'
-    ref: ae2ec71af47184cdd9567ae85ff821d133c3343f
+    ref: 7c58303ffb61d91ef9662ec20e7b498bc6f62b8f
     file:
       - '/templates/wasm_build.gitlab-ci.yml'
-      
+
 test_hb_auth:
+  extends: .job-defaults
   stage: test
   script:
     - echo "TODO run tests"
@@ -24,6 +25,7 @@ test_hb_auth:
     - public-runner-docker
 
 build_hb_auth:
+  extends: .job-defaults
   stage: build
   image: ${EMSCRIPTEN_IMAGE}
   before_script:
@@ -43,6 +45,7 @@ build_hb_auth:
       - "$CI_PROJECT_DIR/LICENSE.md"
 
 publish_hb_auth:
+  extends: .job-defaults
   stage: publish
   image: ${EMSCRIPTEN_IMAGE}
   variables:

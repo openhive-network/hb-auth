@@ -1,11 +1,11 @@
-import Wax, { operation, transaction } from "@hive/wax";
+import { createWaxFoundation } from "@hive/wax";
 import {
   proxy,
   wrap,
   type Remote,
   type Local,
 } from "../node_modules/comlink/dist/esm/comlink";
-import { AuthorizationError, GenericError, InternalError } from "./errors";
+import { AuthorizationError, GenericError } from "./errors";
 import { isSupportWebWorker } from "./environment";
 import workerString from "worker";
 import type { Auth, WorkerExpose, AuthUser, KeyAuthorityType } from "./worker";
@@ -55,7 +55,7 @@ abstract class Client {
   /** @hidden */
   #auth!: Local<Auth>;
   /** @hidden */
-  #sessionEndCallback: () => Promise<void> = async () => {};
+  #sessionEndCallback: () => Promise<void> = async () => { };
 
   /** @hidden */
   protected set options(options: ClientOptions) {
@@ -155,9 +155,6 @@ abstract class Client {
     username: string,
     keyType: KeyAuthorityType,
   ): Promise<string> {
-    const wax = await Wax();
-    const proto = new wax.proto_protocol();
-
     const dynamicGlobalProps = await fetch(this.options.node, {
       method: "post",
       body: JSON.stringify({
@@ -167,49 +164,26 @@ abstract class Client {
       }),
     });
     const { result: globalProps } = await dynamicGlobalProps.json();
-    const ref_block_num = globalProps.head_block_number & 0xffff;
-    const ref_block_prefix = Buffer.from(
-      globalProps.head_block_id,
-      "hex",
-    ).readUInt32LE(4);
 
-    const op =
-      keyType === "posting"
-        ? operation.create({
-            vote: {
-              voter: username,
-              author: "author",
-              permlink: "permlink",
-              weight: 10000,
-            },
-          })
-        : operation.create({
-            limit_order_cancel: { owner: username, orderid: 0 },
-          });
+    const wax = await createWaxFoundation();
+    const tx = new wax.TransactionBuilder(globalProps.head_block_id, "+1m")
 
-    const tx = transaction.create({
-      ref_block_num,
-      ref_block_prefix,
-      expiration: new Date(Date.now() + 1000 * 60).toISOString().slice(0, -5),
-      operations: [
-        {
-          ...op,
-        },
-      ],
-      extensions: [],
-    });
-
-    const { content: digest, exception_message } =
-      proto.cpp_calculate_sig_digest(
-        JSON.stringify(transaction.toJSON(tx)),
-        this.options.chainId,
-      );
-
-    if (exception_message) {
-      throw new InternalError(exception_message);
+    if (keyType === 'posting') {
+      tx.push({
+        vote: {
+          voter: username,
+          author: "author",
+          permlink: "permlink",
+          weight: 10000,
+        }
+      })
+    } else {
+      tx.push({
+        limit_order_cancel: { owner: username, orderid: 0 },
+      })
     }
 
-    return digest as string;
+    return tx.sigDigest;
   }
 
   /**

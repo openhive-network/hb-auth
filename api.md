@@ -27,7 +27,7 @@ ___
 
 ### isSupportSharedWorker
 
-• `Const` **isSupportSharedWorker**: ``false``
+• `Const` **isSupportSharedWorker**: `boolean`
 
 #### Defined in
 

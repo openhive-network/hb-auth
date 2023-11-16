@@ -5,7 +5,6 @@ import createBeekeeperApp, {
   type IBeekeeperWallet,
 } from "@hive/beekeeper";
 import { AuthorizationError, GenericError, InternalError } from "./errors";
-import { isSupportSharedWorker } from "./environment";
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment, @typescript-eslint/prefer-ts-expect-error
 // @ts-ignore
@@ -395,15 +394,14 @@ const exports = {
 declare const Comlink: any;
 declare let onconnect: any;
 
-if (isSupportSharedWorker) {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars, prefer-const
-  onconnect = (event: any) => {
-    const port = event.ports[0];
-    Comlink.expose(exports, port);
-  }
-} else {
-  Comlink.expose(exports);
+// eslint-disable-next-line @typescript-eslint/no-unused-vars, prefer-const
+onconnect = (event: any) => {
+  const port = event.ports[0];
+
+  Comlink.expose(exports, port);
 }
+
+Comlink.expose(exports);
 
 export type WorkerExpose = typeof exports;
 export type { Auth };

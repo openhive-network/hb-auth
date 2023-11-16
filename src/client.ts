@@ -2,11 +2,12 @@ import { createWaxFoundation } from "@hive/wax";
 import {
   proxy,
   wrap,
+  type Endpoint,
   type Remote,
   type Local,
 } from "../node_modules/comlink/dist/esm/comlink";
 import { AuthorizationError, GenericError } from "./errors";
-import { isSupportWebWorker } from "./environment";
+import { isSupportSharedWorker, isSupportWebWorker } from "./environment";
 import workerString from "worker";
 import type { Auth, WorkerExpose, AuthUser, KeyAuthorityType } from "./worker";
 
@@ -99,10 +100,21 @@ abstract class Client {
   private loadWebWorker(): void {
     if (this.#worker) return;
 
+    this.#worker = wrap<WorkerExpose>(this.getWorkerEndpoint());
+  }
+
+  private getWorkerEndpoint(): Endpoint {
     const workerBlob = new Blob([workerString]);
-    const workerUrl = URL.createObjectURL(workerBlob);
-    const worker = new Worker(workerUrl);
-    this.#worker = wrap<WorkerExpose>(worker);
+    if (isSupportSharedWorker) {
+      const workerUrl = localStorage.getItem('workerUrl') ?? URL.createObjectURL(workerBlob);
+      if (!localStorage.getItem('workerUrl')) localStorage.setItem('workerUrl', workerUrl);
+
+      return new SharedWorker(workerUrl).port;
+    } else {
+      const workerUrl = URL.createObjectURL(workerBlob);
+
+      return new Worker(workerUrl);
+    }
   }
 
   /** @hidden */

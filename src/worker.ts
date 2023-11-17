@@ -38,12 +38,12 @@ class Registration {
       unlockTimeout: 10,
       storageRoot: this.storage,
     });
-    this.session = await this.api.createSession(self.crypto.randomUUID());
+    this.session = this.api.createSession(self.crypto.randomUUID());
     const wallet = await this.session.createWallet(username);
     await wallet.wallet.importKey(wifKey);
-    const [pubKey] = await wallet.wallet.getPublicKeys();
+    const [pubKey] = wallet.wallet.getPublicKeys();
 
-    const signed = await wallet.wallet.signDigest(pubKey, digest);
+    const signed = wallet.wallet.signDigest(pubKey, digest);
     return signed;
   }
 
@@ -81,7 +81,7 @@ class AuthWorker {
       storageRoot: this.storage,
       unlockTimeout: 900, // TODO: handle timeout properly for opened wallets
     });
-    this.session = await this.api.createSession(self.crypto.randomUUID());
+    this.session = this.api.createSession(self.crypto.randomUUID());
   }
 
   public setSessionEndCallback(callback: () => Promise<void> = noop): void {
@@ -144,7 +144,7 @@ class AuthWorker {
       const alias = await this.getAlias(`${username}@${keyType}`);
       if (alias?.alias) throw new AuthorizationError(`This user is already registered with '${keyType}' authority`);
 
-      const unlocked = await exist.unlock(password);
+      const unlocked = exist.unlock(password);
       const pubKey = await unlocked.importKey(wifKey);
       await this.addAlias(username, pubKey, keyType);
     } else {
@@ -172,7 +172,7 @@ class AuthWorker {
       const w = await this.getWallet(username);
 
       if (w && w.name === username) {
-        await w.unlock(password);
+        w.unlock(password);
         return await this.sign(username, digest, keyType);
       } else {
         throw new AuthorizationError("User not found");
@@ -192,7 +192,7 @@ class AuthWorker {
   }
 
   public async getWallets(): Promise<IBeekeeperWallet[]> {
-    return await this.session.listWallets();
+    return this.session.listWallets();
   }
 
   public async sign(
@@ -203,16 +203,16 @@ class AuthWorker {
     try {
       const wallet = await this.getWallet(username);
       if (!wallet?.unlocked) throw new AuthorizationError("Not authorized");
-      const keys = await wallet.unlocked.getPublicKeys();
+      const keys = wallet.unlocked.getPublicKeys();
       const alias = await this.getAlias(`${username}@${keyType}`);
       const foundKey = keys.find((key) => key === alias?.pubKey);
 
       if (!foundKey) {
-        await wallet.unlocked?.lock();
+        wallet.unlocked?.lock();
         throw new AuthorizationError('Not authorized, missing authority');
       }
 
-      const signed = await wallet.unlocked.signDigest(foundKey, digest);
+      const signed = wallet.unlocked.signDigest(foundKey, digest);
       return signed;
     } catch (error) {
       if (error instanceof AuthorizationError) {

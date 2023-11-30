@@ -7,7 +7,7 @@ import replace from "@rollup/plugin-replace";
 const esbuild = _esbuild?.default ?? _esbuild;
 const dts = _dts?.default ?? _dts;
 
-const name = require("./package.json").main.replace(/\.js$/, "");
+const name = require("./package.json").main.replace(/\.js$/, "").replace(".mjs", "");
 
 function escape(str) {
   return str
@@ -37,7 +37,7 @@ export default [
         sourcemap: true,
       },
       {
-        file: `${name}.js`,
+        file: `${name}.mjs`,
         format: "es",
         sourcemap: true,
       },

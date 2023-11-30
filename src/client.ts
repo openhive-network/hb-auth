@@ -9,6 +9,7 @@ import { AuthorizationError, GenericError } from "./errors";
 import { isSupportWebWorker } from "./environment";
 import workerString from "worker";
 import type { Auth, WorkerExpose, AuthUser, KeyAuthorityType } from "./worker";
+export type { AuthUser, KeyAuthorityType };
 
 export interface AuthStatus {
   /**
@@ -55,7 +56,7 @@ abstract class Client {
   /** @hidden */
   #auth!: Local<Auth>;
   /** @hidden */
-  #sessionEndCallback: () => Promise<void> = async () => { };
+  #sessionEndCallback: () => Promise<void> = async () => {};
 
   /** @hidden */
   protected set options(options: ClientOptions) {
@@ -166,21 +167,21 @@ abstract class Client {
     const { result: globalProps } = await dynamicGlobalProps.json();
 
     const wax = await createWaxFoundation();
-    const tx = new wax.TransactionBuilder(globalProps.head_block_id, "+1m")
+    const tx = new wax.TransactionBuilder(globalProps.head_block_id, "+1m");
 
-    if (keyType === 'posting') {
+    if (keyType === "posting") {
       tx.push({
         vote: {
           voter: username,
           author: "author",
           permlink: "permlink",
           weight: 10000,
-        }
-      })
+        },
+      });
     } else {
       tx.push({
         limit_order_cancel: { owner: username, orderid: 0 },
-      })
+      });
     }
 
     return tx.sigDigest;

@@ -11,7 +11,18 @@
 ## Interfaces
 
 - [AuthStatus](#interfacesauthstatusmd)
+- [AuthUser](#interfacesauthusermd)
 - [ClientOptions](#interfacesclientoptionsmd)
+
+## Type Aliases
+
+### KeyAuthorityType
+
+Ƭ **KeyAuthorityType**: typeof `KEY_TYPES`[`number`]
+
+#### Defined in
+
+hb-auth.d.ts:12
 
 ## Variables
 
@@ -150,7 +161,7 @@ ___
 
 ### getAuthByUser
 
-▸ **getAuthByUser**(`username`): `Promise`\<``null`` \| `AuthUser`\>
+▸ **getAuthByUser**(`username`): `Promise`\<``null`` \| [`AuthUser`](#interfacesauthusermd)\>
 
 #### Parameters
 
@@ -160,7 +171,7 @@ ___
 
 #### Returns
 
-`Promise`\<``null`` \| `AuthUser`\>
+`Promise`\<``null`` \| [`AuthUser`](#interfacesauthusermd)\>
 
 **`Description`**
 
@@ -179,11 +190,11 @@ ___
 
 ### getAuths
 
-▸ **getAuths**(): `Promise`\<`AuthUser`[]\>
+▸ **getAuths**(): `Promise`\<[`AuthUser`](#interfacesauthusermd)[]\>
 
 #### Returns
 
-`Promise`\<`AuthUser`[]\>
+`Promise`\<[`AuthUser`](#interfacesauthusermd)[]\>
 
 **`Description`**
 
@@ -469,7 +480,7 @@ ___
 
 ### getAuthByUser
 
-▸ **getAuthByUser**(`username`): `Promise`\<``null`` \| `AuthUser`\>
+▸ **getAuthByUser**(`username`): `Promise`\<``null`` \| [`AuthUser`](#interfacesauthusermd)\>
 
 #### Parameters
 
@@ -479,7 +490,7 @@ ___
 
 #### Returns
 
-`Promise`\<``null`` \| `AuthUser`\>
+`Promise`\<``null`` \| [`AuthUser`](#interfacesauthusermd)\>
 
 **`Description`**
 
@@ -498,11 +509,11 @@ ___
 
 ### getAuths
 
-▸ **getAuths**(): `Promise`\<`AuthUser`[]\>
+▸ **getAuths**(): `Promise`\<[`AuthUser`](#interfacesauthusermd)[]\>
 
 #### Returns
 
-`Promise`\<`AuthUser`[]\>
+`Promise`\<[`AuthUser`](#interfacesauthusermd)[]\>
 
 **`Description`**
 
@@ -693,6 +704,31 @@ Value that describes auth status
 #### Defined in
 
 hb-auth.d.ts:36
+
+
+<a name="interfacesauthusermd"></a>
+
+# Interface: AuthUser
+
+## Properties
+
+### authorized
+
+• **authorized**: `boolean`
+
+#### Defined in
+
+hb-auth.d.ts:15
+
+___
+
+### username
+
+• **username**: `string`
+
+#### Defined in
+
+hb-auth.d.ts:14
 
 
 <a name="interfacesclientoptionsmd"></a>

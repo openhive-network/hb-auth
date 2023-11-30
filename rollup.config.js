@@ -46,7 +46,7 @@ export default [
       esbuild(),
       replace({
         "require('worker')": "require('./worker.js')",
-        "from 'worker'": "from './worker.js'",
+        "from 'worker'": "from './worker.mjs'",
         delimiters: ["", ""],
         preventAssignment: true,
       }),
@@ -63,6 +63,11 @@ export default [
     input: ["src/worker.ts"],
     output: [
       {
+        file: `dist/worker.mjs`,
+        format: "es",
+      },
+      {
+        // this is for CommonJS import because .mjs extension breaks interoperability
         file: `dist/worker.js`,
         format: "es",
       },

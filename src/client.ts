@@ -116,7 +116,7 @@ abstract class Client {
    * That method should be called first before calling other methods.
    * @returns {InstanceType<Client>}
    */
-  public async initialize(): Promise<Client> {
+  public async initialize(): Promise<this> {
     this.#auth = await new this.#worker.Auth();
 
     return await Promise.resolve(this);

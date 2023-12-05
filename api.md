@@ -213,11 +213,11 @@ ___
 
 ### initialize
 
-▸ **initialize**(): `Promise`\<`Client`\>
+▸ **initialize**(): `Promise`\<[`OfflineClient`](#classesofflineclientmd)\>
 
 #### Returns
 
-`Promise`\<`Client`\>
+`Promise`\<[`OfflineClient`](#classesofflineclientmd)\>
 
 **`Description`**
 
@@ -532,11 +532,11 @@ ___
 
 ### initialize
 
-▸ **initialize**(): `Promise`\<`Client`\>
+▸ **initialize**(): `Promise`\<[`OnlineClient`](#classesonlineclientmd)\>
 
 #### Returns
 
-`Promise`\<`Client`\>
+`Promise`\<[`OnlineClient`](#classesonlineclientmd)\>
 
 **`Description`**
 

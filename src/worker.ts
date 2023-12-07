@@ -20,6 +20,7 @@ export type KeyAuthorityType = (typeof KEY_TYPES)[number];
 export interface AuthUser {
   username: string;
   authorized: boolean;
+  keyType: KeyAuthorityType | undefined;
 }
 
 // This class is used to initiate new wasm application while registering a new user
@@ -61,9 +62,14 @@ class AuthWorker {
   private readonly storage = "/storage_root";
   private readonly aliasStorage = "/aliases";
   private sessionEndCallback = noop;
+  private _loggedInUser: Omit<AuthUser, 'authorized'> | undefined;
   private _generator!: AsyncGenerator<string, string>;
   private _registration: Registration | undefined;
   // private _interval!: ReturnType<typeof setInterval>;
+
+  public get loggedInUser(): Omit<AuthUser, 'authorized'> | undefined {
+    return this._loggedInUser;
+  }
 
   constructor() {
     this.Ready = new Promise((resolve, reject) => {
@@ -213,6 +219,14 @@ class AuthWorker {
       }
 
       const signed = wallet.unlocked.signDigest(foundKey, digest);
+
+      if (!this._loggedInUser) {
+        this._loggedInUser = {
+          username,
+          keyType
+        }
+      }
+
       return signed;
     } catch (error) {
       if (error instanceof AuthorizationError) {
@@ -227,6 +241,7 @@ class AuthWorker {
     try {
       await this.sessionEndCallback();
       await this.api.delete();
+      this._loggedInUser = undefined;
     } catch (error) {
       throw new InternalError(error);
     }
@@ -239,6 +254,7 @@ class AuthWorker {
     try {
       await this.api.delete();
       await this.removeAlias(`${username}@${keyType}`);
+      this._loggedInUser = undefined;
       // clearInterval(this._interval);
     } catch (error) {
       throw new InternalError(error);
@@ -361,12 +377,14 @@ class Auth {
   public async getAuthByUser(username: string): Promise<AuthUser | null> {
     try {
       const wallet = await (await this.getWorker()).getWallet(username);
-
+      const loggedInUser = (await this.getWorker()).loggedInUser;
+      
       if (!wallet) return null;
 
       return {
         authorized: !!wallet.unlocked,
         username: wallet.name,
+        keyType: loggedInUser?.username === username ? loggedInUser.keyType : undefined
       };
     } catch (error) {
       throw new GenericError(`Internal error: \n${error as string}`);
@@ -376,10 +394,12 @@ class Auth {
   public async getAuths(): Promise<AuthUser[]> {
     try {
       const wallets = await (await this.getWorker()).getWallets();
-
+      const loggedInUser = (await this.getWorker()).loggedInUser;
+      
       return wallets.map(({ unlocked, name }) => ({
         authorized: !!unlocked,
         username: name,
+        keyType: loggedInUser?.username === name ? loggedInUser.keyType : undefined
       }));
     } catch (error) {
       throw new GenericError(`Internal error: \n${error as string}`);

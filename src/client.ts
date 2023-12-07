@@ -8,7 +8,7 @@ import {
 } from "../node_modules/comlink/dist/esm/comlink";
 import { AuthorizationError, GenericError } from "./errors";
 import { isSupportSharedWorker, isSupportWebWorker } from "./environment";
-import workerString from "worker";
+// import workerString from "worker";
 import type { Auth, WorkerExpose, AuthUser, KeyAuthorityType } from "./worker";
 
 export interface AuthStatus {
@@ -104,14 +104,14 @@ abstract class Client {
   }
 
   private getWorkerEndpoint(): Endpoint {
-    const workerBlob = new Blob([workerString]);
+    const workerUrl = '/auth/worker.js';
     if (isSupportSharedWorker) {
-      const workerUrl = localStorage.getItem('workerUrl') ?? URL.createObjectURL(workerBlob);
-      if (!localStorage.getItem('workerUrl')) localStorage.setItem('workerUrl', workerUrl);
+      // const workerUrl = localStorage.getItem('workerUrl') ?? URL.createObjectURL(file);
+      // if (!localStorage.getItem('workerUrl')) localStorage.setItem('workerUrl', workerUrl);
 
       return new SharedWorker(workerUrl).port;
     } else {
-      const workerUrl = URL.createObjectURL(workerBlob);
+      // const workerUrl = URL.createObjectURL(workerBlob);
 
       return new Worker(workerUrl);
     }

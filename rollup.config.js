@@ -7,7 +7,7 @@ import replace from "@rollup/plugin-replace";
 const esbuild = _esbuild?.default ?? _esbuild;
 const dts = _dts?.default ?? _dts;
 
-const name = require("./package.json").main.replace(/\.js$/, "");
+const name = require("./package.json").main.replace(/\.js$/, "").replace(".mjs", "");
 
 function escape(str) {
   return str
@@ -32,7 +32,7 @@ export default [
   bundle({
     output: [
       {
-        file: `${name}.js`,
+        file: `${name}.cjs`,
         format: "cjs",
         sourcemap: true,
       },
@@ -46,7 +46,7 @@ export default [
       esbuild(),
       replace({
         "require('worker')": "require('./worker.js')",
-        "from 'worker'": "from './worker.js'",
+        "from 'worker'": "from './worker.mjs'",
         delimiters: ["", ""],
         preventAssignment: true,
       }),
@@ -63,6 +63,11 @@ export default [
     input: ["src/worker.ts"],
     output: [
       {
+        file: `dist/worker.mjs`,
+        format: "es",
+      },
+      {
+        // this is for CommonJS import because .mjs extension breaks interoperability
         file: `dist/worker.js`,
         format: "es",
       },

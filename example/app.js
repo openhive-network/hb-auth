@@ -14,9 +14,9 @@ client.initialize().then(async (authClient) => {
   const errorEl = document.getElementById("error");
   errorEl.style.color = "red";
 
-  const updateStatus = async () => {
+  const updateStatus = async (user) => {
     errorEl.innerText = "";
-    await authClient.getAuthByUser(MY_USER).then((auth) => {
+    await authClient.getAuthByUser(user || MY_USER).then((auth) => {
       if (!auth) {
         statusEl.innerText = "There is no registered user";
         statusEl.style.color = "grey";
@@ -55,9 +55,9 @@ client.initialize().then(async (authClient) => {
       .authenticate(data.username, data.password, data.type)
       .then((status) => {
         if (status.ok) {
-          updateStatus();
+          updateStatus(data.username);
         } else {
-          updateStatus();
+          updateStatus(data.username);
           errorEl.innerText = "Not authorized: Invalid credentials";
         }
       })

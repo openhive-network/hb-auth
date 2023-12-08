@@ -83,12 +83,12 @@ export default [
           module: true,
         },
       }),
-      {
-        name: "worker-to-string",
-        renderChunk(str) {
-          return `export default "${escape(str)}"`;
-        },
-      },
+      // {
+      //   name: "worker-to-string",
+      //   renderChunk(str) {
+      //     return `export default "${escape(str)}"`;
+      //   },
+      // },
     ],
   },
 ];

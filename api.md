@@ -22,7 +22,7 @@
 
 #### Defined in
 
-hb-auth.d.ts:12
+hb-auth.d.ts:13
 
 ## Variables
 
@@ -33,6 +33,16 @@ hb-auth.d.ts:12
 #### Defined in
 
 hb-auth.d.ts:3
+
+___
+
+### isSupportSharedWorker
+
+• `Const` **isSupportSharedWorker**: `boolean`
+
+#### Defined in
+
+hb-auth.d.ts:5
 
 ___
 
@@ -87,7 +97,7 @@ Client.constructor
 
 #### Defined in
 
-hb-auth.d.ts:77
+hb-auth.d.ts:79
 
 ## Properties
 
@@ -101,7 +111,7 @@ Client.#private
 
 #### Defined in
 
-hb-auth.d.ts:61
+hb-auth.d.ts:63
 
 ## Methods
 
@@ -131,7 +141,7 @@ Client.authenticate
 
 #### Defined in
 
-hb-auth.d.ts:126
+hb-auth.d.ts:129
 
 ___
 
@@ -155,7 +165,7 @@ Client.authorize
 
 #### Defined in
 
-hb-auth.d.ts:147
+hb-auth.d.ts:150
 
 ___
 
@@ -184,7 +194,7 @@ Client.getAuthByUser
 
 #### Defined in
 
-hb-auth.d.ts:106
+hb-auth.d.ts:109
 
 ___
 
@@ -207,7 +217,7 @@ Client.getAuths
 
 #### Defined in
 
-hb-auth.d.ts:99
+hb-auth.d.ts:102
 
 ___
 
@@ -230,7 +240,7 @@ Client.initialize
 
 #### Defined in
 
-hb-auth.d.ts:87
+hb-auth.d.ts:90
 
 ___
 
@@ -257,7 +267,7 @@ Client.logout
 
 #### Defined in
 
-hb-auth.d.ts:131
+hb-auth.d.ts:134
 
 ___
 
@@ -289,7 +299,7 @@ Client.register
 
 #### Defined in
 
-hb-auth.d.ts:118
+hb-auth.d.ts:121
 
 ___
 
@@ -317,7 +327,7 @@ Client.setSessionEndCallback
 
 #### Defined in
 
-hb-auth.d.ts:93
+hb-auth.d.ts:96
 
 ___
 
@@ -349,7 +359,7 @@ Client.sign
 
 #### Defined in
 
-hb-auth.d.ts:139
+hb-auth.d.ts:142
 
 
 <a name="classesonlineclientmd"></a>
@@ -393,7 +403,7 @@ Client.constructor
 
 #### Defined in
 
-hb-auth.d.ts:77
+hb-auth.d.ts:79
 
 ## Properties
 
@@ -407,7 +417,7 @@ Client.#private
 
 #### Defined in
 
-hb-auth.d.ts:61
+hb-auth.d.ts:63
 
 ___
 
@@ -417,7 +427,7 @@ ___
 
 #### Defined in
 
-hb-auth.d.ts:155
+hb-auth.d.ts:158
 
 ## Methods
 
@@ -447,7 +457,7 @@ Client.authenticate
 
 #### Defined in
 
-hb-auth.d.ts:126
+hb-auth.d.ts:129
 
 ___
 
@@ -474,7 +484,7 @@ Client.authorize
 
 #### Defined in
 
-hb-auth.d.ts:154
+hb-auth.d.ts:157
 
 ___
 
@@ -503,7 +513,7 @@ Client.getAuthByUser
 
 #### Defined in
 
-hb-auth.d.ts:106
+hb-auth.d.ts:109
 
 ___
 
@@ -526,7 +536,7 @@ Client.getAuths
 
 #### Defined in
 
-hb-auth.d.ts:99
+hb-auth.d.ts:102
 
 ___
 
@@ -549,7 +559,7 @@ Client.initialize
 
 #### Defined in
 
-hb-auth.d.ts:87
+hb-auth.d.ts:90
 
 ___
 
@@ -576,7 +586,7 @@ Client.logout
 
 #### Defined in
 
-hb-auth.d.ts:131
+hb-auth.d.ts:134
 
 ___
 
@@ -608,7 +618,7 @@ Client.register
 
 #### Defined in
 
-hb-auth.d.ts:118
+hb-auth.d.ts:121
 
 ___
 
@@ -636,7 +646,7 @@ Client.setSessionEndCallback
 
 #### Defined in
 
-hb-auth.d.ts:93
+hb-auth.d.ts:96
 
 ___
 
@@ -668,7 +678,7 @@ Client.sign
 
 #### Defined in
 
-hb-auth.d.ts:139
+hb-auth.d.ts:142
 
 
 <a name="interfacesauthstatusmd"></a>
@@ -689,7 +699,7 @@ An error in case of unsuccessful authorization
 
 #### Defined in
 
-hb-auth.d.ts:41
+hb-auth.d.ts:43
 
 ___
 
@@ -703,7 +713,7 @@ Value that describes auth status
 
 #### Defined in
 
-hb-auth.d.ts:36
+hb-auth.d.ts:38
 
 
 <a name="interfacesauthusermd"></a>
@@ -718,7 +728,17 @@ hb-auth.d.ts:36
 
 #### Defined in
 
-hb-auth.d.ts:15
+hb-auth.d.ts:16
+
+___
+
+### keyType
+
+• **keyType**: `undefined` \| ``"active"`` \| ``"posting"``
+
+#### Defined in
+
+hb-auth.d.ts:17
 
 ___
 
@@ -728,7 +748,7 @@ ___
 
 #### Defined in
 
-hb-auth.d.ts:14
+hb-auth.d.ts:15
 
 
 <a name="interfacesclientoptionsmd"></a>
@@ -751,7 +771,7 @@ Blockchain ID used for calculating digest
 
 #### Defined in
 
-hb-auth.d.ts:49
+hb-auth.d.ts:51
 
 ___
 
@@ -769,4 +789,4 @@ Blockchain Node address for online account verification
 
 #### Defined in
 
-hb-auth.d.ts:55
+hb-auth.d.ts:57

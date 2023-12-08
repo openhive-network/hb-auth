@@ -4,7 +4,7 @@
   "description": "",
   "source": "index.html",
   "scripts": {
-    "start": "parcel",
+    "start": "rm -rf dist && mkdir dist && mkdir dist/auth && cp ../dist/worker.js ./dist/auth/ && parcel",
     "build": "parcel build --dist-dir dist"
   },
   "keywords": [],

@@ -1,8 +1,8 @@
 import { type ChromiumBrowser, type ConsoleMessage, chromium } from 'playwright';
 import { test, expect } from '@playwright/test';
 
-import type HbAuth from '../../dist/hb-auth';
-declare const auth: typeof HbAuth;
+import type { OnlineClient } from '../../dist/hb-auth';
+declare const auth: typeof OnlineClient;
 
 let browser!: ChromiumBrowser;
 
@@ -20,7 +20,6 @@ test.describe('HB Auth base tests', () => {
 
         await page.goto(`http://localhost:8080/src/__tests__/assets/test.html`);
         await page.waitForURL('**/test.html', { waitUntil: 'load' });
-        console.log(auth);
     });
 
     test('Should test on chromium', async () => {

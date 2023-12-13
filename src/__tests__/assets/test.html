@@ -9,17 +9,18 @@
   <script type="importmap">
     {
       "imports": {
-        "@hive/hb-auth": "/dist/hb-auth.mjs"
+        "@hive/hb-auth": "/dist/hb-auth.mjs",
+        "@hive/wax": "/node_modules/@hive/wax/wasm/dist/bundle/index.js"
       }
     }
   </script>
   <script type="module">
-    import HbAuth from '@hive/hb-auth';
+    import {OnlineClient} from '@hive/hb-auth';
 
     Object.defineProperties(window, {
       auth: {
         get() {
-          return HbAuth;
+          return OnlineClient;
         }
       }
     });

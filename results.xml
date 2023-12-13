@@ -1,0 +1,33 @@
+<testsuites id="" name="" tests="3" failures="1" skipped="2" errors="0" time="0.716741">
+<testsuite name="src/__tests__/index.spec.ts" timestamp="2023-12-13T09:33:13.391Z" hostname="hbauth_testsuite" tests="3" failures="1" skipped="2" time="0.062" errors="0">
+<testcase name="HB Auth base tests › Should test on chromium" classname="src/__tests__/index.spec.ts" time="0.062">
+<failure message="base.ts:26:9 Should test on chromium" type="FAILURE">
+<![CDATA[  [hbauth_testsuite] › src/__tests__/base.ts:26:9 › HB Auth base tests › Should test on chromium ───
+
+    Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8080/src/__tests__/assets/test.html
+    =========================== logs ===========================
+    navigating to "http://localhost:8080/src/__tests__/assets/test.html", waiting until "load"
+    ============================================================
+
+      19 |         });
+      20 |
+    > 21 |         await page.goto(`http://localhost:8080/src/__tests__/assets/test.html`);
+         |                    ^
+      22 |         await page.waitForURL('**/test.html', { waitUntil: 'load' });
+      23 |         console.log(auth);
+      24 |     });
+
+        at /home/efe-dev/work/hive/hb-auth/src/__tests__/base.ts:21:20
+]]>
+</failure>
+</testcase>
+<testcase name="HB Auth base tests › Should have a valid html test webpage" classname="src/__tests__/index.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="HB Auth base tests › Should have global module" classname="src/__tests__/index.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+</testsuites>

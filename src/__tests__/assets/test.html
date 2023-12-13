@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Wax Test</title>
+</head>
+<body id="auth-container">
+  <script type="importmap">
+    {
+      "imports": {
+        "@hive/hb-auth": "/dist/hb-auth.mjs"
+      }
+    }
+  </script>
+  <script type="module">
+    import HbAuth from '@hive/hb-auth';
+
+    Object.defineProperties(window, {
+      auth: {
+        get() {
+          return HbAuth;
+        }
+      }
+    });
+  </script>
+</body>
+</html>

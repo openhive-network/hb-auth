@@ -29,9 +29,9 @@ build_hb_auth:
   stage: build
   image: ${EMSCRIPTEN_IMAGE}
   before_script:
-    - npm ci
+    - pnpm install --frozen-lockfile
   script:
-    - npm run build
+    - pnpm run build
   needs:
     - job: test_hb_auth
   tags:

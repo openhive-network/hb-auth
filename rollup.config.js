@@ -9,18 +9,6 @@ const dts = _dts?.default ?? _dts;
 
 const name = require("./package.json").main.replace(/\.js$/, "").replace(".mjs", "");
 
-function escape(str) {
-  return str
-    .replace(/[\\]/g, "\\\\")
-    .replace(/[\"]/g, '\\"')
-    .replace(/[\/]/g, "\\/")
-    .replace(/[\b]/g, "\\b")
-    .replace(/[\f]/g, "\\f")
-    .replace(/[\n]/g, "\\n")
-    .replace(/[\r]/g, "\\r")
-    .replace(/[\t]/g, "\\t");
-}
-
 const bundle = (config) => ({
   ...config,
   input: ["src/index.ts"],
@@ -32,12 +20,7 @@ export default [
   bundle({
     output: [
       {
-        file: `${name}.cjs`,
-        format: "cjs",
-        sourcemap: true,
-      },
-      {
-        file: `${name}.mjs`,
+        file: `${name}.js`,
         format: "es",
         sourcemap: true,
       },
@@ -45,8 +28,7 @@ export default [
     plugins: [
       esbuild(),
       replace({
-        "require('worker')": "require('./worker.js')",
-        "from 'worker'": "from './worker.mjs'",
+        "from 'worker'": "from './worker.js'",
         delimiters: ["", ""],
         preventAssignment: true,
       }),
@@ -63,11 +45,6 @@ export default [
     input: ["src/worker.ts"],
     output: [
       {
-        file: `dist/worker.mjs`,
-        format: "es",
-      },
-      {
-        // this is for CommonJS import because .mjs extension breaks interoperability
         file: `dist/worker.js`,
         format: "es",
       },
@@ -83,12 +60,6 @@ export default [
           module: true,
         },
       }),
-      // {
-      //   name: "worker-to-string",
-      //   renderChunk(str) {
-      //     return `export default "${escape(str)}"`;
-      //   },
-      // },
     ],
   },
 ];

@@ -19,8 +19,7 @@ test_hb_auth:
   extends: .job-defaults
   stage: test
   script:
-    - echo "TODO run tests"
-    # - pnpm run test
+    - pnpm run test
   tags:
     - public-runner-docker
 

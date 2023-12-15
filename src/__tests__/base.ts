@@ -1,8 +1,9 @@
 import { type ChromiumBrowser, type ConsoleMessage, chromium } from 'playwright';
 import { test, expect } from '@playwright/test';
 
-import type { OnlineClient } from '../../dist/hb-auth';
-declare const auth: typeof OnlineClient;
+import { OfflineClient, type OnlineClient } from '../../dist/hb-auth';
+// declare const AuthOnlineClient: typeof OnlineClient;
+declare const AuthOfflineClient: typeof OnlineClient;
 
 let browser!: ChromiumBrowser;
 
@@ -34,12 +35,12 @@ test.describe('HB Auth base tests', () => {
         expect(id).toBe('auth-container');
     });
 
-    test('Should have global module', async ({ page }) => {
+    test('Should have global OfflineClient', async ({ page }) => {
         const moduleType = await page.evaluate(() => {
-            return typeof auth;
+            return typeof AuthOfflineClient;
         });
-
-        expect(moduleType).toBe('function');
+        
+        expect(moduleType).toBe(OfflineClient);
     });
 
     test.afterAll(async () => {

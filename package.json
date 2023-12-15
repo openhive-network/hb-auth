@@ -3,9 +3,10 @@
   "version": "0.0.1-LastGitTagPlaceholder.GitHashPlaceholder",
   "description": "Auth library for browser applications that uses Beekeeper",
   "license": "SEE LICENSE IN LICENSE.md",
-  "main": "dist/hb-auth.mjs",
-  "module": "dist/hb-auth.mjs",
+  "main": "dist/hb-auth.js",
+  "module": "dist/hb-auth.js",
   "types": "dist/hb-auth.d.ts",
+  "type": "module",
   "scripts": {
     "build": "pnpm run clean && rollup -c --bundleConfigAsCjs",
     "clean": "rm -rf ./dist",
@@ -62,7 +63,7 @@
     "rollup-plugin-esbuild": "^5.0.0",
     "typedoc": "^0.25.3",
     "typedoc-plugin-markdown": "^3.17.1",
-    "typescript": "^5.1.6"
+    "typescript": "^5.3.3"
   },
   "dependencies": {
     "@hive/beekeeper": "1.27.5-rc0-stable.d7af2aa40",

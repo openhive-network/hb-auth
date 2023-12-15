@@ -15,14 +15,19 @@
     }
   </script>
   <script type="module">
-    import {OnlineClient} from '@hive/hb-auth';
+    import {OnlineClient, OfflineClient} from '@hive/hb-auth';
 
     Object.defineProperties(window, {
-      auth: {
+      OnlineClient: {
         get() {
           return OnlineClient;
         }
-      }
+      },
+      OfflineClient: {
+        get() {
+          return OfflineClient;
+        }
+      },
     });
   </script>
 </body>

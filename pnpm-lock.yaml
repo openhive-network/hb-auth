@@ -92,7 +92,7 @@ devDependencies:
     specifier: ^3.17.1
     version: 3.17.1(typedoc@0.25.4)
   typescript:
-    specifier: ^5.1.6
+    specifier: ^5.3.3
     version: 5.3.3
 
 packages:

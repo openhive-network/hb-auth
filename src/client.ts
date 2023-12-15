@@ -102,20 +102,25 @@ abstract class Client {
     if (this.#worker) return;
 
     this.#worker = wrap<WorkerExpose>(this.getWorkerEndpoint());
+
+
   }
 
   private getWorkerEndpoint(): Endpoint {
     const workerUrl = '/auth/worker.js';
+    let worker: SharedWorker | Worker;
     if (isSupportSharedWorker) {
-      // const workerUrl = localStorage.getItem('workerUrl') ?? URL.createObjectURL(file);
-      // if (!localStorage.getItem('workerUrl')) localStorage.setItem('workerUrl', workerUrl);
-
-      return new SharedWorker(workerUrl).port;
+      worker = new SharedWorker(workerUrl);
     } else {
-      // const workerUrl = URL.createObjectURL(workerBlob);
-
-      return new Worker(workerUrl);
+      worker = new Worker(workerUrl);
     }
+
+    worker.onerror = () => {
+      throw new GenericError('Cannot load Worker. Make sure you have worker.js file in your public directory under /auth/worker.js');
+    }
+
+    if (worker instanceof SharedWorker) return worker.port;
+    return worker;
   }
 
   /** @hidden */
@@ -131,7 +136,7 @@ abstract class Client {
   public async initialize(): Promise<this> {
     this.#auth = await new this.#worker.Auth();
 
-    return await Promise.resolve(this);
+    return Promise.resolve(this);
   }
 
   /**
@@ -231,10 +236,10 @@ abstract class Client {
 
     if (authenticated) {
       await this.#auth.onAuthComplete();
-      return await Promise.resolve({ ok: true });
+      return Promise.resolve({ ok: true });
     } else {
       // TODO: handle that case more clearly
-      return await Promise.resolve({
+      return Promise.resolve({
         ok: false,
         error: new AuthorizationError(""),
       });
@@ -269,17 +274,17 @@ abstract class Client {
       );
 
       if (authenticated) {
-        return await Promise.resolve({ ok: true });
+        return Promise.resolve({ ok: true });
       } else {
         await this.#auth.logout();
         // TODO: handle that case more clearly
-        return await Promise.resolve({
+        return Promise.resolve({
           ok: false,
           error: new AuthorizationError(""),
         });
       }
     } catch (err) {
-      return await Promise.reject(err);
+      return Promise.reject(err);
     }
   }
 

@@ -97,7 +97,7 @@ class AuthWorker {
   public async onAuthComplete(): Promise<void> {
     await this._registration?.clear();
     this._registration = undefined;
-    await this._generator.next()
+    await this._generator?.next()
   }
 
   private async * processNewRegistration(username: string, password: string, wifKey: string, keyType: KeyAuthorityType, digest: string): AsyncGenerator<any> {

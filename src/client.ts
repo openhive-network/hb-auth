@@ -1,4 +1,4 @@
-import { createWaxFoundation } from "@hive/wax";
+import { createWaxFoundation } from "@hive-staging/wax";
 import {
   proxy,
   wrap,
@@ -38,12 +38,19 @@ export interface ClientOptions {
    * @defaultValue `"https://api.hive.blog"`
    */
   node: string;
+  /**
+   * @description Url for worker script path provided by hb-auth library
+   * @type {string}
+   * @defaultValue `"/auth/worker.js"`
+   */
+  workerUrl: string;
 }
 
 /* @hidden */
 const defaultOptions: ClientOptions = {
   chainId: "beeab0de00000000000000000000000000000000000000000000000000000000",
   node: "https://api.hive.blog",
+  workerUrl: "/auth/worker.js"
 };
 
 /**
@@ -57,7 +64,7 @@ abstract class Client {
   /** @hidden */
   #auth!: Local<Auth>;
   /** @hidden */
-  #sessionEndCallback: () => Promise<void> = async () => {};
+  #sessionEndCallback: () => Promise<void> = async () => { };
 
   /** @hidden */
   protected set options(options: ClientOptions) {
@@ -85,42 +92,41 @@ abstract class Client {
    * @description Additional options for auth client
    * @param clientOptions @type {ClientOptions} - Options
    */
-  constructor(private readonly clientOptions: ClientOptions = defaultOptions) {
-    this.options = clientOptions;
+  constructor(private readonly clientOptions: Partial<ClientOptions> = defaultOptions) {
+    this.options = clientOptions as ClientOptions;
     if (!isSupportWebWorker) {
       throw new GenericError(
         `WebWorker support is required for running this library.
          Your browser/environment does not support WebWorkers.`,
       );
     }
-    // load worker
-    this.loadWebWorker();
   }
 
   /** @hidden */
-  private loadWebWorker(): void {
+  private async loadWebWorker(): Promise<void> {
     if (this.#worker) return;
-
-    this.#worker = wrap<WorkerExpose>(this.getWorkerEndpoint());
-
-
+    this.#worker = wrap<WorkerExpose>(await this.getWorkerEndpoint());
   }
 
-  private getWorkerEndpoint(): Endpoint {
-    const workerUrl = '/auth/worker.js';
-    let worker: SharedWorker | Worker;
-    if (isSupportSharedWorker) {
-      worker = new SharedWorker(workerUrl);
-    } else {
-      worker = new Worker(workerUrl);
-    }
+  private async getWorkerEndpoint(): Promise<Endpoint> {
 
-    worker.onerror = () => {
-      throw new GenericError('Cannot load Worker. Make sure you have worker.js file in your public directory under /auth/worker.js');
-    }
 
-    if (worker instanceof SharedWorker) return worker.port;
-    return worker;
+    // TODO: detect missing worker file and throw
+
+    return new Promise((resolve, reject) => {
+      let worker: SharedWorker | Worker;
+      if (isSupportSharedWorker) {
+        worker = new SharedWorker(this.options.workerUrl);
+      } else {
+        worker = new Worker(this.options.workerUrl);
+      }
+
+      if (worker instanceof SharedWorker) {
+        return resolve(worker.port);
+      }
+
+      resolve(worker);
+    })
   }
 
   /** @hidden */
@@ -134,9 +140,14 @@ abstract class Client {
    * @returns {InstanceType<Client>}
    */
   public async initialize(): Promise<this> {
-    this.#auth = await new this.#worker.Auth();
+    try {
+      await this.loadWebWorker();
+      this.#auth = await new this.#worker.Auth();
 
-    return Promise.resolve(this);
+      return Promise.resolve(this);
+    } catch (err) {
+      return Promise.reject(err);
+    }
   }
 
   /**

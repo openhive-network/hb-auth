@@ -1,13 +1,13 @@
 import { type ChromiumBrowser, type ConsoleMessage, chromium } from 'playwright';
 import { test, expect } from '@playwright/test';
 
-import { OfflineClient, type OnlineClient } from '../../dist/hb-auth';
-// declare const AuthOnlineClient: typeof OnlineClient;
-declare const AuthOfflineClient: typeof OnlineClient;
+import { OfflineClient } from '../../dist/hb-auth';
+
+declare const AuthOfflineClient: typeof OfflineClient;
 
 let browser!: ChromiumBrowser;
 
-test.describe('HB Auth base tests', () => {
+test.describe('HB Auth Offline Client base tests', () => {
     test.beforeAll(async () => {
         browser = await chromium.launch({
             headless: true
@@ -19,8 +19,8 @@ test.describe('HB Auth base tests', () => {
             console.log('>>', msg.type(), msg.text())
         });
 
-        await page.goto(`http://localhost:8080/src/__tests__/assets/test.html`);
-        await page.waitForURL('**/test.html', { waitUntil: 'load' });
+        await page.goto(`http://localhost:8080/src/__tests__/assets/offline.html`);
+        await page.waitForURL('**/offline.html', { waitUntil: 'load' });
     });
 
     test('Should test on chromium', async () => {
@@ -36,14 +36,36 @@ test.describe('HB Auth base tests', () => {
     });
 
     test('Should have global OfflineClient', async ({ page }) => {
-        const moduleType = await page.evaluate(() => {
+        const offlineClient = await page.evaluate(async () => {
             return typeof AuthOfflineClient;
         });
-        
-        expect(moduleType).toBe(OfflineClient);
+
+        expect(offlineClient).toBe(typeof OfflineClient);
+    });
+
+
+    test.skip('Should throw error if there is no worker file found', async ({ page }) => {
+        const err = await page.evaluate(async () => {
+            try {
+                const instance = new AuthOfflineClient();
+                await instance.initialize();
+            } catch (error) {
+                return true;
+            }
+        })
+
+        expect(err).toBeTruthy();
+    });
+
+    test('Should be able to create new OfflineClient instance', async ({ page }) => {
+        await page.evaluate(async () => {
+            const instance = new AuthOfflineClient({ workerUrl: "/dist/worker.js" });
+            await instance.initialize();
+        })
     });
 
     test.afterAll(async () => {
         await browser.close();
     });
 });
+

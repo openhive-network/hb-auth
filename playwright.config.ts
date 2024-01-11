@@ -1,5 +1,6 @@
 // This is a workaround for https://github.com/microsoft/playwright/issues/18282#issuecomment-1612266345
 import { defineConfig } from '@playwright/test';
+import path from 'path';
 
 export default defineConfig({
     reporter: [
@@ -15,7 +16,7 @@ export default defineConfig({
     // Run your local dev server before starting the tests
     webServer: {
         command: 'npx http-server',
-        url: 'http://localhost:8080'
+        url: 'http://localhost:8080',
     }
 });
 

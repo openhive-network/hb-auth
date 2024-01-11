@@ -3,27 +3,22 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>HbAuth Test</title>
+  <title>HbAuth Offline Client Test</title>
 </head>
 <body id="auth-container">
   <script type="importmap">
     {
       "imports": {
-        "@hive/hb-auth": "/dist/hb-auth.mjs",
-        "@hive/wax": "/node_modules/@hive/wax/wasm/dist/bundle/index.js"
+        "@hive/hb-auth": "/dist/hb-auth.js",
+        "@hive-staging/wax": "/node_modules/@hive-staging/wax/wasm/dist/bundle/lib/web.js"
       }
     }
   </script>
   <script type="module">
-    import {OnlineClient, OfflineClient} from '@hive/hb-auth';
+    import { OfflineClient } from '@hive/hb-auth';
 
     Object.defineProperties(window, {
-      OnlineClient: {
-        get() {
-          return OnlineClient;
-        }
-      },
-      OfflineClient: {
+      AuthOfflineClient: {
         get() {
           return OfflineClient;
         }

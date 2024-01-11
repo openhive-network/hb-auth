@@ -2,7 +2,7 @@ import { OnlineClient } from "@hive/hb-auth";
 
 const CHAIN_ID =
   "beeab0de00000000000000000000000000000000000000000000000000000000";
-const MY_USER = "add_your_test_username_here_to_check_auth_status";
+const MY_USER = "ngc1559";
 
 // create new client instance
 const client = new OnlineClient();

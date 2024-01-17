@@ -40,6 +40,8 @@ test_hb_auth:
       artifacts: true
   stage: test
   image: ${EMSCRIPTEN_IMAGE}
+  before_script:
+    - pnpm install --frozen-lockfile
   script:
     - pnpm test
   tags:

@@ -104,6 +104,7 @@ class AuthWorker {
     try {
       this._registration = new Registration();
       const signed = await this._registration.request(username, wifKey, digest);
+
       // first yield signed transaction
       yield await Promise.resolve(signed);
 
@@ -112,7 +113,6 @@ class AuthWorker {
     } catch (error: any) {
       // clear registration on error
       await this._registration?.clear();
-
       if (error instanceof AuthorizationError) {
         throw new AuthorizationError(error.message);
       } else {

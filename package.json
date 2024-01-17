@@ -11,7 +11,7 @@
     "build": "pnpm run clean && rollup -c --bundleConfigAsCjs",
     "clean": "rm -rf ./dist",
     "lint": "eslint . --ext .ts",
-    "pretest": "playwright install",
+    "pretest": "playwright install chromium",
     "test": "unset CI && playwright test --workers 1 --max-failures 1 --project=hbauth_testsuite",
     "prebuild": "pnpm run husky && pnpm run lint",
     "husky": "husky install ./.husky"

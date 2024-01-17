@@ -43,7 +43,8 @@ test_hb_auth:
   before_script:
     - pnpm install --frozen-lockfile
   script:
-    - pnpm test
+    - . "$NVM_DIR/nvm.sh"  # This loads nvm
+    - npm run test
   tags:
     - public-runner-docker
   artifacts:

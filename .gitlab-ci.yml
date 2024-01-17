@@ -1,6 +1,6 @@
 stages:
-  - test
   - build
+  - test
   - publish
 
 variables:
@@ -15,14 +15,6 @@ include:
     file:
       - '/templates/wasm_build.gitlab-ci.yml'
 
-test_hb_auth:
-  extends: .job-defaults
-  stage: test
-  script:
-    - pnpm run test
-  tags:
-    - public-runner-docker
-
 build_hb_auth:
   extends: .job-defaults
   stage: build
@@ -31,8 +23,6 @@ build_hb_auth:
     - pnpm install --frozen-lockfile
   script:
     - pnpm run build
-  needs:
-    - job: test_hb_auth
   tags:
     - public-runner-docker
   artifacts:
@@ -42,6 +32,23 @@ build_hb_auth:
       - "$CI_PROJECT_DIR/README.md"
       - "$CI_PROJECT_DIR/api.md"
       - "$CI_PROJECT_DIR/LICENSE.md"
+
+test_hb_auth:
+  extends: .job-defaults
+  needs: 
+    - job: build_hb_auth
+      artifacts: true
+  stage: test
+  script:
+    - pnpm test
+  tags:
+    - public-runner-docker
+  artifacts:
+    reports:
+      junit: results.xml
+    paths:
+      - "$CI_PROJECT_DIR/results.json"
+
 
 publish_hb_auth:
   extends: .job-defaults

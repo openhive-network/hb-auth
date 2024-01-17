@@ -67,8 +67,8 @@
     "typescript": "^5.3.3"
   },
   "dependencies": {
-    "@hive-staging/beekeeper": "0.1.6",
-    "@hive-staging/wax": "0.3.28",
+    "@hive/beekeeper": "1.27.2-240117152416",
+    "@hive/wax": "0.3.8-240116125426",
     "comlink": "^4.4.1",
     "idb": "^7.1.1"
   }

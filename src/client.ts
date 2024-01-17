@@ -1,4 +1,4 @@
-import { TBlockHash, createWaxFoundation } from "@hive-staging/wax";
+import { TBlockHash, createWaxFoundation } from "@hive/wax";
 import {
   proxy,
   wrap,

@@ -5,12 +5,12 @@ settings:
   excludeLinksFromLockfile: false
 
 dependencies:
-  '@hive-staging/beekeeper':
-    specifier: 0.1.6
-    version: 0.1.6
-  '@hive-staging/wax':
-    specifier: 0.3.28
-    version: 0.3.28
+  '@hive/beekeeper':
+    specifier: 1.27.2-240117152416
+    version: 1.27.2-240117152416
+  '@hive/wax':
+    specifier: 0.3.8-240116125426
+    version: 0.3.8-240116125426
   comlink:
     specifier: ^4.4.1
     version: 4.4.1
@@ -1561,16 +1561,21 @@ packages:
     engines: {node: ^12.22.0 || ^14.17.0 || >=16.0.0}
     dev: true
 
-  /@hive-staging/beekeeper@0.1.6:
-    resolution: {integrity: sha512-f9xiwn7CfNYaKmBJ+Vg00AKlbNvIf+p5cfIWo5vX21i2m+0LVfczcMAWAdLekf4ey+1yunO9RP4FiL+ahnAAjA==}
+  /@hive/beekeeper@1.27.2-240110132748:
+    resolution: {integrity: sha1-gowsXVxXbN1M3HxCzGHaGFF4BHo=, tarball: https://gitlab.syncad.com/api/v4/projects/198/packages/npm/@hive/beekeeper/-/@hive/beekeeper-1.27.2-240110132748.tgz}
     engines: {node: '>= 12'}
     dev: false
 
-  /@hive-staging/wax@0.3.28:
-    resolution: {integrity: sha512-eG8JFCR3/5GWqWs72j2Cu13rwAYNWaWQeKCA/KzO4qZqlyNh0NvKya9hkguiabrDg9ebuyycj1NKq4GhuFy5CQ==}
+  /@hive/beekeeper@1.27.2-240117152416:
+    resolution: {integrity: sha1-uPlZxUXv1SppH6ze02SLcOCnVfs=, tarball: https://gitlab.syncad.com/api/v4/projects/198/packages/npm/@hive/beekeeper/-/@hive/beekeeper-1.27.2-240117152416.tgz}
     engines: {node: '>= 12'}
+    dev: false
+
+  /@hive/wax@0.3.8-240116125426:
+    resolution: {integrity: sha1-mGasxM5tIpXa1tKVBULz7ze1LGQ=, tarball: https://gitlab.syncad.com/api/v4/projects/419/packages/npm/@hive/wax/-/@hive/wax-0.3.8-240116125426.tgz}
+    engines: {node: '>= 18'}
     dependencies:
-      '@hive-staging/beekeeper': 0.1.6
+      '@hive/beekeeper': 1.27.2-240110132748
       class-transformer: 0.5.1
       class-validator: 0.14.0
       long: 5.2.3

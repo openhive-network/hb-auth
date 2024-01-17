@@ -3,7 +3,7 @@ import createBeekeeperApp, {
   type IBeekeeperSession,
   type IBeekeeperInstance,
   type IBeekeeperWallet,
-} from "@hive-staging/beekeeper";
+} from "@hive/beekeeper";
 import { AuthorizationError, GenericError, InternalError } from "./errors";
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment, @typescript-eslint/prefer-ts-expect-error

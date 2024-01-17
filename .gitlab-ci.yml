@@ -39,6 +39,7 @@ test_hb_auth:
     - job: build_hb_auth
       artifacts: true
   stage: test
+  image: ${EMSCRIPTEN_IMAGE}
   script:
     - pnpm test
   tags:

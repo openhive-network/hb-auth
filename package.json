@@ -46,7 +46,7 @@
     "@rollup/plugin-node-resolve": "^15.2.1",
     "@rollup/plugin-replace": "^5.0.2",
     "@rollup/plugin-terser": "^0.4.3",
-    "@types/node": "^20.10.5",
+    "@types/node": "^20.10.8",
     "@typescript-eslint/eslint-plugin": "^5.62.0",
     "buffer": "^6.0.3",
     "concat-md": "^0.5.1",
@@ -59,12 +59,12 @@
     "husky": "^8.0.3",
     "playwright": "^1.39.0",
     "prettier": "3.0.1",
-    "rollup": "^3.28.1",
-    "rollup-plugin-dts": "^6.0.0",
-    "rollup-plugin-esbuild": "^5.0.0",
-    "typedoc": "^0.25.3",
+    "rollup": "^4.3.1",
+    "rollup-plugin-dts": "^6.1.0",
+    "rollup-plugin-esbuild": "^6.1.0",
+    "typedoc": "^0.25.4",
     "typedoc-plugin-markdown": "^3.17.1",
-    "typescript": "^5.3.3"
+    "typescript": "^5.2.2"
   },
   "dependencies": {
     "@hive/beekeeper": "1.27.2-240117152416",

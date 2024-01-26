@@ -121,39 +121,29 @@ hb-auth.d.ts:69
 
 #### Parameters
 
-| Name | Type | Description |
-| :------ | :------ | :------ |
-| `username` | `string` | Username |
-| `password` | `string` | Password |
-| `keyType` | ``"active"`` \| ``"posting"`` | Key authority type |
+| Name | Type |
+| :------ | :------ |
+| `username` | `string` |
+| `password` | `string` |
+| `keyType` | ``"active"`` \| ``"posting"`` |
 
 #### Returns
 
 `Promise`\<[`AuthStatus`](#interfacesauthstatusmd)\>
 
-**`Description`**
-
-Method that authenticates an already registered user.
-
-#### Inherited from
+#### Overrides
 
 Client.authenticate
 
 #### Defined in
 
-hb-auth.d.ts:135
+hb-auth.d.ts:158
 
 ___
 
 ### authorize
 
-▸ **authorize**(`username`): `Promise`\<`boolean`\>
-
-#### Parameters
-
-| Name | Type |
-| :------ | :------ |
-| `username` | `string` |
+▸ **authorize**(): `Promise`\<`boolean`\>
 
 #### Returns
 
@@ -277,29 +267,24 @@ ___
 
 #### Parameters
 
-| Name | Type | Description |
-| :------ | :------ | :------ |
-| `username` | `string` | Username |
-| `password` | `string` | Password |
-| `wifKey` | `string` | Private key |
-| `keyType` | ``"active"`` \| ``"posting"`` | Key authority type |
+| Name | Type |
+| :------ | :------ |
+| `username` | `string` |
+| `password` | `string` |
+| `wifKey` | `string` |
+| `keyType` | ``"active"`` \| ``"posting"`` |
 
 #### Returns
 
 `Promise`\<[`AuthStatus`](#interfacesauthstatusmd)\>
 
-**`Description`**
-
-Method that registers a new user or adding
-another key with different authority to existing user.
-
-#### Inherited from
+#### Overrides
 
 Client.register
 
 #### Defined in
 
-hb-auth.d.ts:127
+hb-auth.d.ts:157
 
 ___
 
@@ -427,7 +412,7 @@ ___
 
 #### Defined in
 
-hb-auth.d.ts:164
+hb-auth.d.ts:166
 
 ## Methods
 
@@ -437,27 +422,23 @@ hb-auth.d.ts:164
 
 #### Parameters
 
-| Name | Type | Description |
-| :------ | :------ | :------ |
-| `username` | `string` | Username |
-| `password` | `string` | Password |
-| `keyType` | ``"active"`` \| ``"posting"`` | Key authority type |
+| Name | Type |
+| :------ | :------ |
+| `username` | `string` |
+| `password` | `string` |
+| `keyType` | ``"active"`` \| ``"posting"`` |
 
 #### Returns
 
 `Promise`\<[`AuthStatus`](#interfacesauthstatusmd)\>
 
-**`Description`**
-
-Method that authenticates an already registered user.
-
-#### Inherited from
+#### Overrides
 
 Client.authenticate
 
 #### Defined in
 
-hb-auth.d.ts:135
+hb-auth.d.ts:168
 
 ___
 
@@ -484,7 +465,7 @@ Client.authorize
 
 #### Defined in
 
-hb-auth.d.ts:163
+hb-auth.d.ts:165
 
 ___
 
@@ -596,29 +577,24 @@ ___
 
 #### Parameters
 
-| Name | Type | Description |
-| :------ | :------ | :------ |
-| `username` | `string` | Username |
-| `password` | `string` | Password |
-| `wifKey` | `string` | Private key |
-| `keyType` | ``"active"`` \| ``"posting"`` | Key authority type |
+| Name | Type |
+| :------ | :------ |
+| `username` | `string` |
+| `password` | `string` |
+| `wifKey` | `string` |
+| `keyType` | ``"active"`` \| ``"posting"`` |
 
 #### Returns
 
 `Promise`\<[`AuthStatus`](#interfacesauthstatusmd)\>
 
-**`Description`**
-
-Method that registers a new user or adding
-another key with different authority to existing user.
-
-#### Inherited from
+#### Overrides
 
 Client.register
 
 #### Defined in
 
-hb-auth.d.ts:127
+hb-auth.d.ts:167
 
 ___
 

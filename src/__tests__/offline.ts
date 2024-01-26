@@ -22,6 +22,19 @@ const user = {
             public: '6oR6ckA4TejTWTjatUdbcS98AKETc3rcnQ9dWxmeNiKDzfhBZa'
         },
     ],
+    txs: [
+        // posting
+        {
+            'digest': '390f34297cfcb8fa4b37353431ecbab05b8dc0c9c15fb9ca1a3d510c52177542',
+            'signed': '206fef91d06a7fbf0c987b68c6793820c8262232c8b76ab1469c042a1edd07c02761818a108d8faf94d886dd37f351e49b4cb96646eb3665ffd61e881805571d44'
+        },
+        // active
+        {
+            'digest': '390f34297cfcb8fa4b37353431ecbab05b8dc0c9c15fb9ca1a3d510c52177542',
+            'signed': '1f3345fb4b04cb1b8729ad2f1eca1d707463a0b57cb73000366290a37f3f53311d05394a2ddbf82f854d013b24e20f6e8aa46a8c7d12c1208630654836e7faf504'
+        },
+
+    ]
 }
 
 test.describe('HB Auth Offline Client base tests', () => {
@@ -194,7 +207,7 @@ test.describe('HB Auth Offline Client base tests', () => {
         const newTab = await browserContext.newPage();
         await newTab.goto(`http://localhost:8080/src/__tests__/assets/offline.html`);
         await newTab.waitForURL('**/offline.html', { waitUntil: 'load' });
-        
+
         const authorized = await newTab.evaluate(async ({ username }) => {
             // get new instance on new page
             const newAuthInstance = new AuthOfflineClient({ workerUrl: "/dist/worker.js" });
@@ -204,6 +217,42 @@ test.describe('HB Auth Offline Client base tests', () => {
 
         expect(authorized).toBeTruthy();
     });
+
+    test('Should user sign tx and get signed tx back with given key type', async () => {
+        const signed1 = await page.evaluate(async ({ username, password, keys, txs }) => {
+            await authInstance.logout();
+            await authInstance.authenticate(username, password, keys[0].type as KeyAuthorityType);
+            const signed = await authInstance.sign(username, txs[0].digest, keys[0].type as KeyAuthorityType)
+            return signed
+        }, user)
+
+        expect(signed1).toBe(user.txs[0].signed);
+
+        const signed2 = await page.evaluate(async ({ username, password, keys, txs }) => {
+            await authInstance.logout();
+            await authInstance.authenticate(username, password, keys[1].type as KeyAuthorityType);
+            const signed = await authInstance.sign(username, txs[1].digest, keys[1].type as KeyAuthorityType)
+            return signed
+        }, user)
+
+        expect(signed2).toBe(user.txs[1].signed);
+    });
+
+    test('Should user get error when trying to sign with not authorized key', async () => {
+        const error = await page.evaluate(async ({ username, password, keys, txs }) => {
+            await authInstance.logout();
+            await authInstance.authenticate(username, password, keys[1].type as KeyAuthorityType);
+
+            try {
+                await authInstance.sign(username, txs[0].digest, keys[0].type as KeyAuthorityType)
+
+            } catch (error) {
+                return error.message
+            }
+        }, user)
+
+        expect(error).toBe('Not authorized, missing authority');
+    })
 
     test.afterAll(async () => {
         await browser.close();

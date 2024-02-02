@@ -1,9 +1,10 @@
 node_modules/
 lib/
 dist/
-.eslintrc.js
+.eslintrc.cjs
 jest.config.*
 rollup.*
 tsconfig.*
 example/
 index.d.ts
+playwright.config.ts

@@ -93,7 +93,7 @@ abstract class Client {
    * @param clientOptions @type {ClientOptions} - Options
    */
   constructor(private readonly clientOptions: Partial<ClientOptions> = defaultOptions) {
-    this.options = clientOptions as ClientOptions;
+    this.options = {...clientOptions} as ClientOptions;
     if (!isSupportWebWorker) {
       throw new GenericError(
         `WebWorker support is required for running this library.
@@ -253,10 +253,7 @@ abstract class Client {
       return Promise.resolve({ ok: true });
     } else {
       // TODO: handle that case more clearly
-      return Promise.resolve({
-        ok: false,
-        error: new AuthorizationError(""),
-      });
+      return Promise.reject(new AuthorizationError("Invalid credentials"));
     }
   }
 
@@ -293,10 +290,7 @@ abstract class Client {
       } else {
         await this.#auth.logout();
         // TODO: handle that case more clearly
-        return Promise.resolve({
-          ok: false,
-          error: new AuthorizationError(""),
-        });
+        return Promise.reject(new AuthorizationError("Invalid credentials"));
       }
     } catch (err) {
       return Promise.reject(err);

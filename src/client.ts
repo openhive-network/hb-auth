@@ -1,4 +1,4 @@
-import { createWaxFoundation } from "@hive/wax";
+import { TBlockHash, createWaxFoundation } from "@hive/wax";
 import {
   proxy,
   wrap,
@@ -38,12 +38,19 @@ export interface ClientOptions {
    * @defaultValue `"https://api.hive.blog"`
    */
   node: string;
+  /**
+   * @description Url for worker script path provided by hb-auth library
+   * @type {string}
+   * @defaultValue `"/auth/worker.js"`
+   */
+  workerUrl: string;
 }
 
 /* @hidden */
 const defaultOptions: ClientOptions = {
   chainId: "beeab0de00000000000000000000000000000000000000000000000000000000",
   node: "https://api.hive.blog",
+  workerUrl: "/auth/worker.js"
 };
 
 /**
@@ -57,7 +64,7 @@ abstract class Client {
   /** @hidden */
   #auth!: Local<Auth>;
   /** @hidden */
-  #sessionEndCallback: () => Promise<void> = async () => {};
+  #sessionEndCallback: () => Promise<void> = async () => { };
 
   /** @hidden */
   protected set options(options: ClientOptions) {
@@ -85,37 +92,37 @@ abstract class Client {
    * @description Additional options for auth client
    * @param clientOptions @type {ClientOptions} - Options
    */
-  constructor(private readonly clientOptions: ClientOptions = defaultOptions) {
-    this.options = clientOptions;
+  constructor(private readonly clientOptions: Partial<ClientOptions> = defaultOptions) {
+    this.options = {...clientOptions} as ClientOptions;
     if (!isSupportWebWorker) {
       throw new GenericError(
         `WebWorker support is required for running this library.
          Your browser/environment does not support WebWorkers.`,
       );
     }
-    // load worker
-    this.loadWebWorker();
   }
 
   /** @hidden */
-  private loadWebWorker(): void {
+  private async loadWebWorker(): Promise<void> {
     if (this.#worker) return;
-
-    this.#worker = wrap<WorkerExpose>(this.getWorkerEndpoint());
+    this.#worker = wrap<WorkerExpose>(await this.getWorkerEndpoint());
   }
 
-  private getWorkerEndpoint(): Endpoint {
-    const workerUrl = '/auth/worker.js';
-    if (isSupportSharedWorker) {
-      // const workerUrl = localStorage.getItem('workerUrl') ?? URL.createObjectURL(file);
-      // if (!localStorage.getItem('workerUrl')) localStorage.setItem('workerUrl', workerUrl);
+  private async getWorkerEndpoint(): Promise<Endpoint> {
 
-      return new SharedWorker(workerUrl).port;
-    } else {
-      // const workerUrl = URL.createObjectURL(workerBlob);
 
-      return new Worker(workerUrl);
-    }
+    // TODO: detect missing worker file and throw
+
+    return new Promise((resolve, reject) => {
+      let worker: SharedWorker | Worker;
+      if (isSupportSharedWorker) {
+        worker = new SharedWorker(this.options.workerUrl);
+        return resolve(worker.port);
+      } else {
+        worker = new Worker(this.options.workerUrl);
+        return resolve(worker);
+      }
+    })
   }
 
   /** @hidden */
@@ -129,9 +136,14 @@ abstract class Client {
    * @returns {InstanceType<Client>}
    */
   public async initialize(): Promise<this> {
-    this.#auth = await new this.#worker.Auth();
+    try {
+      await this.loadWebWorker();
+      this.#auth = await new this.#worker.Auth();
 
-    return await Promise.resolve(this);
+      return Promise.resolve(this);
+    } catch (err) {
+      return Promise.reject(err);
+    }
   }
 
   /**
@@ -167,19 +179,26 @@ abstract class Client {
   private async getVerificationDigest(
     username: string,
     keyType: KeyAuthorityType,
+    offline?: boolean
   ): Promise<string> {
-    const dynamicGlobalProps = await fetch(this.options.node, {
-      method: "post",
-      body: JSON.stringify({
-        jsonrpc: "2.0",
-        method: "database_api.get_dynamic_global_properties",
-        id: 1,
-      }),
-    });
-    const { result: globalProps } = await dynamicGlobalProps.json();
+    let head_block_id: TBlockHash = '04e3256d94edee6ac72add19c1439260fbb00701';
+
+    if (!offline) {
+      const dynamicGlobalProps = await fetch(this.options.node, {
+        method: "post",
+        body: JSON.stringify({
+          jsonrpc: "2.0",
+          method: "database_api.get_dynamic_global_properties",
+          id: 1,
+        }),
+      });
+
+      const props = await dynamicGlobalProps.json();
+      head_block_id = props.result.head_block_id;
+    }
 
     const wax = await createWaxFoundation();
-    const tx = new wax.TransactionBuilder(globalProps.head_block_id, "+1m");
+    const tx = new wax.TransactionBuilder(head_block_id, "+1m");
 
     if (keyType === "posting") {
       tx.push({
@@ -213,8 +232,9 @@ abstract class Client {
     password: string,
     wifKey: string,
     keyType: KeyAuthorityType,
+    offline?: boolean
   ): Promise<AuthStatus> {
-    const digest = await this.getVerificationDigest(username, keyType);
+    const digest = await this.getVerificationDigest(username, keyType, offline);
     const signature = await this.#auth.register(
       username,
       password,
@@ -228,16 +248,12 @@ abstract class Client {
       signature,
       keyType,
     );
-
     if (authenticated) {
       await this.#auth.onAuthComplete();
-      return await Promise.resolve({ ok: true });
+      return Promise.resolve({ ok: true });
     } else {
       // TODO: handle that case more clearly
-      return await Promise.resolve({
-        ok: false,
-        error: new AuthorizationError(""),
-      });
+      return Promise.reject(new AuthorizationError("Invalid credentials"));
     }
   }
 
@@ -252,9 +268,10 @@ abstract class Client {
     username: string,
     password: string,
     keyType: KeyAuthorityType,
+    offline?: boolean
   ): Promise<AuthStatus> {
     try {
-      const digest = await this.getVerificationDigest(username, keyType);
+      const digest = await this.getVerificationDigest(username, keyType, offline);
       const signature = await this.#auth.authenticate(
         username,
         password,
@@ -269,17 +286,14 @@ abstract class Client {
       );
 
       if (authenticated) {
-        return await Promise.resolve({ ok: true });
+        return Promise.resolve({ ok: true });
       } else {
         await this.#auth.logout();
         // TODO: handle that case more clearly
-        return await Promise.resolve({
-          ok: false,
-          error: new AuthorizationError(""),
-        });
+        return Promise.reject(new AuthorizationError("Invalid credentials"));
       }
     } catch (err) {
-      return await Promise.reject(err);
+      return Promise.reject(err);
     }
   }
 
@@ -314,17 +328,24 @@ abstract class Client {
  */
 class OfflineClient extends Client {
   // simple auth based on wallet auth status
-  protected async authorize(username: string): Promise<boolean> {
-    try {
-      const authStatus = await this.getAuthByUser(username);
-      if (authStatus?.authorized) {
-        return true;
-      } else {
-        return false;
-      }
-    } catch (err) {
-      return false;
-    }
+  protected async authorize(): Promise<boolean> {
+    return true;
+  }
+
+  public async register(
+    username: string,
+    password: string,
+    wifKey: string,
+    keyType: KeyAuthorityType) {
+    return super.register(username, password, wifKey, keyType, true);
+  }
+
+  public async authenticate(
+    username: string,
+    password: string,
+    keyType: KeyAuthorityType
+  ) {
+    return super.authenticate(username, password, keyType, true);
   }
 }
 
@@ -377,6 +398,22 @@ class OnlineClient extends Client {
       result: { valid },
     } = await verifyResponse.json();
     return valid;
+  }
+
+  public async register(
+    username: string,
+    password: string,
+    wifKey: string,
+    keyType: KeyAuthorityType) {
+    return super.register(username, password, wifKey, keyType, false);
+  }
+
+  public async authenticate(
+    username: string,
+    password: string,
+    keyType: KeyAuthorityType
+  ) {
+    return super.authenticate(username, password, keyType, false);
   }
 }
 

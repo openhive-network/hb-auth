@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HbAuth Offline Client Test</title>
+</head>
+<body id="auth-container">
+  <script type="importmap">
+    {
+      "imports": {
+        "@hive/hb-auth": "/dist/hb-auth.js",
+        "@hive/wax": "/node_modules/@hive/wax/wasm/dist/bundle/web.js"
+      }
+    }
+  </script>
+  <script type="module">
+    import { OfflineClient } from '@hive/hb-auth';
+
+    Object.defineProperties(window, {
+      AuthOfflineClient: {
+        get() {
+          return OfflineClient;
+        }
+      },
+    });
+  </script>
+</body>
+</html>

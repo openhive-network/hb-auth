@@ -1,6 +1,6 @@
 stages:
-  - test
   - build
+  - test
   - publish
 
 variables:
@@ -11,29 +11,18 @@ variables:
 
 include:
   - project: 'hive/common-ci-configuration'
-    ref: 7c58303ffb61d91ef9662ec20e7b498bc6f62b8f
+    ref: 44d0cec8cfa8fb87d0daf5cef1485fb57b9e26fd
     file:
       - '/templates/wasm_build.gitlab-ci.yml'
-
-test_hb_auth:
-  extends: .job-defaults
-  stage: test
-  script:
-    - echo "TODO run tests"
-    # - pnpm run test
-  tags:
-    - public-runner-docker
 
 build_hb_auth:
   extends: .job-defaults
   stage: build
   image: ${EMSCRIPTEN_IMAGE}
   before_script:
-    - npm ci
+    - pnpm install --frozen-lockfile
   script:
-    - npm run build
-  needs:
-    - job: test_hb_auth
+    - pnpm run build
   tags:
     - public-runner-docker
   artifacts:
@@ -43,6 +32,27 @@ build_hb_auth:
       - "$CI_PROJECT_DIR/README.md"
       - "$CI_PROJECT_DIR/api.md"
       - "$CI_PROJECT_DIR/LICENSE.md"
+
+test_hb_auth:
+  extends: .job-defaults
+  needs: 
+    - job: build_hb_auth
+      artifacts: true
+  stage: test
+  image: ${EMSCRIPTEN_IMAGE}
+  before_script:
+    - pnpm install --frozen-lockfile
+  script:
+    - . "$NVM_DIR/nvm.sh"  # This loads nvm
+    - npm run test
+  tags:
+    - public-runner-docker
+  artifacts:
+    reports:
+      junit: results.xml
+    paths:
+      - "$CI_PROJECT_DIR/results.json"
+
 
 publish_hb_auth:
   extends: .job-defaults

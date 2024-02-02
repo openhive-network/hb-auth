@@ -97,13 +97,14 @@ class AuthWorker {
   public async onAuthComplete(): Promise<void> {
     await this._registration?.clear();
     this._registration = undefined;
-    await this._generator.next()
+    await this._generator?.next()
   }
 
   private async * processNewRegistration(username: string, password: string, wifKey: string, keyType: KeyAuthorityType, digest: string): AsyncGenerator<any> {
     try {
       this._registration = new Registration();
       const signed = await this._registration.request(username, wifKey, digest);
+
       // first yield signed transaction
       yield await Promise.resolve(signed);
 
@@ -112,7 +113,6 @@ class AuthWorker {
     } catch (error: any) {
       // clear registration on error
       await this._registration?.clear();
-
       if (error instanceof AuthorizationError) {
         throw new AuthorizationError(error.message);
       } else {
@@ -213,7 +213,7 @@ class AuthWorker {
       const alias = await this.getAlias(`${username}@${keyType}`);
       const foundKey = keys.find((key) => key === alias?.pubKey);
 
-      if (!foundKey) {
+      if (!foundKey || (this.loggedInUser && this.loggedInUser?.keyType !== keyType)) {
         wallet.unlocked?.lock();
         throw new AuthorizationError('Not authorized, missing authority');
       }

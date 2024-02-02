@@ -5,3 +5,7 @@ coverage/
 dist/
 .parcel-cache
 build/
+results.json
+results.xml
+test-results
+.env*

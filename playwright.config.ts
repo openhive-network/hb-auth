@@ -1,5 +1,8 @@
 // This is a workaround for https://github.com/microsoft/playwright/issues/18282#issuecomment-1612266345
 import { defineConfig } from '@playwright/test';
+import dotenv from 'dotenv';
+
+dotenv.config();
 
 export default defineConfig({
     reporter: [

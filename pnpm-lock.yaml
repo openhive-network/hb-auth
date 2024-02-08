@@ -6,11 +6,11 @@ settings:
 
 dependencies:
   '@hive/beekeeper':
-    specifier: 1.27.2-240117152416
-    version: 1.27.2-240117152416
+    specifier: 1.27.2-240208135851
+    version: 1.27.2-240208135851
   '@hive/wax':
-    specifier: 0.3.8-240116125426
-    version: 0.3.8-240116125426
+    specifier: 0.3.8-240208125103
+    version: 0.3.8-240208125103
   comlink:
     specifier: ^4.4.1
     version: 4.4.1
@@ -1569,13 +1569,13 @@ packages:
     engines: {node: '>= 12'}
     dev: false
 
-  /@hive/beekeeper@1.27.2-240117152416:
-    resolution: {integrity: sha1-uPlZxUXv1SppH6ze02SLcOCnVfs=, tarball: https://gitlab.syncad.com/api/v4/projects/198/packages/npm/@hive/beekeeper/-/@hive/beekeeper-1.27.2-240117152416.tgz}
+  /@hive/beekeeper@1.27.2-240208135851:
+    resolution: {integrity: sha1-MFDsYQ7R0i2uWOEoXCCEprX8ax4=, tarball: https://gitlab.syncad.com/api/v4/projects/198/packages/npm/@hive/beekeeper/-/@hive/beekeeper-1.27.2-240208135851.tgz}
     engines: {node: '>= 12'}
     dev: false
 
-  /@hive/wax@0.3.8-240116125426:
-    resolution: {integrity: sha1-mGasxM5tIpXa1tKVBULz7ze1LGQ=, tarball: https://gitlab.syncad.com/api/v4/projects/419/packages/npm/@hive/wax/-/@hive/wax-0.3.8-240116125426.tgz}
+  /@hive/wax@0.3.8-240208125103:
+    resolution: {integrity: sha1-WSEAuyLMfSg6yHPrj5yoiaeuwPU=, tarball: https://gitlab.syncad.com/api/v4/projects/419/packages/npm/@hive/wax/-/@hive/wax-0.3.8-240208125103.tgz}
     engines: {node: '>= 18'}
     dependencies:
       '@hive/beekeeper': 1.27.2-240110132748

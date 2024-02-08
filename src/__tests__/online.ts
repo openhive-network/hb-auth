@@ -157,6 +157,18 @@ test.describe('HB Auth Online Client base tests', () => {
         expect(authUser).toBeTruthy();
     })
 
+    test('Should return error if user tries to login while already logged in', async () => {
+        const error = await page.evaluate(async ({ username, password, keys }) => {
+            try {
+                await authInstance.authenticate(username, password, keys[0].type as KeyAuthorityType);
+            } catch (error) {
+                return error.message;
+            }
+        }, user)
+
+        expect(error).toBe('User is already logged in');
+    })
+
     test('Should return error if user tries to login with bad authority type', async () => {
         const error = await page.evaluate(async ({ username, password }) => {
             await authInstance.logout();

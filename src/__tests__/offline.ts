@@ -139,7 +139,6 @@ test.describe('HB Auth Offline Client base tests', () => {
         expect(authUser).toBeFalsy();
     });
 
-    // TODO: Fix random fail here Not authorized, missing authority??
     test('Should user login with username and password', async () => {
         const authUser = await page.evaluate(async ({ username, password, keys }) => {
             await authInstance.authenticate(username, password, keys[0].type as KeyAuthorityType);
@@ -147,6 +146,18 @@ test.describe('HB Auth Offline Client base tests', () => {
         }, user)
 
         expect(authUser).toBeTruthy();
+    })
+
+    test('Should return error if user tries to login while already logged in', async () => {
+        const error = await page.evaluate(async ({ username, password, keys }) => {
+            try {
+                await authInstance.authenticate(username, password, keys[0].type as KeyAuthorityType);
+            } catch (error) {
+                return error.message;
+            }
+        }, user)
+
+        expect(error).toBe('User is already logged in');
     })
 
     test('Should return error if user tries to login with bad authority type', async () => {

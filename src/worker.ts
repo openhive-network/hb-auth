@@ -187,7 +187,11 @@ class AuthWorker {
       if (error instanceof AuthorizationError) {
         throw new AuthorizationError(error.message);
       } else {
-        throw new InternalError(error);
+        if (String(error).includes("already")) {
+          throw new AuthorizationError("User is already logged in");
+        } else {
+          throw new InternalError(error);
+        }
       }
     }
   }
@@ -378,7 +382,7 @@ class Auth {
     try {
       const wallet = await (await this.getWorker()).getWallet(username);
       const loggedInUser = (await this.getWorker()).loggedInUser;
-      
+
       if (!wallet) return null;
 
       return {
@@ -395,7 +399,7 @@ class Auth {
     try {
       const wallets = await (await this.getWorker()).getWallets();
       const loggedInUser = (await this.getWorker()).loggedInUser;
-      
+
       return wallets.map(({ unlocked, name }) => ({
         authorized: !!unlocked,
         username: name,

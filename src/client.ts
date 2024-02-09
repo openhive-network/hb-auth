@@ -1,4 +1,4 @@
-import { TBlockHash, createWaxFoundation } from "@hive/wax";
+import { TBlockHash, createHiveChain } from "@hive/wax";
 import {
   proxy,
   wrap,
@@ -93,7 +93,7 @@ abstract class Client {
    * @param clientOptions @type {ClientOptions} - Options
    */
   constructor(private readonly clientOptions: Partial<ClientOptions> = defaultOptions) {
-    this.options = {...clientOptions} as ClientOptions;
+    this.options = { ...clientOptions } as ClientOptions;
     if (!isSupportWebWorker) {
       throw new GenericError(
         `WebWorker support is required for running this library.
@@ -182,23 +182,14 @@ abstract class Client {
     offline?: boolean
   ): Promise<string> {
     let head_block_id: TBlockHash = '04e3256d94edee6ac72add19c1439260fbb00701';
+    const chain = await createHiveChain({ apiEndpoint: this.options.node });
 
     if (!offline) {
-      const dynamicGlobalProps = await fetch(this.options.node, {
-        method: "post",
-        body: JSON.stringify({
-          jsonrpc: "2.0",
-          method: "database_api.get_dynamic_global_properties",
-          id: 1,
-        }),
-      });
 
-      const props = await dynamicGlobalProps.json();
-      head_block_id = props.result.head_block_id;
+      const props = await chain.api.database_api.get_dynamic_global_properties({})
+      head_block_id = props.head_block_id;
     }
-
-    const wax = await createWaxFoundation();
-    const tx = new wax.TransactionBuilder(head_block_id, "+1m");
+    const tx = new chain.TransactionBuilder(head_block_id, "+1m");
 
     if (keyType === "posting") {
       tx.push({

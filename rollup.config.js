@@ -12,8 +12,7 @@ const name = require("./package.json").main.replace(/\.js$/, "").replace(".mjs",
 
 const bundle = (config) => ({
   ...config,
-  input: ["src/index.ts"],
-  // external: (id) => !/^[./]/.test(id)
+  input: ["src/index.ts"]
 });
 
 export default [
@@ -21,8 +20,7 @@ export default [
     output: [
       {
         file: `${name}.js`,
-        format: "es",
-        sourcemap: true,
+        format: "es"
       },
     ],
     plugins: [
@@ -45,7 +43,7 @@ export default [
     plugins: [
       esbuild(),
       resolve({
-        moduleDirectories: ['node_modules', 'src']
+        moduleDirectories: ['node_modules', 'src'],
       }),
       commonjs()
     ]

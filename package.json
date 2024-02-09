@@ -34,15 +34,16 @@
     "LICENSE.md",
     "README.md",
     "api.md",
-    "dist/**/*.d.ts",
-    "dist/**/*.js",
-    "dist/**/*.mjs"
+    "dist/hb-auth.d.ts",
+    "dist/hb-auth.js",
+    "dist/worker.js"
   ],
   "devDependencies": {
     "@babel/core": "^7.22.9",
     "@babel/preset-env": "^7.22.9",
     "@babel/preset-typescript": "^7.22.5",
     "@playwright/test": "^1.39.0",
+    "@rollup/plugin-commonjs": "^25.0.7",
     "@rollup/plugin-node-resolve": "^15.2.1",
     "@rollup/plugin-replace": "^5.0.2",
     "@rollup/plugin-terser": "^0.4.3",

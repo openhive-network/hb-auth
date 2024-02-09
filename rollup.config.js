@@ -1,6 +1,7 @@
 import _dts from "rollup-plugin-dts";
 import _esbuild from "rollup-plugin-esbuild";
 import terser from "@rollup/plugin-terser";
+import commonjs from "@rollup/plugin-commonjs";
 import resolve from "@rollup/plugin-node-resolve";
 import replace from "@rollup/plugin-replace";
 
@@ -11,18 +12,15 @@ const name = require("./package.json").main.replace(/\.js$/, "").replace(".mjs",
 
 const bundle = (config) => ({
   ...config,
-  input: ["src/index.ts"],
-  external: (id) => !/^[./]/.test(id)
+  input: ["src/index.ts"]
 });
 
 export default [
-  
   bundle({
     output: [
       {
         file: `${name}.js`,
-        format: "es",
-        sourcemap: true,
+        format: "es"
       },
     ],
     plugins: [
@@ -33,6 +31,22 @@ export default [
         preventAssignment: true,
       }),
     ],
+  }),
+  bundle({
+    output: [
+      {
+        file: `${name}.full.js`,
+        format: 'es',
+        sourcemap: false
+      }
+    ],
+    plugins: [
+      esbuild(),
+      resolve({
+        moduleDirectories: ['node_modules', 'src'],
+      }),
+      commonjs()
+    ]
   }),
   bundle({
     plugins: [dts()],

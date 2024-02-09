@@ -5,7 +5,7 @@ import {
   type Endpoint,
   type Remote,
   type Local,
-} from "../node_modules/comlink/dist/esm/comlink";
+} from "comlink";
 import { AuthorizationError, GenericError } from "./errors";
 import { isSupportSharedWorker, isSupportWebWorker } from "./environment";
 // import workerString from "worker";

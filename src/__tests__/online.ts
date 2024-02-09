@@ -47,8 +47,7 @@ test.describe('HB Auth Online Client base tests', () => {
 
         browserContext = await browser.newContext();
         page = await browserContext.newPage();
-        await page.goto(`http://localhost:8080/src/__tests__/assets/online.html`);
-        await page.waitForURL('**/online.html', { waitUntil: 'load' });
+        await page.goto(`http://localhost:8080/src/__tests__/assets/online.html`, { waitUntil: 'load' });
     });
 
     test.beforeEach(async ({ page }) => {
@@ -225,8 +224,7 @@ test.describe('HB Auth Online Client base tests', () => {
 
     test('Should user session should remain in new tab', async () => {
         const newTab = await browserContext.newPage();
-        await newTab.goto(`http://localhost:8080/src/__tests__/assets/online.html`);
-        await newTab.waitForURL('**/online.html', { waitUntil: 'load' });
+        await newTab.goto(`http://localhost:8080/src/__tests__/assets/online.html`, { waitUntil: 'load' });
 
         const authorized = await newTab.evaluate(async ({ username }) => {
             // get new instance on new page

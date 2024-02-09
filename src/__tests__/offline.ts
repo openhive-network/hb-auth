@@ -49,8 +49,7 @@ test.describe('HB Auth Offline Client base tests', () => {
 
         browserContext = await browser.newContext();
         page = await browserContext.newPage();
-        await page.goto(`http://localhost:8080/src/__tests__/assets/offline.html`);
-        await page.waitForURL('**/offline.html', { waitUntil: 'load' });
+        await page.goto(`http://localhost:8080/src/__tests__/assets/offline.html`, { waitUntil: 'load' });
     });
 
     test.beforeEach(async ({ page }) => {
@@ -216,8 +215,7 @@ test.describe('HB Auth Offline Client base tests', () => {
 
     test('Should user session should remain in new tab', async () => {
         const newTab = await browserContext.newPage();
-        await newTab.goto(`http://localhost:8080/src/__tests__/assets/offline.html`);
-        await newTab.waitForURL('**/offline.html', { waitUntil: 'load' });
+        await newTab.goto(`http://localhost:8080/src/__tests__/assets/offline.html`, { waitUntil: 'load' });
 
         const authorized = await newTab.evaluate(async ({ username }) => {
             // get new instance on new page

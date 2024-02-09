@@ -6,25 +6,34 @@
 
 **hb-auth** is written in TypeScript, so out of the box it gives you clear API spec. 
 
+### [Important!] Having worker file configured
+
+This is a crucial step for having **hb-auth** work since it is based on WebWorkers. There is a file called `worker.js` in `@hive/hb-auth` package. It should be copied in your `public` folder where you serve your application. And path from your `public` folder should be defined in client options while creating new instance as below. Default value is `/auth/worker.js`
+
+```
+new OnlineClient({ workerUrl: "/your/path/to/worker.js" })
+new OfflineClient({ workerUrl: "/your/path/to/worker.js" })
+```
+
 #### Example usage
 
 As a an example you can check `example` in this project. This is an application that demonstrates user flow (register, login and logout).
 
 To run example project do following:
 
-First you should install packages and build **hb-auth** locally, run following commands in root folder of this repository:
+First you should install packages and build **hb-auth** locally. **hb-auth** uses [pnpm](https://pnpm.io/). Run following commands in root folder of this repository:
 
 ```
-npm install
-npm run build
+pnpm install
+pnpm run build
 ```
 
 After having **hb-auth** freshly build, build and run `example` project.
 
 ```
 cd example
-npm install
-npm start
+pnpm install
+pnpm start
 ```
 
 #### Install for your web application

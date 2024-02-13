@@ -16,13 +16,16 @@ git config --global --add safe.directory '*'
 git fetch --tags
 
 SHORT_HASH=$(git rev-parse --short HEAD)
+REV_HASH=$(git rev-parse HEAD)
 CURRENT_BRANCH_IMPL=$(git branch -r --contains "${SHORT_HASH}")
 if [ "${CURRENT_BRANCH_IMPL}" = "" ]; then
   CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
 else
   CURRENT_BRANCH="${CURRENT_BRANCH_IMPL#*/}"
 fi
-TAG=$(git tag --sort=taggerdate | grep -Eo '[0-9]+\.[0-9]+\.[0-9]+(-.+)?' | tail -1)
+GIT_COMMIT_TIME=$(TZ=UTC0 git show --quiet --date='format-local:%Y%m%d%H%M%S' --format="%cd")
+TAG_TIME=${GIT_COMMIT_TIME:2}
+TAG=$(git tag --sort=-taggerdate | grep -Eo '[0-9]+\.[0-9]+\.[0-9]+(-.+)?' | tail -1)
 
 echo "Preparing npm packge for ${CURRENT_BRANCH}@${TAG} (#${SHORT_HASH})"
 
@@ -39,10 +42,10 @@ if [ "$CURRENT_BRANCH" = "master" ]; then
   NEW_VERSION="${TAG}"
 elif [ "$CURRENT_BRANCH" = "develop" ]; then
   DIST_TAG="stable"
-  NEW_VERSION="${TAG}-stable.${SHORT_HASH}"
+  NEW_VERSION="${TAG}-stable.${TAG_TIME}"
 else
   DIST_TAG="dev"
-  NEW_VERSION="${TAG}-${SHORT_HASH}"
+  NEW_VERSION="${TAG}-${TAG_TIME}"
 fi
 
 git checkout "${PROJECT_DIR}/package.json" # be sure we're on clean version

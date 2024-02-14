@@ -1,4 +1,4 @@
-import { TBlockHash, createHiveChain } from "@hive/wax";
+import { ITransactionBuilder, TBlockHash, createHiveChain } from "@hive/wax";
 import {
   proxy,
   wrap,
@@ -44,13 +44,20 @@ export interface ClientOptions {
    * @defaultValue `"/auth/worker.js"`
    */
   workerUrl: string;
+  /**
+   * @description Strict authorization by checking if public key in signature matches user's public key, so other authorities will be ignored
+   * @type {boolean}
+   * @defaultValue `true`
+   */
+  strict: boolean;
 }
 
 /* @hidden */
 const defaultOptions: ClientOptions = {
   chainId: "beeab0de00000000000000000000000000000000000000000000000000000000",
   node: "https://api.hive.blog",
-  workerUrl: "/auth/worker.js"
+  workerUrl: "/auth/worker.js",
+  strict: true
 };
 
 /**
@@ -92,7 +99,7 @@ abstract class Client {
    * @description Additional options for auth client
    * @param clientOptions @type {ClientOptions} - Options
    */
-  constructor(private readonly clientOptions: Partial<ClientOptions> = defaultOptions) {
+  constructor(private readonly clientOptions: ClientOptions = defaultOptions) {
     this.options = { ...clientOptions } as ClientOptions;
     if (!isSupportWebWorker) {
       throw new GenericError(
@@ -176,11 +183,11 @@ abstract class Client {
   }
 
   /** @hidden */
-  private async getVerificationDigest(
+  private async getVerificationTx(
     username: string,
     keyType: KeyAuthorityType,
     offline?: boolean
-  ): Promise<string> {
+  ): Promise<ITransactionBuilder> {
     let head_block_id: TBlockHash = '04e3256d94edee6ac72add19c1439260fbb00701';
     const chain = await createHiveChain({ apiEndpoint: this.options.node });
 
@@ -190,7 +197,7 @@ abstract class Client {
       head_block_id = props.head_block_id;
     }
     const tx = new chain.TransactionBuilder(head_block_id, "+1m");
-
+    
     if (keyType === "posting") {
       tx.push({
         vote: {
@@ -206,7 +213,7 @@ abstract class Client {
       });
     }
 
-    return tx.sigDigest;
+    return tx;
   }
 
   /**
@@ -225,17 +232,17 @@ abstract class Client {
     keyType: KeyAuthorityType,
     offline?: boolean
   ): Promise<AuthStatus> {
-    const digest = await this.getVerificationDigest(username, keyType, offline);
+    const tx = await this.getVerificationTx(username, keyType, offline);
     const signature = await this.#auth.register(
       username,
       password,
       wifKey,
       keyType,
-      digest,
+      tx.sigDigest,
     );
     const authenticated = await this.authorize(
       username,
-      digest,
+      tx.sigDigest,
       signature,
       keyType,
     );
@@ -262,16 +269,16 @@ abstract class Client {
     offline?: boolean
   ): Promise<AuthStatus> {
     try {
-      const digest = await this.getVerificationDigest(username, keyType, offline);
+      const tx = await this.getVerificationTx(username, keyType, offline);
       const signature = await this.#auth.authenticate(
         username,
         password,
         keyType,
-        digest,
+        tx.sigDigest,
       );
       const authenticated = await this.authorize(
         username,
-        digest,
+        tx.sigDigest,
         signature,
         keyType,
       );

@@ -81,7 +81,7 @@ for imported keys' validity.
 
 | Name | Type |
 | :------ | :------ |
-| `clientOptions?` | `Partial`\<[`ClientOptions`](#interfacesclientoptionsmd)\> |
+| `clientOptions?` | [`ClientOptions`](#interfacesclientoptionsmd) |
 
 #### Returns
 
@@ -97,7 +97,7 @@ Client.constructor
 
 #### Defined in
 
-hb-auth.d.ts:85
+hb-auth.d.ts:91
 
 ## Properties
 
@@ -111,7 +111,7 @@ Client.#private
 
 #### Defined in
 
-hb-auth.d.ts:69
+hb-auth.d.ts:75
 
 ## Methods
 
@@ -137,7 +137,7 @@ Client.authenticate
 
 #### Defined in
 
-hb-auth.d.ts:158
+hb-auth.d.ts:164
 
 ___
 
@@ -155,7 +155,7 @@ Client.authorize
 
 #### Defined in
 
-hb-auth.d.ts:156
+hb-auth.d.ts:162
 
 ___
 
@@ -184,7 +184,7 @@ Client.getAuthByUser
 
 #### Defined in
 
-hb-auth.d.ts:115
+hb-auth.d.ts:121
 
 ___
 
@@ -207,7 +207,7 @@ Client.getAuths
 
 #### Defined in
 
-hb-auth.d.ts:108
+hb-auth.d.ts:114
 
 ___
 
@@ -230,7 +230,7 @@ Client.initialize
 
 #### Defined in
 
-hb-auth.d.ts:96
+hb-auth.d.ts:102
 
 ___
 
@@ -257,7 +257,7 @@ Client.logout
 
 #### Defined in
 
-hb-auth.d.ts:140
+hb-auth.d.ts:146
 
 ___
 
@@ -284,7 +284,7 @@ Client.register
 
 #### Defined in
 
-hb-auth.d.ts:157
+hb-auth.d.ts:163
 
 ___
 
@@ -312,7 +312,7 @@ Client.setSessionEndCallback
 
 #### Defined in
 
-hb-auth.d.ts:102
+hb-auth.d.ts:108
 
 ___
 
@@ -344,7 +344,7 @@ Client.sign
 
 #### Defined in
 
-hb-auth.d.ts:148
+hb-auth.d.ts:154
 
 
 <a name="classesonlineclientmd"></a>
@@ -372,7 +372,7 @@ user by verifying user's signature through the network.
 
 | Name | Type |
 | :------ | :------ |
-| `clientOptions?` | `Partial`\<[`ClientOptions`](#interfacesclientoptionsmd)\> |
+| `clientOptions?` | [`ClientOptions`](#interfacesclientoptionsmd) |
 
 #### Returns
 
@@ -388,7 +388,7 @@ Client.constructor
 
 #### Defined in
 
-hb-auth.d.ts:85
+hb-auth.d.ts:91
 
 ## Properties
 
@@ -402,7 +402,7 @@ Client.#private
 
 #### Defined in
 
-hb-auth.d.ts:69
+hb-auth.d.ts:75
 
 ___
 
@@ -412,7 +412,7 @@ ___
 
 #### Defined in
 
-hb-auth.d.ts:166
+hb-auth.d.ts:172
 
 ## Methods
 
@@ -438,7 +438,7 @@ Client.authenticate
 
 #### Defined in
 
-hb-auth.d.ts:168
+hb-auth.d.ts:174
 
 ___
 
@@ -465,7 +465,7 @@ Client.authorize
 
 #### Defined in
 
-hb-auth.d.ts:165
+hb-auth.d.ts:171
 
 ___
 
@@ -494,7 +494,7 @@ Client.getAuthByUser
 
 #### Defined in
 
-hb-auth.d.ts:115
+hb-auth.d.ts:121
 
 ___
 
@@ -517,7 +517,7 @@ Client.getAuths
 
 #### Defined in
 
-hb-auth.d.ts:108
+hb-auth.d.ts:114
 
 ___
 
@@ -540,7 +540,7 @@ Client.initialize
 
 #### Defined in
 
-hb-auth.d.ts:96
+hb-auth.d.ts:102
 
 ___
 
@@ -567,7 +567,7 @@ Client.logout
 
 #### Defined in
 
-hb-auth.d.ts:140
+hb-auth.d.ts:146
 
 ___
 
@@ -594,7 +594,7 @@ Client.register
 
 #### Defined in
 
-hb-auth.d.ts:167
+hb-auth.d.ts:173
 
 ___
 
@@ -622,7 +622,7 @@ Client.setSessionEndCallback
 
 #### Defined in
 
-hb-auth.d.ts:102
+hb-auth.d.ts:108
 
 ___
 
@@ -654,7 +654,7 @@ Client.sign
 
 #### Defined in
 
-hb-auth.d.ts:148
+hb-auth.d.ts:154
 
 
 <a name="interfacesauthstatusmd"></a>
@@ -766,6 +766,24 @@ Blockchain Node address for online account verification
 #### Defined in
 
 hb-auth.d.ts:57
+
+___
+
+### strict
+
+• **strict**: `boolean`
+
+**`Description`**
+
+Strict authorization by checking if public key in signature matches user's public key
+
+**`Default Value`**
+
+`true`
+
+#### Defined in
+
+hb-auth.d.ts:69
 
 ___
 

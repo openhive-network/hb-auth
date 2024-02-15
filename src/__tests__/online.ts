@@ -80,7 +80,7 @@ test.describe('HB Auth Online Client base tests', () => {
     test.skip('Should throw error if there is no worker file found', async () => {
         const err = await page.evaluate(async () => {
             try {
-                const instance = new AuthOnlineClient();
+                const instance = new AuthOnlineClient(false);
                 await instance.initialize();
             } catch (error) {
                 return true;
@@ -92,7 +92,7 @@ test.describe('HB Auth Online Client base tests', () => {
 
     test('Should be able to create new OnlineClient instance', async () => {
         await page.evaluate(async () => {
-            authInstance = new AuthOnlineClient({ workerUrl: "/dist/worker.js", node: "https://api.hive.blog" });
+            authInstance = new AuthOnlineClient(false, { workerUrl: "/dist/worker.js", node: "https://api.hive.blog" });
             await authInstance.initialize();
         })
     });
@@ -228,7 +228,7 @@ test.describe('HB Auth Online Client base tests', () => {
 
         const authorized = await newTab.evaluate(async ({ username }) => {
             // get new instance on new page
-            const newAuthInstance = new AuthOnlineClient({ workerUrl: "/dist/worker.js" });
+            const newAuthInstance = new AuthOnlineClient(false, { workerUrl: "/dist/worker.js" });
             await newAuthInstance.initialize();
             return (await newAuthInstance.getAuthByUser(username))?.authorized;
         }, user);

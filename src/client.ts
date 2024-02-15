@@ -1,4 +1,4 @@
-import { ITransactionBuilder, TBlockHash, createHiveChain } from "@hive/wax";
+import { IHiveChainInterface, ITransactionBuilder, createHiveChain } from "@hive/wax";
 import {
   proxy,
   wrap,
@@ -8,7 +8,6 @@ import {
 } from "comlink";
 import { AuthorizationError, GenericError } from "./errors";
 import { isSupportSharedWorker, isSupportWebWorker } from "./environment";
-// import workerString from "worker";
 import type { Auth, WorkerExpose, AuthUser, KeyAuthorityType } from "./worker";
 export type { AuthUser, KeyAuthorityType };
 
@@ -44,20 +43,13 @@ export interface ClientOptions {
    * @defaultValue `"/auth/worker.js"`
    */
   workerUrl: string;
-  /**
-   * @description Strict authorization by checking if public key in signature matches user's public key, so other authorities will be ignored
-   * @type {boolean}
-   * @defaultValue `true`
-   */
-  strict: boolean;
 }
 
 /* @hidden */
 const defaultOptions: ClientOptions = {
   chainId: "beeab0de00000000000000000000000000000000000000000000000000000000",
   node: "https://api.hive.blog",
-  workerUrl: "/auth/worker.js",
-  strict: true
+  workerUrl: "/auth/worker.js"
 };
 
 /**
@@ -69,7 +61,11 @@ abstract class Client {
   /** @hidden */
   #options!: ClientOptions;
   /** @hidden */
+  #strict!: boolean;
+  /** @hidden */
   #auth!: Local<Auth>;
+  /** @hidden */
+  #hiveChain!: IHiveChainInterface;
   /** @hidden */
   #sessionEndCallback: () => Promise<void> = async () => { };
 
@@ -83,6 +79,16 @@ abstract class Client {
     return this.#options;
   }
 
+  /** @hidden */
+  protected set isStrict(strict: boolean) {
+    this.#strict = strict;
+  }
+
+  /** @hidden */
+  protected get isStrict(): boolean {
+    return this.#strict;
+  }
+
   /**
    * @hidden
    * Authentication method to implement in derived classes
@@ -90,16 +96,17 @@ abstract class Client {
    */
   protected abstract authorize(
     username: string,
-    digest: string,
-    signature: string,
+    txBuilder: ITransactionBuilder,
     keyType: KeyAuthorityType,
   ): Promise<boolean>;
 
   /**
    * @description Additional options for auth client
+   * @param strict @type {boolean} - Strict authorization by checking if public key in signature matches user's public key, so other authorities will be ignored
    * @param clientOptions @type {ClientOptions} - Options
    */
-  constructor(private readonly clientOptions: ClientOptions = defaultOptions) {
+  constructor(private readonly strict: boolean, private readonly clientOptions: Partial<ClientOptions> = defaultOptions) {
+    this.isStrict = strict;
     this.options = { ...clientOptions } as ClientOptions;
     if (!isSupportWebWorker) {
       throw new GenericError(
@@ -146,6 +153,7 @@ abstract class Client {
     try {
       await this.loadWebWorker();
       this.#auth = await new this.#worker.Auth();
+      this.#hiveChain = await createHiveChain({ apiEndpoint: this.options.node, chainId: this.options.chainId });
 
       return Promise.resolve(this);
     } catch (err) {
@@ -188,18 +196,16 @@ abstract class Client {
     keyType: KeyAuthorityType,
     offline?: boolean
   ): Promise<ITransactionBuilder> {
-    let head_block_id: TBlockHash = '04e3256d94edee6ac72add19c1439260fbb00701';
-    const chain = await createHiveChain({ apiEndpoint: this.options.node });
+    let txBuilder: ITransactionBuilder;
 
-    if (!offline) {
-
-      const props = await chain.api.database_api.get_dynamic_global_properties({})
-      head_block_id = props.head_block_id;
+    if (offline) {
+      txBuilder = new this.#hiveChain.TransactionBuilder('04e3256d94edee6ac72add19c1439260fbb00701', "+1m");
+    } else {
+      txBuilder = await this.#hiveChain.getTransactionBuilder("+1m");
     }
-    const tx = new chain.TransactionBuilder(head_block_id, "+1m");
-    
+
     if (keyType === "posting") {
-      tx.push({
+      txBuilder.push({
         vote: {
           voter: username,
           author: "author",
@@ -208,12 +214,14 @@ abstract class Client {
         },
       });
     } else {
-      tx.push({
+      txBuilder.push({
         limit_order_cancel: { owner: username, orderid: 0 },
       });
     }
 
-    return tx;
+    txBuilder.validate();
+
+    return txBuilder;
   }
 
   /**
@@ -232,20 +240,23 @@ abstract class Client {
     keyType: KeyAuthorityType,
     offline?: boolean
   ): Promise<AuthStatus> {
-    const tx = await this.getVerificationTx(username, keyType, offline);
+    const txBuilder = await this.getVerificationTx(username, keyType, offline);
     const signature = await this.#auth.register(
       username,
       password,
       wifKey,
       keyType,
-      tx.sigDigest,
+      txBuilder.sigDigest
     );
+
+    txBuilder.build(signature);
+
     const authenticated = await this.authorize(
       username,
-      tx.sigDigest,
-      signature,
+      txBuilder,
       keyType,
     );
+
     if (authenticated) {
       await this.#auth.onAuthComplete();
       return Promise.resolve({ ok: true });
@@ -269,17 +280,19 @@ abstract class Client {
     offline?: boolean
   ): Promise<AuthStatus> {
     try {
-      const tx = await this.getVerificationTx(username, keyType, offline);
+      const txBuilder = await this.getVerificationTx(username, keyType, offline);
       const signature = await this.#auth.authenticate(
         username,
         password,
         keyType,
-        tx.sigDigest,
+        txBuilder.sigDigest,
       );
+
+      txBuilder.build(signature);
+
       const authenticated = await this.authorize(
         username,
-        tx.sigDigest,
-        signature,
+        txBuilder,
         keyType,
       );
 
@@ -354,11 +367,16 @@ class OfflineClient extends Client {
 class OnlineClient extends Client {
   protected async authorize(
     username: string,
-    digest: string,
-    signature: string,
+    txBuilder: ITransactionBuilder,
     keyType: KeyAuthorityType,
   ): Promise<boolean> {
-    return await this.verify(username, digest, signature, keyType);
+    const verificationResult = await this.verify(username, txBuilder.sigDigest, txBuilder.build().signatures[0], keyType);
+
+    if (this.isStrict && verificationResult) {
+      //
+    }
+
+    return verificationResult;
   }
 
   private async verify(

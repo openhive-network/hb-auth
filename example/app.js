@@ -1,11 +1,11 @@
-import { OnlineClient } from "@hive/hb-auth";
+import { OfflineClient } from "@hive/hb-auth";
 
 const CHAIN_ID =
   "beeab0de00000000000000000000000000000000000000000000000000000000";
 const MY_USER = "ngc1559";
 
 // create new client instance
-const client = new OnlineClient();
+const client = new OfflineClient(false);
 
 // Initialize auth client first!
 client.initialize().then(async (authClient) => {

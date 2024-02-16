@@ -1,7 +1,7 @@
-import { type ChromiumBrowser, type ConsoleMessage, chromium, Page, BrowserContext } from 'playwright';
+import { type ChromiumBrowser, type ConsoleMessage, chromium, type Page, type BrowserContext } from 'playwright';
 import { test, expect } from '@playwright/test';
 
-import { KeyAuthorityType, OfflineClient } from '../../dist/hb-auth';
+import { type KeyAuthorityType, OfflineClient } from '../../dist/hb-auth';
 
 declare const AuthOfflineClient: typeof OfflineClient;
 
@@ -49,10 +49,11 @@ test.describe('HB Auth Offline Client base tests', () => {
 
         browserContext = await browser.newContext();
         page = await browserContext.newPage();
+
         await page.goto(`http://localhost:8080/src/__tests__/assets/offline.html`, { waitUntil: 'load' });
     });
 
-    test.beforeEach(async ({ page }) => {
+    test.beforeEach(async () => {
         page.on('console', (msg: ConsoleMessage) => {
             console.log('>>', msg.type(), msg.text())
         });

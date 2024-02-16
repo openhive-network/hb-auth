@@ -1,4 +1,4 @@
-import { IHiveChainInterface, ITransactionBuilder, createHiveChain } from "@hive/wax";
+import { type IHiveChainInterface, type ITransactionBuilder, createHiveChain } from "@hive/wax";
 import {
   proxy,
   wrap,
@@ -105,9 +105,9 @@ abstract class Client {
    * @param strict @type {boolean} - Strict authorization by checking if public key in signature matches user's public key, so other authorities will be ignored
    * @param clientOptions @type {ClientOptions} - Options
    */
-  constructor(private readonly strict: boolean, private readonly clientOptions: Partial<ClientOptions> = defaultOptions) {
+  constructor(private readonly strict: boolean, private readonly clientOptions: Partial<ClientOptions> = {}) {
     this.isStrict = strict;
-    this.options = { ...clientOptions } as ClientOptions;
+    this.options = {...defaultOptions, ...clientOptions};
     if (!isSupportWebWorker) {
       throw new GenericError(
         `WebWorker support is required for running this library.
@@ -347,16 +347,16 @@ class OfflineClient extends Client {
     username: string,
     password: string,
     wifKey: string,
-    keyType: KeyAuthorityType) {
-    return super.register(username, password, wifKey, keyType, true);
+    keyType: KeyAuthorityType): Promise<AuthStatus> {
+    return await super.register(username, password, wifKey, keyType, true);
   }
 
   public async authenticate(
     username: string,
     password: string,
     keyType: KeyAuthorityType
-  ) {
-    return super.authenticate(username, password, keyType, true);
+  ): Promise<AuthStatus> {
+    return await super.authenticate(username, password, keyType, true);
   }
 }
 
@@ -420,16 +420,16 @@ class OnlineClient extends Client {
     username: string,
     password: string,
     wifKey: string,
-    keyType: KeyAuthorityType) {
-    return super.register(username, password, wifKey, keyType, false);
+    keyType: KeyAuthorityType): Promise<AuthStatus> {
+    return await super.register(username, password, wifKey, keyType, false);
   }
 
   public async authenticate(
     username: string,
     password: string,
     keyType: KeyAuthorityType
-  ) {
-    return super.authenticate(username, password, keyType, false);
+  ): Promise<AuthStatus> {
+    return await super.authenticate(username, password, keyType, false);
   }
 }
 

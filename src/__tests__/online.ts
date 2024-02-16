@@ -1,7 +1,7 @@
-import { type ChromiumBrowser, type ConsoleMessage, chromium, Page, BrowserContext } from 'playwright';
+import { type ChromiumBrowser, type ConsoleMessage, chromium, type Page, type BrowserContext } from 'playwright';
 import { test, expect } from '@playwright/test';
 
-import { KeyAuthorityType, OnlineClient } from '../../dist/hb-auth';
+import { type KeyAuthorityType, OnlineClient } from '../../dist/hb-auth';
 
 declare const AuthOnlineClient: typeof OnlineClient;
 
@@ -50,7 +50,7 @@ test.describe('HB Auth Online Client base tests', () => {
         await page.goto(`http://localhost:8080/src/__tests__/assets/online.html`, { waitUntil: 'load' });
     });
 
-    test.beforeEach(async ({ page }) => {
+    test.beforeEach(async () => {
         page.on('console', (msg: ConsoleMessage) => {
             console.log('>>', msg.type(), msg.text())
         });

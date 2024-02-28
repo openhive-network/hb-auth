@@ -94,10 +94,16 @@ class AuthWorker {
     this.sessionEndCallback = callback;
   }
 
-  public async onAuthComplete(): Promise<void> {
+  public async onAuthComplete(failed?: boolean): Promise<void> {
     await this._registration?.clear();
     this._registration = undefined;
-    await this._generator?.next()
+
+    if (failed) {
+      await this._generator.throw(new AuthorizationError("Invalid credentials"));
+    } else {
+      await this._generator?.next()
+    }
+
   }
 
   private async * processNewRegistration(username: string, password: string, wifKey: string, keyType: KeyAuthorityType, digest: string): AsyncGenerator<any> {
@@ -113,6 +119,7 @@ class AuthWorker {
     } catch (error: any) {
       // clear registration on error
       await this._registration?.clear();
+
       if (error instanceof AuthorizationError) {
         throw new AuthorizationError(error.message);
       } else {
@@ -339,8 +346,8 @@ class Auth {
     ).registerUser(username, password, wifKey, keyType, digest);
   }
 
-  public async onAuthComplete(): Promise<void> {
-    await (await this.getWorker()).onAuthComplete();
+  public async onAuthComplete(failed: boolean): Promise<void> {
+    await (await this.getWorker()).onAuthComplete(failed);
   }
 
   public async unregister(

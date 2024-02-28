@@ -8,5 +8,5 @@ build/
 results.json
 results.xml
 test-results
-.env*
+.env
 src/__tests__/assets/auth/

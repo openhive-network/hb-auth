@@ -51,8 +51,8 @@ packages:
     engines: {node: '>= 12'}
     dev: false
 
-  /@hive/wax@0.3.8-240208125103:
-    resolution: {integrity: sha1-WSEAuyLMfSg6yHPrj5yoiaeuwPU=, tarball: https://gitlab.syncad.com/api/v4/projects/419/packages/npm/@hive/wax/-/@hive/wax-0.3.8-240208125103.tgz}
+  /@hive/wax@0.3.8-240228091712:
+    resolution: {integrity: sha1-/TUEa8AtnmW4JSrd3X+T8ZuN0ks=, tarball: https://gitlab.syncad.com/api/v4/projects/419/packages/npm/@hive/wax/-/@hive/wax-0.3.8-240228091712.tgz}
     engines: {node: '>= 18'}
     dependencies:
       '@hive/beekeeper': 1.27.2-240110132748
@@ -2074,7 +2074,7 @@ packages:
     name: '@hive/hb-auth'
     dependencies:
       '@hive/beekeeper': 1.27.2-240208135851
-      '@hive/wax': 0.3.8-240208125103
+      '@hive/wax': 0.3.8-240228091712
       comlink: 4.4.1
       idb: 7.1.1
     dev: false

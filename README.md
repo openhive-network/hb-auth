@@ -11,7 +11,8 @@
 This is a crucial step for having **hb-auth** work since it is based on WebWorkers. There is a file called `worker.js` in `@hive/hb-auth` package. It should be copied in your `public` folder where you serve your application. And path from your `public` folder should be defined in client options while creating new instance as below. Default value is `/auth/worker.js`
 
 ```
-new OnlineClient({ workerUrl: "/your/path/to/worker.js" })
+new OnlineClient(false, { workerUrl: "/your/path/to/worker.js" })
+// or
 new OfflineClient({ workerUrl: "/your/path/to/worker.js" })
 ```
 
@@ -48,7 +49,7 @@ So, to access that library, add `.npmrc` file on you project's root with followi
 
 After having `.npmrc` file added, you can install package:
 
-`npm install @hive/hb-auth`
+`npm install @hive/hb-auth@stable`
 
 #### API Documentation
 

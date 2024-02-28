@@ -83,7 +83,7 @@ test.describe('HB Auth Offline Client base tests', () => {
     test.skip('Should throw error if there is no worker file found', async () => {
         const err = await page.evaluate(async () => {
             try {
-                const instance = new AuthOfflineClient(false);
+                const instance = new AuthOfflineClient();
                 await instance.initialize();
             } catch (error) {
                 return true;
@@ -95,7 +95,7 @@ test.describe('HB Auth Offline Client base tests', () => {
 
     test('Should be able to create new OfflineClient instance', async () => {
         await page.evaluate(async () => {
-            authInstance = new AuthOfflineClient(false, { workerUrl: "/dist/worker.js" });
+            authInstance = new AuthOfflineClient({ workerUrl: "/dist/worker.js" });
             await authInstance.initialize();
         })
     });
@@ -220,7 +220,7 @@ test.describe('HB Auth Offline Client base tests', () => {
 
         const authorized = await newTab.evaluate(async ({ username }) => {
             // get new instance on new page
-            const newAuthInstance = new AuthOfflineClient(false, { workerUrl: "/dist/worker.js" });
+            const newAuthInstance = new AuthOfflineClient({ workerUrl: "/dist/worker.js" });
             await newAuthInstance.initialize();
             return (await newAuthInstance.getAuthByUser(username))?.authorized;
         }, user);

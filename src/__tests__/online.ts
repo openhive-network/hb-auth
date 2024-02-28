@@ -19,6 +19,10 @@ const user = {
             type: 'active',
             private: process.env.CI_TEST_USER_WIF_ACTIVE as string
         },
+        {
+            type: 'posting',
+            private: process.env.CI_TEST_AUTHORITY_USER_WIF_POSTING as string
+        }
     ],
     txs: [
         // posting
@@ -26,12 +30,16 @@ const user = {
             'digest': '390f34297cfcb8fa4b37353431ecbab05b8dc0c9c15fb9ca1a3d510c52177542',
             'signed': '1f748f38d9b312ac28e0644ec2cccafd25549cdedb9f862c6b30fa4ded941e9fdd78fe73daa6f01efdf10de55aab2f41762a8ae40c2c935f6a4589228f033f24cc'
         },
-        // private
+        // active
         {
             'digest': '390f34297cfcb8fa4b37353431ecbab05b8dc0c9c15fb9ca1a3d510c52177542',
             'signed': '1f5adcc54c74bcfd1d7382b4e588082ac8d1480031976627902ba59b6817fcccbc55fc7438cdad6e0e81481e82e08e89c92ff2d57c0723f23d43a5c49356a0fb3f'
         },
-
+        // other authority
+        {
+            'digest': '390f34297cfcb8fa4b37353431ecbab05b8dc0c9c15fb9ca1a3d510c52177542',
+            'signed': '207b3b7d17d1056e759891b50165e8c649b8e8499646a7b52ee78032b2753277b24d55f166871c5aff7607d00cfd64b1d0d9b353eee46f343e351b7bef81eb4d34'
+        },
     ]
 }
 
@@ -40,6 +48,10 @@ test.describe('HB Auth Online Client base tests', () => {
     let authInstance: OnlineClient;
     let browserContext: BrowserContext;
 
+    async function navigate(page: Page): Promise<void> {
+        await page.goto(`http://localhost:8080/src/__tests__/assets/online.html`, { waitUntil: 'load' });
+    }
+
     test.beforeAll(async () => {
         browser = await chromium.launch({
             headless: true
@@ -47,7 +59,7 @@ test.describe('HB Auth Online Client base tests', () => {
 
         browserContext = await browser.newContext();
         page = await browserContext.newPage();
-        await page.goto(`http://localhost:8080/src/__tests__/assets/online.html`, { waitUntil: 'load' });
+        await navigate(page);
     });
 
     test.beforeEach(async () => {
@@ -270,6 +282,55 @@ test.describe('HB Auth Online Client base tests', () => {
         }, user)
 
         expect(error).toBe('Not authorized, missing authority');
+    })
+
+    test('Should user be verifed based on own key_auth in strict mode', async () => {
+        const newContext = await browser.newContext();
+        const newPage = await newContext.newPage();
+        await navigate(newPage);
+        const error = await newPage.evaluate(async ({ username, password, keys }) => {
+            try {
+                // strict mode is on
+                const instance = new AuthOnlineClient(true, { workerUrl: "/dist/worker.js" });
+                await instance.initialize();
+                await instance.register(username, password, keys[2].private, keys[2].type as KeyAuthorityType);
+            } catch (error) {
+                return error.message;
+            }
+        }, user)
+
+        expect(error).toBe('Invalid credentials');
+  
+        // User is authorizied only with own private key in strict mode
+        const registered = await newPage.evaluate(async ({ username, password, keys }) => {
+            // strict mode is on
+            const instance = new AuthOnlineClient(true, { workerUrl: "/dist/worker.js" });
+            await instance.initialize();
+            const response = await instance.register(username, password, keys[0].private, keys[0].type as KeyAuthorityType);
+            return response.ok;
+        }, user)
+
+        expect(registered).toBeTruthy();
+    });
+
+    test('Should user can login and sign with another account from user\'s authorities', async () => {
+        const newContext = await browser.newContext();
+        const newPage = await newContext.newPage();
+        await navigate(newPage);
+        const signed = await newPage.evaluate(async ({ username, password, keys, txs }) => {
+            try {
+                // strict mode is off
+                const instance = new AuthOnlineClient(false, { workerUrl: "/dist/worker.js" });
+                await instance.initialize();
+                await instance.register(username, password, keys[2].private, keys[2].type as KeyAuthorityType);
+                const signed = await instance.sign(username, txs[2].digest, keys[2].type as KeyAuthorityType)
+                return signed;
+            } catch (error) {
+                return error.message;
+            }
+        }, user)
+
+        expect(signed).toBe(user.txs[2].signed);
     })
 
     test.afterAll(async () => {

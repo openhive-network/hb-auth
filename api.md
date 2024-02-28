@@ -75,30 +75,25 @@ for imported keys' validity.
 
 ### constructor
 
-• **new OfflineClient**(`strict`, `clientOptions?`): [`OfflineClient`](#classesofflineclientmd)
+• **new OfflineClient**(`clientOptions?`): [`OfflineClient`](#classesofflineclientmd)
 
 #### Parameters
 
 | Name | Type |
 | :------ | :------ |
-| `strict` | `boolean` |
 | `clientOptions?` | `Partial`\<[`ClientOptions`](#interfacesclientoptionsmd)\> |
 
 #### Returns
 
 [`OfflineClient`](#classesofflineclientmd)
 
-**`Description`**
-
-Additional options for auth client
-
-#### Inherited from
+#### Overrides
 
 Client.constructor
 
 #### Defined in
 
-hb-auth.d.ts:92
+hb-auth.d.ts:166
 
 ## Properties
 
@@ -113,6 +108,20 @@ Client.#private
 #### Defined in
 
 hb-auth.d.ts:70
+
+___
+
+### clientOptions
+
+• `Readonly` **clientOptions**: `Partial`\<[`ClientOptions`](#interfacesclientoptionsmd)\>
+
+#### Overrides
+
+Client.clientOptions
+
+#### Defined in
+
+hb-auth.d.ts:165
 
 ## Methods
 
@@ -138,7 +147,7 @@ Client.authenticate
 
 #### Defined in
 
-hb-auth.d.ts:165
+hb-auth.d.ts:169
 
 ___
 
@@ -156,7 +165,7 @@ Client.authorize
 
 #### Defined in
 
-hb-auth.d.ts:163
+hb-auth.d.ts:167
 
 ___
 
@@ -185,7 +194,7 @@ Client.getAuthByUser
 
 #### Defined in
 
-hb-auth.d.ts:122
+hb-auth.d.ts:124
 
 ___
 
@@ -208,7 +217,7 @@ Client.getAuths
 
 #### Defined in
 
-hb-auth.d.ts:115
+hb-auth.d.ts:117
 
 ___
 
@@ -231,7 +240,7 @@ Client.initialize
 
 #### Defined in
 
-hb-auth.d.ts:103
+hb-auth.d.ts:105
 
 ___
 
@@ -258,7 +267,7 @@ Client.logout
 
 #### Defined in
 
-hb-auth.d.ts:147
+hb-auth.d.ts:149
 
 ___
 
@@ -285,7 +294,7 @@ Client.register
 
 #### Defined in
 
-hb-auth.d.ts:164
+hb-auth.d.ts:168
 
 ___
 
@@ -313,7 +322,7 @@ Client.setSessionEndCallback
 
 #### Defined in
 
-hb-auth.d.ts:109
+hb-auth.d.ts:111
 
 ___
 
@@ -345,7 +354,7 @@ Client.sign
 
 #### Defined in
 
-hb-auth.d.ts:155
+hb-auth.d.ts:157
 
 
 <a name="classesonlineclientmd"></a>
@@ -390,7 +399,7 @@ Client.constructor
 
 #### Defined in
 
-hb-auth.d.ts:92
+hb-auth.d.ts:94
 
 ## Properties
 
@@ -408,13 +417,27 @@ hb-auth.d.ts:70
 
 ___
 
+### clientOptions
+
+• `Readonly` **clientOptions**: `Partial`\<[`ClientOptions`](#interfacesclientoptionsmd)\>
+
+#### Inherited from
+
+Client.clientOptions
+
+#### Defined in
+
+hb-auth.d.ts:72
+
+___
+
 ### verify
 
 • `Private` **verify**: `any`
 
 #### Defined in
 
-hb-auth.d.ts:173
+hb-auth.d.ts:177
 
 ## Methods
 
@@ -440,7 +463,7 @@ Client.authenticate
 
 #### Defined in
 
-hb-auth.d.ts:175
+hb-auth.d.ts:179
 
 ___
 
@@ -466,7 +489,7 @@ Client.authorize
 
 #### Defined in
 
-hb-auth.d.ts:172
+hb-auth.d.ts:176
 
 ___
 
@@ -495,7 +518,7 @@ Client.getAuthByUser
 
 #### Defined in
 
-hb-auth.d.ts:122
+hb-auth.d.ts:124
 
 ___
 
@@ -518,7 +541,7 @@ Client.getAuths
 
 #### Defined in
 
-hb-auth.d.ts:115
+hb-auth.d.ts:117
 
 ___
 
@@ -541,7 +564,7 @@ Client.initialize
 
 #### Defined in
 
-hb-auth.d.ts:103
+hb-auth.d.ts:105
 
 ___
 
@@ -568,7 +591,7 @@ Client.logout
 
 #### Defined in
 
-hb-auth.d.ts:147
+hb-auth.d.ts:149
 
 ___
 
@@ -595,7 +618,7 @@ Client.register
 
 #### Defined in
 
-hb-auth.d.ts:174
+hb-auth.d.ts:178
 
 ___
 
@@ -623,7 +646,7 @@ Client.setSessionEndCallback
 
 #### Defined in
 
-hb-auth.d.ts:109
+hb-auth.d.ts:111
 
 ___
 
@@ -655,7 +678,7 @@ Client.sign
 
 #### Defined in
 
-hb-auth.d.ts:155
+hb-auth.d.ts:157
 
 
 <a name="interfacesauthstatusmd"></a>

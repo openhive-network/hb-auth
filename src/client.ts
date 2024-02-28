@@ -1,4 +1,4 @@
-import { type IHiveChainInterface, type ITransactionBuilder, createHiveChain } from "@hive/wax";
+import { type IHiveChainInterface, type ITransactionBuilder, createHiveChain, ApiOperation } from "@hive/wax";
 import {
   proxy,
   wrap,
@@ -65,7 +65,7 @@ abstract class Client {
   /** @hidden */
   #auth!: Local<Auth>;
   /** @hidden */
-  #hiveChain!: IHiveChainInterface;
+  protected hiveChain!: IHiveChainInterface;
   /** @hidden */
   #sessionEndCallback: () => Promise<void> = async () => { };
 
@@ -102,12 +102,12 @@ abstract class Client {
 
   /**
    * @description Additional options for auth client
-   * @param strict @type {boolean} - Strict authorization by checking if public key in signature matches user's public key, so other authorities will be ignored
+   * @param strict @type {boolean} - Strict authorization by checking if public key in signature matches user's public key, so other authorities will be ignored. Note that this doesn't affect OfflineClient's behaviour.
    * @param clientOptions @type {ClientOptions} - Options
    */
-  constructor(private readonly strict: boolean, private readonly clientOptions: Partial<ClientOptions> = {}) {
+  constructor(private readonly strict: boolean, readonly clientOptions: Partial<ClientOptions> = {}) {
     this.isStrict = strict;
-    this.options = {...defaultOptions, ...clientOptions};
+    this.options = { ...defaultOptions, ...clientOptions };
     if (!isSupportWebWorker) {
       throw new GenericError(
         `WebWorker support is required for running this library.
@@ -153,7 +153,7 @@ abstract class Client {
     try {
       await this.loadWebWorker();
       this.#auth = await new this.#worker.Auth();
-      this.#hiveChain = await createHiveChain({ apiEndpoint: this.options.node, chainId: this.options.chainId });
+      this.hiveChain = await createHiveChain({ apiEndpoint: this.options.node, chainId: this.options.chainId });
 
       return Promise.resolve(this);
     } catch (err) {
@@ -199,9 +199,9 @@ abstract class Client {
     let txBuilder: ITransactionBuilder;
 
     if (offline) {
-      txBuilder = new this.#hiveChain.TransactionBuilder('04e3256d94edee6ac72add19c1439260fbb00701', "+1m");
+      txBuilder = new this.hiveChain.TransactionBuilder('04e3256d94edee6ac72add19c1439260fbb00701', "+1m");
     } else {
-      txBuilder = await this.#hiveChain.getTransactionBuilder("+1m");
+      txBuilder = await this.hiveChain.getTransactionBuilder("+1m");
     }
 
     if (keyType === "posting") {
@@ -258,10 +258,10 @@ abstract class Client {
     );
 
     if (authenticated) {
-      await this.#auth.onAuthComplete();
+      await this.#auth.onAuthComplete(false);
       return Promise.resolve({ ok: true });
     } else {
-      // TODO: handle that case more clearly
+      await this.#auth.onAuthComplete(true);
       return Promise.reject(new AuthorizationError("Invalid credentials"));
     }
   }
@@ -338,6 +338,10 @@ abstract class Client {
  * for imported keys' validity.
  */
 class OfflineClient extends Client {
+  constructor(readonly clientOptions: Partial<ClientOptions> = {}) {
+    super(false, clientOptions);
+  }
+
   // simple auth based on wallet auth status
   protected async authorize(): Promise<boolean> {
     return true;
@@ -373,7 +377,10 @@ class OnlineClient extends Client {
     const verificationResult = await this.verify(username, txBuilder.sigDigest, txBuilder.build().signatures[0], keyType);
 
     if (this.isStrict && verificationResult) {
-      //
+      const accounts = await this.hiveChain.api.database_api.find_accounts({ accounts: [username] });
+      const account_key = accounts['accounts'][0][keyType].key_auths[0][0];
+
+      return account_key.endsWith(txBuilder.signatureKeys[0]);
     }
 
     return verificationResult;

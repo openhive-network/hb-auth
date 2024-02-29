@@ -304,6 +304,7 @@ abstract class Client {
       );
 
       if (authenticated) {
+        this.#auth.onAuthComplete(false);
         return Promise.resolve({ ok: true });
       } else {
         await this.#auth.logout();

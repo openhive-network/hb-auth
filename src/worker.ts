@@ -12,7 +12,7 @@ importScripts("https://unpkg.com/comlink/dist/umd/comlink.js");
 
 const BEEKEEPER_LOGS = true;
 const KEY_TYPES = ["active", "posting"] as const;
-// const SESSION_HEALTH_CHECK = 2000;
+const SESSION_HEALTH_CHECK = 2000;
 const noop = async (): Promise<void> => { };
 
 export type KeyAuthorityType = (typeof KEY_TYPES)[number];
@@ -65,10 +65,14 @@ class AuthWorker {
   private _loggedInUser: Omit<AuthUser, 'authorized'> | undefined;
   private _generator!: AsyncGenerator<string, string>;
   private _registration: Registration | undefined;
-  // private _interval!: ReturnType<typeof setInterval>;
+  private _interval!: ReturnType<typeof setInterval>;
 
   public get loggedInUser(): Omit<AuthUser, 'authorized'> | undefined {
     return this._loggedInUser;
+  }
+
+  public set loggedInUser(user: Omit<AuthUser, 'authorized'> | undefined) {
+    this._loggedInUser = user;
   }
 
   constructor(private sessionTimeout: number) {
@@ -94,6 +98,21 @@ class AuthWorker {
     this.sessionEndCallback = callback;
   }
 
+  private startSessionInterval(): void {
+    this._interval = setInterval(async () => {
+      const {now, timeout_time} = this.session.getInfo(); 
+      if (new Date(now).getTime() >= new Date(timeout_time).getTime()) {
+        await this.lock();
+      } else {
+        // still valid auth session
+      }
+    }, SESSION_HEALTH_CHECK);
+  }
+
+  private clearSessionInterval(): void {
+    clearInterval(this._interval);
+  }
+
   public async onAuthComplete(failed?: boolean): Promise<void> {
     await this._registration?.clear();
     this._registration = undefined;
@@ -101,9 +120,9 @@ class AuthWorker {
     if (failed) {
       await this._generator.throw(new AuthorizationError("Invalid credentials"));
     } else {
+      this.startSessionInterval();
       await this._generator?.next()
     }
-
   }
 
   private async * processNewRegistration(username: string, password: string, wifKey: string, keyType: KeyAuthorityType, digest: string): AsyncGenerator<any> {
@@ -164,6 +183,13 @@ class AuthWorker {
       const unlocked = await this.session.createWallet(username, password);
       const pubKey = await unlocked.wallet.importKey(wifKey);
       await this.addAlias(username, pubKey, keyType);
+    }
+
+    if (!this.loggedInUser) {
+      this.loggedInUser = {
+        username,
+        keyType
+      }
     }
 
     return 'success';
@@ -231,8 +257,8 @@ class AuthWorker {
 
       const signed = wallet.unlocked.signDigest(foundKey, digest);
 
-      if (!this._loggedInUser) {
-        this._loggedInUser = {
+      if (!this.loggedInUser) {
+        this.loggedInUser = {
           username,
           keyType
         }
@@ -251,8 +277,8 @@ class AuthWorker {
   public async lock(): Promise<void> {
     try {
       await this.sessionEndCallback();
-      await this.api.delete();
-      this._loggedInUser = undefined;
+      this.clearSessionInterval();
+      this.loggedInUser = undefined;
     } catch (error) {
       throw new InternalError(error);
     }
@@ -265,8 +291,8 @@ class AuthWorker {
     try {
       await this.api.delete();
       await this.removeAlias(`${username}@${keyType}`);
-      this._loggedInUser = undefined;
-      // clearInterval(this._interval);
+      this.loggedInUser = undefined;
+      this.clearSessionInterval();
     } catch (error) {
       throw new InternalError(error);
     }

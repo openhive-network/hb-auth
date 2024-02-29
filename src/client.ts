@@ -43,13 +43,20 @@ export interface ClientOptions {
    * @defaultValue `"/auth/worker.js"`
    */
   workerUrl: string;
+  /**
+   * @description Session timeout (in seconds) for Wallet, after that session will be destroyed and user must authenticate again
+   * @type {number} 
+   * @defaultValue `900`
+   */
+  sessionTimeout: number;
 }
 
 /* @hidden */
 const defaultOptions: ClientOptions = {
   chainId: "beeab0de00000000000000000000000000000000000000000000000000000000",
   node: "https://api.hive.blog",
-  workerUrl: "/auth/worker.js"
+  workerUrl: "/auth/worker.js",
+  sessionTimeout: 900
 };
 
 /**
@@ -152,7 +159,7 @@ abstract class Client {
   public async initialize(): Promise<this> {
     try {
       await this.loadWebWorker();
-      this.#auth = await new this.#worker.Auth();
+      this.#auth = await new this.#worker.Auth(this.options.sessionTimeout);
       this.hiveChain = await createHiveChain({ apiEndpoint: this.options.node, chainId: this.options.chainId });
 
       return Promise.resolve(this);

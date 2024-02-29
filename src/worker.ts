@@ -71,7 +71,7 @@ class AuthWorker {
     return this._loggedInUser;
   }
 
-  constructor() {
+  constructor(private sessionTimeout: number) {
     this.Ready = new Promise((resolve, reject) => {
       this.initializeBeekeeperApp()
         .then(() => {
@@ -85,7 +85,7 @@ class AuthWorker {
     this.api = await createBeekeeperApp({
       enableLogs: BEEKEEPER_LOGS,
       storageRoot: this.storage,
-      unlockTimeout: 900, // TODO: handle timeout properly for opened wallets
+      unlockTimeout: this.sessionTimeout, 
     });
     this.session = this.api.createSession(self.crypto.randomUUID());
   }
@@ -323,11 +323,13 @@ class AuthWorker {
 class Auth {
   static #worker: AuthWorker | undefined;
 
+  constructor(private sessionTimeout: number) {}
+
   private async getWorker(): Promise<AuthWorker> {
     try {
       if (Auth.#worker !== undefined) return Auth.#worker;
 
-      Auth.#worker = await new AuthWorker().Ready;
+      Auth.#worker = await new AuthWorker(this.sessionTimeout).Ready;
       return Auth.#worker;
     } catch (error) {
       throw new InternalError(error);

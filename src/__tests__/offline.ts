@@ -42,6 +42,10 @@ test.describe('HB Auth Offline Client base tests', () => {
     let authInstance: OfflineClient;
     let browserContext: BrowserContext;
 
+    async function navigate(page: Page): Promise<void> {
+        await page.goto(`http://localhost:8080/src/__tests__/assets/offline.html`, { waitUntil: 'load' });
+    }
+
     test.beforeAll(async () => {
         browser = await chromium.launch({
             headless: true
@@ -50,7 +54,7 @@ test.describe('HB Auth Offline Client base tests', () => {
         browserContext = await browser.newContext();
         page = await browserContext.newPage();
 
-        await page.goto(`http://localhost:8080/src/__tests__/assets/offline.html`, { waitUntil: 'load' });
+        await navigate(page);
     });
 
     test.beforeEach(async () => {
@@ -216,7 +220,7 @@ test.describe('HB Auth Offline Client base tests', () => {
 
     test('Should user session should remain in new tab', async () => {
         const newTab = await browserContext.newPage();
-        await newTab.goto(`http://localhost:8080/src/__tests__/assets/offline.html`, { waitUntil: 'load' });
+        await navigate(newTab);
 
         const authorized = await newTab.evaluate(async ({ username }) => {
             // get new instance on new page
@@ -262,7 +266,22 @@ test.describe('HB Auth Offline Client base tests', () => {
         }, user)
 
         expect(error).toBe('Not authorized, missing authority');
-    })
+    });
+
+    test('Should user be logged out when session time expires', async ({ page: _page }) => {
+        await navigate(_page);
+        const loggedIn = await _page.evaluate(async ({ username, password, keys }) => {
+            const SESSION_TIME = 10; // 10 seconds
+            const instance = new AuthOfflineClient({ sessionTimeout: SESSION_TIME });
+            await instance.initialize();
+            await instance.register(username, password, keys[1].private, keys[1].type as KeyAuthorityType);
+            await _page.waitForTimeout(SESSION_TIME * 1000);
+            const user = await instance.getAuthByUser(username);
+            return user?.username;
+        }, user);
+
+        expect(loggedIn).toBeUndefined();
+    });
 
     test.afterAll(async () => {
         await browser.close();

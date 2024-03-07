@@ -42,6 +42,10 @@ test.describe('HB Auth Offline Client base tests', () => {
     let authInstance: OfflineClient;
     let browserContext: BrowserContext;
 
+    async function navigate(page: Page): Promise<void> {
+        await page.goto(`http://localhost:8080/src/__tests__/assets/offline.html`, { waitUntil: 'load' });
+    }
+
     test.beforeAll(async () => {
         browser = await chromium.launch({
             headless: true
@@ -50,7 +54,7 @@ test.describe('HB Auth Offline Client base tests', () => {
         browserContext = await browser.newContext();
         page = await browserContext.newPage();
 
-        await page.goto(`http://localhost:8080/src/__tests__/assets/offline.html`, { waitUntil: 'load' });
+        await navigate(page);
     });
 
     test.beforeEach(async () => {
@@ -102,10 +106,11 @@ test.describe('HB Auth Offline Client base tests', () => {
 
     test('Should return null if no user registered with given username', async () => {
         const authUser = await page.evaluate(async ({ username }) => {
-            return (await authInstance.getAuthByUser(username));
+            const authUser = await authInstance.getAuthByUser(username);
+            return authUser;
         }, user)
 
-        expect(authUser).toBeFalsy();
+        expect(authUser).toBeNull();
     });
 
     test('Should register new user', async () => {
@@ -216,7 +221,7 @@ test.describe('HB Auth Offline Client base tests', () => {
 
     test('Should user session should remain in new tab', async () => {
         const newTab = await browserContext.newPage();
-        await newTab.goto(`http://localhost:8080/src/__tests__/assets/offline.html`, { waitUntil: 'load' });
+        await navigate(newTab);
 
         const authorized = await newTab.evaluate(async ({ username }) => {
             // get new instance on new page
@@ -262,7 +267,66 @@ test.describe('HB Auth Offline Client base tests', () => {
         }, user)
 
         expect(error).toBe('Not authorized, missing authority');
-    })
+    });
+
+    test('Should user able to lock/unlock wallet during user\'s session time', async () => {
+        const authorized = await page.evaluate(async ({ username, password, keys }) => {
+            await authInstance.logout();
+            await authInstance.authenticate(username, password, keys[0].type as KeyAuthorityType);
+            await authInstance.lock();
+            const authUser = await authInstance.getAuthByUser(username)
+            return authUser?.authorized;
+        }, user);
+
+        expect(authorized).toBeFalsy();
+
+        const authorizedAfterUnlock = await page.evaluate(async ({ username, password }) => {
+            await authInstance.unlock(password);
+            const authUser = await authInstance.getAuthByUser(username)
+            return authUser?.authorized;
+        }, user);
+
+        expect(authorizedAfterUnlock).toBeTruthy();
+    });
+
+    test('Should user get error when trying to lock/unlock wallet if not authenticated', async () => {
+        const errorWhileLocking = await page.evaluate(async () => {
+            await authInstance.logout();
+            try {
+                await authInstance.lock();
+            } catch (error) {
+                return error.message;
+            }
+        })
+
+        expect(errorWhileLocking).toBe("There is no existing user session or session already expired");
+
+        const errorWhileUnlocking = await page.evaluate(async ({ password }) => {
+            await authInstance.logout();
+            try {
+                await authInstance.unlock(password);
+            } catch (error) {
+                return error.message;
+            }
+        }, user)
+
+        expect(errorWhileUnlocking).toBe("There is no existing user session or session already expired");
+    });
+
+    test.skip('Should user be logged out when session time expires', async ({ page: _page }) => {
+        await navigate(_page);
+        const loggedIn = await _page.evaluate(async ({ username, password, keys }) => {
+            const SESSION_TIME = 10; // 10 seconds
+            const instance = new AuthOfflineClient({ sessionTimeout: SESSION_TIME });
+            await instance.initialize();
+            await instance.register(username, password, keys[1].private, keys[1].type as KeyAuthorityType);
+            await _page.waitForTimeout(SESSION_TIME * 1000);
+            const user = await instance.getAuthByUser(username);
+            return user?.username;
+        }, user);
+
+        expect(loggedIn).toBeUndefined();
+    });
 
     test.afterAll(async () => {
         await browser.close();

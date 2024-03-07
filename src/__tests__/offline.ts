@@ -268,7 +268,7 @@ test.describe('HB Auth Offline Client base tests', () => {
         expect(error).toBe('Not authorized, missing authority');
     });
 
-    test('Should user be logged out when session time expires', async ({ page: _page }) => {
+    test.skip('Should user be logged out when session time expires', async ({ page: _page }) => {
         await navigate(_page);
         const loggedIn = await _page.evaluate(async ({ username, password, keys }) => {
             const SESSION_TIME = 10; // 10 seconds

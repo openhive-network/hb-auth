@@ -1,4 +1,4 @@
-import { type IHiveChainInterface, type ITransactionBuilder, createHiveChain, ApiOperation } from "@hive/wax";
+import { type IHiveChainInterface, type ITransactionBuilder, createHiveChain } from "@hive/wax";
 import {
   proxy,
   wrap,
@@ -304,7 +304,7 @@ abstract class Client {
       );
 
       if (authenticated) {
-        this.#auth.onAuthComplete(false);
+        await this.#auth.onAuthComplete(false);
         return Promise.resolve({ ok: true });
       } else {
         await this.#auth.logout();
@@ -317,7 +317,25 @@ abstract class Client {
   }
 
   /**
-   * @description Method that ends existing user session.
+   * @description Method that locks user session and keeps user session during session time.
+   * Note that when user session time ends, user should authenticate again.
+   */
+  public async lock(): Promise<void> {
+    await this.#auth.lock();
+  }
+
+  /**
+   * @description Method that unlocks existing user's session.
+   * This method will extend user's session time after unlocking.
+   * This is different than authenticate method. 
+   * @param password Password
+   */
+  public async unlock(password: string): Promise<void> {
+    await this.#auth.unlock(password);
+  }
+
+  /**
+   * @description Method that ends existing user session. This is different than locking user.
    * When this is called any callback set via @see {Client.setSessionCallback} will fire.
    */
   public async logout(): Promise<void> {
@@ -386,7 +404,7 @@ class OnlineClient extends Client {
 
     if (this.isStrict && verificationResult) {
       const accounts = await this.hiveChain.api.database_api.find_accounts({ accounts: [username] });
-      const account_key = accounts['accounts'][0][keyType].key_auths[0][0];
+      const account_key = accounts.accounts[0][keyType].key_auths[0][0];
 
       return account_key.endsWith(txBuilder.signatureKeys[0]);
     }

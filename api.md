@@ -93,7 +93,7 @@ Client.constructor
 
 #### Defined in
 
-hb-auth.d.ts:174
+hb-auth.d.ts:188
 
 ## Properties
 
@@ -107,7 +107,7 @@ Client.#private
 
 #### Defined in
 
-hb-auth.d.ts:78
+hb-auth.d.ts:80
 
 ___
 
@@ -121,7 +121,7 @@ Client.clientOptions
 
 #### Defined in
 
-hb-auth.d.ts:173
+hb-auth.d.ts:187
 
 ## Methods
 
@@ -147,7 +147,7 @@ Client.authenticate
 
 #### Defined in
 
-hb-auth.d.ts:177
+hb-auth.d.ts:191
 
 ___
 
@@ -165,7 +165,7 @@ Client.authorize
 
 #### Defined in
 
-hb-auth.d.ts:175
+hb-auth.d.ts:189
 
 ___
 
@@ -194,7 +194,7 @@ Client.getAuthByUser
 
 #### Defined in
 
-hb-auth.d.ts:132
+hb-auth.d.ts:134
 
 ___
 
@@ -217,7 +217,7 @@ Client.getAuths
 
 #### Defined in
 
-hb-auth.d.ts:125
+hb-auth.d.ts:127
 
 ___
 
@@ -240,7 +240,30 @@ Client.initialize
 
 #### Defined in
 
-hb-auth.d.ts:113
+hb-auth.d.ts:115
+
+___
+
+### lock
+
+▸ **lock**(): `Promise`\<`void`\>
+
+#### Returns
+
+`Promise`\<`void`\>
+
+**`Description`**
+
+Method that locks user session and keeps user session during session time.
+Note that when user session time ends, user should authenticate again.
+
+#### Inherited from
+
+Client.lock
+
+#### Defined in
+
+hb-auth.d.ts:159
 
 ___
 
@@ -254,7 +277,7 @@ ___
 
 **`Description`**
 
-Method that ends existing user session.
+Method that ends existing user session. This is different than locking user.
 When this is called any callback set via
 
 **`See`**
@@ -267,7 +290,7 @@ Client.logout
 
 #### Defined in
 
-hb-auth.d.ts:157
+hb-auth.d.ts:171
 
 ___
 
@@ -294,7 +317,7 @@ Client.register
 
 #### Defined in
 
-hb-auth.d.ts:176
+hb-auth.d.ts:190
 
 ___
 
@@ -322,7 +345,7 @@ Client.setSessionEndCallback
 
 #### Defined in
 
-hb-auth.d.ts:119
+hb-auth.d.ts:121
 
 ___
 
@@ -354,7 +377,37 @@ Client.sign
 
 #### Defined in
 
-hb-auth.d.ts:165
+hb-auth.d.ts:179
+
+___
+
+### unlock
+
+▸ **unlock**(`password`): `Promise`\<`void`\>
+
+#### Parameters
+
+| Name | Type | Description |
+| :------ | :------ | :------ |
+| `password` | `string` | Password |
+
+#### Returns
+
+`Promise`\<`void`\>
+
+**`Description`**
+
+Method that unlocks existing user's session.
+This method will extend user's session time after unlocking.
+This is different than authenticate method.
+
+#### Inherited from
+
+Client.unlock
+
+#### Defined in
+
+hb-auth.d.ts:166
 
 
 <a name="classesonlineclientmd"></a>
@@ -399,7 +452,7 @@ Client.constructor
 
 #### Defined in
 
-hb-auth.d.ts:102
+hb-auth.d.ts:104
 
 ## Properties
 
@@ -413,7 +466,7 @@ Client.#private
 
 #### Defined in
 
-hb-auth.d.ts:78
+hb-auth.d.ts:80
 
 ___
 
@@ -427,7 +480,7 @@ Client.clientOptions
 
 #### Defined in
 
-hb-auth.d.ts:80
+hb-auth.d.ts:82
 
 ___
 
@@ -437,7 +490,7 @@ ___
 
 #### Defined in
 
-hb-auth.d.ts:185
+hb-auth.d.ts:199
 
 ## Methods
 
@@ -463,7 +516,7 @@ Client.authenticate
 
 #### Defined in
 
-hb-auth.d.ts:187
+hb-auth.d.ts:201
 
 ___
 
@@ -489,7 +542,7 @@ Client.authorize
 
 #### Defined in
 
-hb-auth.d.ts:184
+hb-auth.d.ts:198
 
 ___
 
@@ -518,7 +571,7 @@ Client.getAuthByUser
 
 #### Defined in
 
-hb-auth.d.ts:132
+hb-auth.d.ts:134
 
 ___
 
@@ -541,7 +594,7 @@ Client.getAuths
 
 #### Defined in
 
-hb-auth.d.ts:125
+hb-auth.d.ts:127
 
 ___
 
@@ -564,7 +617,30 @@ Client.initialize
 
 #### Defined in
 
-hb-auth.d.ts:113
+hb-auth.d.ts:115
+
+___
+
+### lock
+
+▸ **lock**(): `Promise`\<`void`\>
+
+#### Returns
+
+`Promise`\<`void`\>
+
+**`Description`**
+
+Method that locks user session and keeps user session during session time.
+Note that when user session time ends, user should authenticate again.
+
+#### Inherited from
+
+Client.lock
+
+#### Defined in
+
+hb-auth.d.ts:159
 
 ___
 
@@ -578,7 +654,7 @@ ___
 
 **`Description`**
 
-Method that ends existing user session.
+Method that ends existing user session. This is different than locking user.
 When this is called any callback set via
 
 **`See`**
@@ -591,7 +667,7 @@ Client.logout
 
 #### Defined in
 
-hb-auth.d.ts:157
+hb-auth.d.ts:171
 
 ___
 
@@ -618,7 +694,7 @@ Client.register
 
 #### Defined in
 
-hb-auth.d.ts:186
+hb-auth.d.ts:200
 
 ___
 
@@ -646,7 +722,7 @@ Client.setSessionEndCallback
 
 #### Defined in
 
-hb-auth.d.ts:119
+hb-auth.d.ts:121
 
 ___
 
@@ -678,7 +754,37 @@ Client.sign
 
 #### Defined in
 
-hb-auth.d.ts:165
+hb-auth.d.ts:179
+
+___
+
+### unlock
+
+▸ **unlock**(`password`): `Promise`\<`void`\>
+
+#### Parameters
+
+| Name | Type | Description |
+| :------ | :------ | :------ |
+| `password` | `string` | Password |
+
+#### Returns
+
+`Promise`\<`void`\>
+
+**`Description`**
+
+Method that unlocks existing user's session.
+This method will extend user's session time after unlocking.
+This is different than authenticate method.
+
+#### Inherited from
+
+Client.unlock
+
+#### Defined in
+
+hb-auth.d.ts:166
 
 
 <a name="interfacesauthstatusmd"></a>
@@ -699,7 +805,7 @@ An error in case of unsuccessful authorization
 
 #### Defined in
 
-hb-auth.d.ts:46
+hb-auth.d.ts:48
 
 ___
 
@@ -713,7 +819,7 @@ Value that describes auth status
 
 #### Defined in
 
-hb-auth.d.ts:41
+hb-auth.d.ts:43
 
 
 <a name="interfacesauthusermd"></a>
@@ -771,7 +877,7 @@ Blockchain ID used for calculating digest
 
 #### Defined in
 
-hb-auth.d.ts:54
+hb-auth.d.ts:56
 
 ___
 
@@ -789,7 +895,7 @@ Blockchain Node address for online account verification
 
 #### Defined in
 
-hb-auth.d.ts:60
+hb-auth.d.ts:62
 
 ___
 
@@ -807,7 +913,7 @@ Session timeout (in seconds) for Wallet, after that session will be destroyed an
 
 #### Defined in
 
-hb-auth.d.ts:72
+hb-auth.d.ts:74
 
 ___
 
@@ -825,4 +931,4 @@ Url for worker script path provided by hb-auth library
 
 #### Defined in
 
-hb-auth.d.ts:66
+hb-auth.d.ts:68

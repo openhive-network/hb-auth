@@ -75,7 +75,7 @@ class AuthWorker {
     this._loggedInUser = user;
   }
 
-  constructor(private sessionTimeout: number) {
+  constructor(private readonly sessionTimeout: number) {
     this.Ready = new Promise((resolve, reject) => {
       this.initializeBeekeeperApp()
         .then(() => {
@@ -89,7 +89,7 @@ class AuthWorker {
     this.api = await createBeekeeperApp({
       enableLogs: BEEKEEPER_LOGS,
       storageRoot: this.storage,
-      unlockTimeout: this.sessionTimeout, 
+      unlockTimeout: this.sessionTimeout,
     });
     this.session = this.api.createSession(self.crypto.randomUUID());
   }
@@ -98,10 +98,14 @@ class AuthWorker {
     this.sessionEndCallback = callback;
   }
 
+  private isValidSession(): boolean {
+    const { now, timeout_time } = this.session.getInfo();
+    return new Date(now).getTime() < new Date(timeout_time).getTime();
+  }
+
   private startSessionInterval(): void {
     this._interval = setInterval(async () => {
-      const {now, timeout_time} = this.session.getInfo(); 
-      if (new Date(now).getTime() >= new Date(timeout_time).getTime()) {
+      if (!this.isValidSession()) {
         await this.lock();
       } else {
         // still valid auth session
@@ -267,20 +271,54 @@ class AuthWorker {
       return signed;
     } catch (error) {
       if (error instanceof AuthorizationError) {
-        throw new AuthorizationError(error.message);
+        throw error;
       } else {
         throw new InternalError(error);
       }
     }
   }
 
-  public async lock(): Promise<void> {
+  public async logout(): Promise<void> {
     try {
       await this.sessionEndCallback();
       this.clearSessionInterval();
       this.loggedInUser = undefined;
     } catch (error) {
       throw new InternalError(error);
+    }
+  }
+
+  public async lock(): Promise<void> {
+    try {
+      if (!this.isValidSession() || !this.loggedInUser) {
+        throw new AuthorizationError("There is no existing user session or session already expired");
+      } else {
+        const wallet = await this.getWallet(this.loggedInUser.username);
+        wallet?.unlocked?.lock();
+      }
+    } catch (error) {
+      if (error instanceof AuthorizationError) {
+        throw error;
+      } else {
+        throw new InternalError(error);
+      }
+    }
+  }
+
+  public async unlock(password: string): Promise<void> {
+    try {
+      if (!this.isValidSession() || !this.loggedInUser) {
+        throw new AuthorizationError("There is no existing user session or session already expired");
+      } else {
+        const wallet = await this.getWallet(this.loggedInUser.username);
+        wallet?.unlock(password);
+      }
+    } catch (error) {
+      if (error instanceof AuthorizationError) {
+        throw error;
+      } else {
+        throw new InternalError(error);
+      }
     }
   }
 
@@ -349,7 +387,7 @@ class AuthWorker {
 class Auth {
   static #worker: AuthWorker | undefined;
 
-  constructor(private sessionTimeout: number) {}
+  constructor(private readonly sessionTimeout: number) { }
 
   private async getWorker(): Promise<AuthWorker> {
     try {
@@ -385,6 +423,14 @@ class Auth {
     await (await this.getWorker()).unregister(username, keyType);
   }
 
+  public async lock(): Promise<void> {
+    await (await this.getWorker()).lock();
+  }
+
+  public async unlock(password: string): Promise<void> {
+    await (await this.getWorker()).unlock(password);
+  }
+
   public async authenticate(
     username: string,
     password: string,
@@ -395,7 +441,7 @@ class Auth {
   }
 
   public async logout(): Promise<void> {
-    await (await this.getWorker()).lock();
+    await (await this.getWorker()).logout();
     Auth.#worker = undefined;
   }
 

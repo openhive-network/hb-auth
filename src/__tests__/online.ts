@@ -338,14 +338,16 @@ test.describe('HB Auth Online Client base tests', () => {
             await authInstance.logout();
             await authInstance.authenticate(username, password, keys[0].type as KeyAuthorityType);
             await authInstance.lock();
-            return (await authInstance.getAuthByUser(username))?.authorized;
+            const authUser = await authInstance.getAuthByUser(username)
+            return authUser?.authorized;
         }, user);
 
         expect(authorized).toBeFalsy();
 
         const authorizedAfterUnlock = await page.evaluate(async ({ username, password }) => {
             await authInstance.unlock(password);
-            return (await authInstance.getAuthByUser(username))?.authorized;
+            const authUser = await authInstance.getAuthByUser(username)
+            return authUser?.authorized;
         }, user);
 
         expect(authorizedAfterUnlock).toBeTruthy();

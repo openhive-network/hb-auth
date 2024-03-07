@@ -268,6 +268,48 @@ test.describe('HB Auth Offline Client base tests', () => {
         expect(error).toBe('Not authorized, missing authority');
     });
 
+    test('Should user able to lock/unlock wallet during user\'s session time', async () => {
+        const authorized = await page.evaluate(async ({ username, password, keys }) => {
+            await authInstance.logout();
+            await authInstance.authenticate(username, password, keys[0].type as KeyAuthorityType);
+            await authInstance.lock();
+            return (await authInstance.getAuthByUser(username))?.authorized;
+        }, user);
+
+        expect(authorized).toBeFalsy();
+
+        const authorizedAfterUnlock = await page.evaluate(async ({ username, password }) => {
+            await authInstance.unlock(password);
+            return (await authInstance.getAuthByUser(username))?.authorized;
+        }, user);
+
+        expect(authorizedAfterUnlock).toBeTruthy();
+    });
+
+    test('Should user get error when trying to lock/unlock wallet if not authenticated', async () => {
+        const errorWhileLocking = await page.evaluate(async () => {
+            await authInstance.logout();
+            try {
+                await authInstance.lock();
+            } catch (error) {
+                return error.message;
+            }
+        })
+
+        expect(errorWhileLocking).toBe("There is no existing user session or session already expired");
+
+        const errorWhileUnlocking = await page.evaluate(async ({ password }) => {
+            await authInstance.logout();
+            try {
+                await authInstance.unlock(password);
+            } catch (error) {
+                return error.message;
+            }
+        }, user)
+
+        expect(errorWhileUnlocking).toBe("There is no existing user session or session already expired");
+    });
+
     test.skip('Should user be logged out when session time expires', async ({ page: _page }) => {
         await navigate(_page);
         const loggedIn = await _page.evaluate(async ({ username, password, keys }) => {

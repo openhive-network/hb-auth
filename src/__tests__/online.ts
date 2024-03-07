@@ -300,7 +300,7 @@ test.describe('HB Auth Online Client base tests', () => {
         }, user)
 
         expect(error).toBe('Invalid credentials');
-  
+
         // User is authorizied only with own private key in strict mode
         const registered = await newPage.evaluate(async ({ username, password, keys }) => {
             // strict mode is on
@@ -332,6 +332,48 @@ test.describe('HB Auth Online Client base tests', () => {
 
         expect(signed).toBe(user.txs[2].signed);
     })
+
+    test('Should user able to lock/unlock wallet during user\'s session time', async () => {
+        const authorized = await page.evaluate(async ({ username, password, keys }) => {
+            await authInstance.logout();
+            await authInstance.authenticate(username, password, keys[0].type as KeyAuthorityType);
+            await authInstance.lock();
+            return (await authInstance.getAuthByUser(username))?.authorized;
+        }, user);
+
+        expect(authorized).toBeFalsy();
+
+        const authorizedAfterUnlock = await page.evaluate(async ({ username, password }) => {
+            await authInstance.unlock(password);
+            return (await authInstance.getAuthByUser(username))?.authorized;
+        }, user);
+
+        expect(authorizedAfterUnlock).toBeTruthy();
+    });
+
+    test('Should user get error when trying to lock/unlock wallet if not authenticated', async () => {
+        const errorWhileLocking = await page.evaluate(async () => {
+            await authInstance.logout();
+            try {
+                await authInstance.lock();
+            } catch (error) {
+                return error.message;
+            }
+        })
+
+        expect(errorWhileLocking).toBe("There is no existing user session or session already expired");
+
+        const errorWhileUnlocking = await page.evaluate(async ({ password }) => {
+            await authInstance.logout();
+            try {
+                await authInstance.unlock(password);
+            } catch (error) {
+                return error.message;
+            }
+        }, user)
+
+        expect(errorWhileUnlocking).toBe("There is no existing user session or session already expired");
+    });
 
     test.afterAll(async () => {
         await browser.close();

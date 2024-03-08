@@ -316,14 +316,14 @@ test.describe('HB Auth Offline Client base tests', () => {
         expect(errorWhileUnlocking).toBe("There is no existing user session or session already expired");
     });
 
-    test.skip('Should user be logged out when session time expires', async ({ page: _page }) => {
+    test('Should user be logged out when session time expires', async ({ page: _page }) => {
         await navigate(_page);
         const loggedIn = await _page.evaluate(async ({ username, password, keys }) => {
             const SESSION_TIME = 10; // 10 seconds
-            const instance = new AuthOfflineClient({ sessionTimeout: SESSION_TIME });
+            const instance = new AuthOfflineClient({ workerUrl: "/dist/worker.js", sessionTimeout: SESSION_TIME });
             await instance.initialize();
             await instance.register(username, password, keys[1].private, keys[1].type as KeyAuthorityType);
-            await _page.waitForTimeout(SESSION_TIME * 1000);
+            await new Promise<void>(resolve => { setTimeout(() => { resolve(); }, ((SESSION_TIME + 1) * 1000)) });
             const user = await instance.getAuthByUser(username);
             return user?.username;
         }, user);

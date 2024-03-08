@@ -60,9 +60,12 @@ test.describe('HB Auth Online Client base tests', () => {
         browserContext = await browser.newContext();
         page = await browserContext.newPage();
         await navigate(page);
+        page.on('console', (msg: ConsoleMessage) => {
+            console.log('>>', msg.type(), msg.text())
+        });
     });
 
-    test.beforeEach(async () => {
+    test.beforeEach(async ({ page }) => {
         page.on('console', (msg: ConsoleMessage) => {
             console.log('>>', msg.type(), msg.text())
         });

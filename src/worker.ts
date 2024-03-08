@@ -106,7 +106,7 @@ class AuthWorker {
   private startSessionInterval(): void {
     this._interval = setInterval(async () => {
       if (!this.isValidSession()) {
-        await this.lock();
+        await this.logout();
       } else {
         // still valid auth session
       }

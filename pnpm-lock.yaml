@@ -9,8 +9,8 @@ dependencies:
     specifier: 1.27.2-240208135851
     version: 1.27.2-240208135851
   '@hive/wax':
-    specifier: 0.3.8-stable.240313233236
-    version: 0.3.8-stable.240313233236
+    specifier: 0.3.8-stable.240314144550
+    version: 0.3.8-stable.240314144550
   comlink:
     specifier: ^4.4.1
     version: 4.4.1
@@ -1577,8 +1577,8 @@ packages:
     engines: {node: '>= 12'}
     dev: false
 
-  /@hive/wax@0.3.8-stable.240313233236:
-    resolution: {integrity: sha1-37jLgucCApfVx47SAO+PABrAe4Q=, tarball: https://gitlab.syncad.com/api/v4/projects/419/packages/npm/@hive/wax/-/@hive/wax-0.3.8-stable.240313233236.tgz}
+  /@hive/wax@0.3.8-stable.240314144550:
+    resolution: {integrity: sha1-NSBKSQUosnLbC0jB/CiBclAxIzI=, tarball: https://gitlab.syncad.com/api/v4/projects/419/packages/npm/@hive/wax/-/@hive/wax-0.3.8-stable.240314144550.tgz}
     engines: {node: '>= 18'}
     dependencies:
       '@hive/beekeeper': 1.27.2-240110132748

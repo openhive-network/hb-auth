@@ -328,10 +328,11 @@ abstract class Client {
    * @description Method that unlocks existing user's session.
    * This method will extend user's session time after unlocking.
    * This is different than authenticate method. 
+   * @param username Username
    * @param password Password
    */
-  public async unlock(password: string): Promise<void> {
-    await this.#auth.unlock(password);
+  public async unlock(username: string, password: string): Promise<void> {
+    await this.#auth.unlock(username, password);
   }
 
   /**

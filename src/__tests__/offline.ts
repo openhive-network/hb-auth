@@ -215,7 +215,7 @@ test.describe('HB Auth Offline Client base tests', () => {
         const authorizedKeyType1 = await page.evaluate(async ({ username, password, keys }) => {
             await authInstance.logout();
             await authInstance.authenticate(username, password, keys[0].type as KeyAuthorityType);
-            return (await authInstance.getAuthByUser(username))?.keyType;
+            return (await authInstance.getAuthByUser(username))?.loggedInKeyType;
         }, user)
 
         expect(authorizedKeyType1).toBe(user.keys[0].type);
@@ -223,7 +223,7 @@ test.describe('HB Auth Offline Client base tests', () => {
         const authorizedKeyType2 = await page.evaluate(async ({ username, password, keys }) => {
             await authInstance.logout();
             await authInstance.authenticate(username, password, keys[1].type as KeyAuthorityType);
-            return (await authInstance.getAuthByUser(username))?.keyType;
+            return (await authInstance.getAuthByUser(username))?.loggedInKeyType;
         }, user)
 
         expect(authorizedKeyType2).toBe(user.keys[1].type);
@@ -292,7 +292,7 @@ test.describe('HB Auth Offline Client base tests', () => {
         expect(authorized).toBeFalsy();
 
         const authorizedAfterUnlock = await page.evaluate(async ({ username, password }) => {
-            await authInstance.unlock(password);
+            await authInstance.unlock(username, password);
             const authUser = await authInstance.getAuthByUser(username)
             return authUser?.authorized;
         }, user);
@@ -300,7 +300,7 @@ test.describe('HB Auth Offline Client base tests', () => {
         expect(authorizedAfterUnlock).toBeTruthy();
     });
 
-    test('Should user get error when trying to lock/unlock wallet if not authenticated', async () => {
+    test('Should user get error when trying to lock wallet if not authenticated', async () => {
         const errorWhileLocking = await page.evaluate(async () => {
             await authInstance.logout();
             try {
@@ -311,17 +311,6 @@ test.describe('HB Auth Offline Client base tests', () => {
         })
 
         expect(errorWhileLocking).toBe("There is no existing user session or session already expired");
-
-        const errorWhileUnlocking = await page.evaluate(async ({ password }) => {
-            await authInstance.logout();
-            try {
-                await authInstance.unlock(password);
-            } catch (error) {
-                return error.message;
-            }
-        }, user)
-
-        expect(errorWhileUnlocking).toBe("There is no existing user session or session already expired");
     });
 
     test.skip('Should user be logged out when session time expires', async ({ page: _page }) => {

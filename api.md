@@ -93,7 +93,7 @@ Client.constructor
 
 #### Defined in
 
-hb-auth.d.ts:189
+hb-auth.d.ts:190
 
 ## Properties
 
@@ -121,7 +121,7 @@ Client.clientOptions
 
 #### Defined in
 
-hb-auth.d.ts:188
+hb-auth.d.ts:189
 
 ## Methods
 
@@ -147,7 +147,7 @@ Client.authenticate
 
 #### Defined in
 
-hb-auth.d.ts:192
+hb-auth.d.ts:193
 
 ___
 
@@ -165,7 +165,7 @@ Client.authorize
 
 #### Defined in
 
-hb-auth.d.ts:190
+hb-auth.d.ts:191
 
 ___
 
@@ -290,7 +290,7 @@ Client.logout
 
 #### Defined in
 
-hb-auth.d.ts:172
+hb-auth.d.ts:173
 
 ___
 
@@ -317,7 +317,7 @@ Client.register
 
 #### Defined in
 
-hb-auth.d.ts:191
+hb-auth.d.ts:192
 
 ___
 
@@ -377,18 +377,19 @@ Client.sign
 
 #### Defined in
 
-hb-auth.d.ts:180
+hb-auth.d.ts:181
 
 ___
 
 ### unlock
 
-▸ **unlock**(`password`): `Promise`\<`void`\>
+▸ **unlock**(`username`, `password`): `Promise`\<`void`\>
 
 #### Parameters
 
 | Name | Type | Description |
 | :------ | :------ | :------ |
+| `username` | `string` | Username |
 | `password` | `string` | Password |
 
 #### Returns
@@ -407,7 +408,7 @@ Client.unlock
 
 #### Defined in
 
-hb-auth.d.ts:167
+hb-auth.d.ts:168
 
 
 <a name="classesonlineclientmd"></a>
@@ -490,7 +491,7 @@ ___
 
 #### Defined in
 
-hb-auth.d.ts:200
+hb-auth.d.ts:201
 
 ## Methods
 
@@ -516,7 +517,7 @@ Client.authenticate
 
 #### Defined in
 
-hb-auth.d.ts:202
+hb-auth.d.ts:203
 
 ___
 
@@ -542,7 +543,7 @@ Client.authorize
 
 #### Defined in
 
-hb-auth.d.ts:199
+hb-auth.d.ts:200
 
 ___
 
@@ -667,7 +668,7 @@ Client.logout
 
 #### Defined in
 
-hb-auth.d.ts:172
+hb-auth.d.ts:173
 
 ___
 
@@ -694,7 +695,7 @@ Client.register
 
 #### Defined in
 
-hb-auth.d.ts:201
+hb-auth.d.ts:202
 
 ___
 
@@ -754,18 +755,19 @@ Client.sign
 
 #### Defined in
 
-hb-auth.d.ts:180
+hb-auth.d.ts:181
 
 ___
 
 ### unlock
 
-▸ **unlock**(`password`): `Promise`\<`void`\>
+▸ **unlock**(`username`, `password`): `Promise`\<`void`\>
 
 #### Parameters
 
 | Name | Type | Description |
 | :------ | :------ | :------ |
+| `username` | `string` | Username |
 | `password` | `string` | Password |
 
 #### Returns
@@ -784,7 +786,7 @@ Client.unlock
 
 #### Defined in
 
-hb-auth.d.ts:167
+hb-auth.d.ts:168
 
 
 <a name="interfacesauthstatusmd"></a>
@@ -838,9 +840,9 @@ hb-auth.d.ts:17
 
 ___
 
-### keyType
+### loggedInKeyType
 
-• **keyType**: `undefined` \| ``"active"`` \| ``"posting"``
+• **loggedInKeyType**: `undefined` \| ``"active"`` \| ``"posting"``
 
 #### Defined in
 

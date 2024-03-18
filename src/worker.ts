@@ -20,7 +20,7 @@ export type KeyAuthorityType = (typeof KEY_TYPES)[number];
 export interface AuthUser {
   username: string;
   authorized: boolean;
-  keyType: KeyAuthorityType | undefined;
+  loggedInKeyType: KeyAuthorityType | undefined;
   registeredKeyTypes: KeyAuthorityType[];
 }
 
@@ -193,7 +193,7 @@ class AuthWorker {
     if (!this.loggedInUser) {
       this.loggedInUser = {
         username,
-        keyType,
+        loggedInKeyType: keyType,
         registeredKeyTypes: await this.getRegisteredKeyTypes(username)
       }
     }
@@ -253,7 +253,7 @@ class AuthWorker {
       return {
         authorized: !!wallet.unlocked,
         username: wallet.name,
-        keyType: this.loggedInUser?.username === username ? this.loggedInUser.keyType : undefined,
+        loggedInKeyType: this.loggedInUser?.username === username ? this.loggedInUser.loggedInKeyType : undefined,
         registeredKeyTypes: await this.getRegisteredKeyTypes(username)
       };
     } catch (error) {
@@ -265,13 +265,11 @@ class AuthWorker {
     try {
       const authUsers = [];
 
-      for await (const { name, unlocked } of await this.getWallets()) {
-        authUsers.push({
-          authorized: !!unlocked,
-          username: name,
-          keyType: this.loggedInUser?.username === name ? this.loggedInUser.keyType : undefined,
-          registeredKeyTypes: await this.getRegisteredKeyTypes(name)
-        })
+      for await (const { name } of await this.getWallets()) {
+        const user = await this.getAuthByUser(name);
+        if (user) {
+          authUsers.push(user);
+        }
       }
 
       return authUsers;
@@ -302,7 +300,7 @@ class AuthWorker {
       if (!this.loggedInUser) {
         this.loggedInUser = {
           username,
-          keyType,
+          loggedInKeyType: keyType,
           registeredKeyTypes: await this.getRegisteredKeyTypes(username)
         }
       }
@@ -344,12 +342,17 @@ class AuthWorker {
     }
   }
 
-  public async unlock(password: string): Promise<void> {
+  public async unlock(username: string, password: string): Promise<void> {
     try {
-      if (!this.isValidSession() || !this.loggedInUser) {
-        throw new AuthorizationError("There is no existing user session or session already expired");
+      const wallet = await this.getWallet(username);
+
+      if (!this.isValidSession()) {
+        throw new InternalError("There is no existing user session or session already expired");
+      }
+
+      if (!wallet) {
+        throw new AuthorizationError("User not found");
       } else {
-        const wallet = await this.getWallet(this.loggedInUser.username);
         wallet?.unlock(password);
       }
     } catch (error) {
@@ -481,8 +484,8 @@ class Auth {
     await (await this.getWorker()).lock();
   }
 
-  public async unlock(password: string): Promise<void> {
-    await (await this.getWorker()).unlock(password);
+  public async unlock(username: string, password: string): Promise<void> {
+    await (await this.getWorker()).unlock(username, password);
   }
 
   public async authenticate(

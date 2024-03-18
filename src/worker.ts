@@ -254,7 +254,7 @@ class AuthWorker {
       const alias = await this.getAlias(`${username}@${keyType}`);
       const foundKey = keys.find((key) => key === alias?.pubKey);
 
-      if (!foundKey || (this.loggedInUser && this.loggedInUser?.keyType !== keyType)) {
+      if (!foundKey) {
         wallet.unlocked?.lock();
         throw new AuthorizationError('Not authorized, missing authority');
       }

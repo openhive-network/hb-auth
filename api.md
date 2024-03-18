@@ -93,7 +93,7 @@ Client.constructor
 
 #### Defined in
 
-hb-auth.d.ts:188
+hb-auth.d.ts:189
 
 ## Properties
 
@@ -107,7 +107,7 @@ Client.#private
 
 #### Defined in
 
-hb-auth.d.ts:80
+hb-auth.d.ts:81
 
 ___
 
@@ -121,7 +121,7 @@ Client.clientOptions
 
 #### Defined in
 
-hb-auth.d.ts:187
+hb-auth.d.ts:188
 
 ## Methods
 
@@ -147,7 +147,7 @@ Client.authenticate
 
 #### Defined in
 
-hb-auth.d.ts:191
+hb-auth.d.ts:192
 
 ___
 
@@ -165,7 +165,7 @@ Client.authorize
 
 #### Defined in
 
-hb-auth.d.ts:189
+hb-auth.d.ts:190
 
 ___
 
@@ -194,7 +194,7 @@ Client.getAuthByUser
 
 #### Defined in
 
-hb-auth.d.ts:134
+hb-auth.d.ts:135
 
 ___
 
@@ -217,7 +217,7 @@ Client.getAuths
 
 #### Defined in
 
-hb-auth.d.ts:127
+hb-auth.d.ts:128
 
 ___
 
@@ -240,7 +240,7 @@ Client.initialize
 
 #### Defined in
 
-hb-auth.d.ts:115
+hb-auth.d.ts:116
 
 ___
 
@@ -263,7 +263,7 @@ Client.lock
 
 #### Defined in
 
-hb-auth.d.ts:159
+hb-auth.d.ts:160
 
 ___
 
@@ -290,7 +290,7 @@ Client.logout
 
 #### Defined in
 
-hb-auth.d.ts:171
+hb-auth.d.ts:172
 
 ___
 
@@ -317,7 +317,7 @@ Client.register
 
 #### Defined in
 
-hb-auth.d.ts:190
+hb-auth.d.ts:191
 
 ___
 
@@ -345,7 +345,7 @@ Client.setSessionEndCallback
 
 #### Defined in
 
-hb-auth.d.ts:121
+hb-auth.d.ts:122
 
 ___
 
@@ -377,7 +377,7 @@ Client.sign
 
 #### Defined in
 
-hb-auth.d.ts:179
+hb-auth.d.ts:180
 
 ___
 
@@ -407,7 +407,7 @@ Client.unlock
 
 #### Defined in
 
-hb-auth.d.ts:166
+hb-auth.d.ts:167
 
 
 <a name="classesonlineclientmd"></a>
@@ -452,7 +452,7 @@ Client.constructor
 
 #### Defined in
 
-hb-auth.d.ts:104
+hb-auth.d.ts:105
 
 ## Properties
 
@@ -466,7 +466,7 @@ Client.#private
 
 #### Defined in
 
-hb-auth.d.ts:80
+hb-auth.d.ts:81
 
 ___
 
@@ -480,7 +480,7 @@ Client.clientOptions
 
 #### Defined in
 
-hb-auth.d.ts:82
+hb-auth.d.ts:83
 
 ___
 
@@ -490,7 +490,7 @@ ___
 
 #### Defined in
 
-hb-auth.d.ts:199
+hb-auth.d.ts:200
 
 ## Methods
 
@@ -516,7 +516,7 @@ Client.authenticate
 
 #### Defined in
 
-hb-auth.d.ts:201
+hb-auth.d.ts:202
 
 ___
 
@@ -542,7 +542,7 @@ Client.authorize
 
 #### Defined in
 
-hb-auth.d.ts:198
+hb-auth.d.ts:199
 
 ___
 
@@ -571,7 +571,7 @@ Client.getAuthByUser
 
 #### Defined in
 
-hb-auth.d.ts:134
+hb-auth.d.ts:135
 
 ___
 
@@ -594,7 +594,7 @@ Client.getAuths
 
 #### Defined in
 
-hb-auth.d.ts:127
+hb-auth.d.ts:128
 
 ___
 
@@ -617,7 +617,7 @@ Client.initialize
 
 #### Defined in
 
-hb-auth.d.ts:115
+hb-auth.d.ts:116
 
 ___
 
@@ -640,7 +640,7 @@ Client.lock
 
 #### Defined in
 
-hb-auth.d.ts:159
+hb-auth.d.ts:160
 
 ___
 
@@ -667,7 +667,7 @@ Client.logout
 
 #### Defined in
 
-hb-auth.d.ts:171
+hb-auth.d.ts:172
 
 ___
 
@@ -694,7 +694,7 @@ Client.register
 
 #### Defined in
 
-hb-auth.d.ts:200
+hb-auth.d.ts:201
 
 ___
 
@@ -722,7 +722,7 @@ Client.setSessionEndCallback
 
 #### Defined in
 
-hb-auth.d.ts:121
+hb-auth.d.ts:122
 
 ___
 
@@ -754,7 +754,7 @@ Client.sign
 
 #### Defined in
 
-hb-auth.d.ts:179
+hb-auth.d.ts:180
 
 ___
 
@@ -784,7 +784,7 @@ Client.unlock
 
 #### Defined in
 
-hb-auth.d.ts:166
+hb-auth.d.ts:167
 
 
 <a name="interfacesauthstatusmd"></a>
@@ -805,7 +805,7 @@ An error in case of unsuccessful authorization
 
 #### Defined in
 
-hb-auth.d.ts:48
+hb-auth.d.ts:49
 
 ___
 
@@ -819,7 +819,7 @@ Value that describes auth status
 
 #### Defined in
 
-hb-auth.d.ts:43
+hb-auth.d.ts:44
 
 
 <a name="interfacesauthusermd"></a>
@@ -845,6 +845,16 @@ ___
 #### Defined in
 
 hb-auth.d.ts:18
+
+___
+
+### registeredKeyTypes
+
+• **registeredKeyTypes**: (``"active"`` \| ``"posting"``)[]
+
+#### Defined in
+
+hb-auth.d.ts:19
 
 ___
 
@@ -877,7 +887,7 @@ Blockchain ID used for calculating digest
 
 #### Defined in
 
-hb-auth.d.ts:56
+hb-auth.d.ts:57
 
 ___
 
@@ -895,7 +905,7 @@ Blockchain Node address for online account verification
 
 #### Defined in
 
-hb-auth.d.ts:62
+hb-auth.d.ts:63
 
 ___
 
@@ -913,7 +923,7 @@ Session timeout (in seconds) for Wallet, after that session will be destroyed an
 
 #### Defined in
 
-hb-auth.d.ts:74
+hb-auth.d.ts:75
 
 ___
 
@@ -931,4 +941,4 @@ Url for worker script path provided by hb-auth library
 
 #### Defined in
 
-hb-auth.d.ts:68
+hb-auth.d.ts:69

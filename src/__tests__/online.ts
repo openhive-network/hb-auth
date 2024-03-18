@@ -217,6 +217,16 @@ test.describe('HB Auth Online Client base tests', () => {
         expect(username).toBe(user.username);
     });
 
+    test('Should getAuthByUser return registered key authority types', async () => {
+        const types = await page.evaluate(async ({ username }) => {
+            const authUser = await authInstance.getAuthByUser(username);
+            return authUser?.registeredKeyTypes;
+        }, user);
+
+        expect(types?.includes('posting')).toBeTruthy();
+        expect(types?.includes('active')).toBeTruthy();
+    });
+
     test('Should user login with different authority types', async () => {
         const authorizedKeyType1 = await page.evaluate(async ({ username, password, keys }) => {
             await authInstance.logout();

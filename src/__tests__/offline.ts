@@ -201,6 +201,16 @@ test.describe('HB Auth Offline Client base tests', () => {
         expect(username).toBe(user.username);
     });
 
+    test('Should getAuthByUser return registered key authority types', async () => {
+        const types = await page.evaluate(async ({ username }) => {
+            const authUser = await authInstance.getAuthByUser(username);
+            return authUser?.registeredKeyTypes;
+        }, user);
+
+        expect(types?.includes('posting')).toBeTruthy();
+        expect(types?.includes('active')).toBeTruthy();
+    });
+
     test('Should user login with different authority types', async () => {
         const authorizedKeyType1 = await page.evaluate(async ({ username, password, keys }) => {
             await authInstance.logout();
@@ -251,7 +261,7 @@ test.describe('HB Auth Offline Client base tests', () => {
         expect(signed2).toBe(user.txs[1].signed);
     });
 
-    test('Should user get error when trying to sign with not authorized key', async ({page: _page}) => {
+    test('Should user get error when trying to sign with not authorized key', async ({ page: _page }) => {
         await navigate(_page);
         const error = await _page.evaluate(async ({ username, password, keys, txs }) => {
             const instance = new AuthOfflineClient({ workerUrl: "/dist/worker.js" });

@@ -19,6 +19,7 @@ export type KeyAuthorityType = (typeof KEY_TYPES)[number];
 
 export interface AuthUser {
   username: string;
+  unlocked: boolean;
   authorized: boolean;
   loggedInKeyType: KeyAuthorityType | undefined;
   registeredKeyTypes: KeyAuthorityType[];
@@ -57,22 +58,23 @@ class Registration {
 }
 
 class AuthWorker {
+
   public readonly Ready: Promise<AuthWorker>;
   private api!: IBeekeeperInstance;
   private session!: IBeekeeperSession;
   private readonly storage = "/storage_root";
   private readonly aliasStorage = "/aliases";
   private sessionEndCallback = noop;
-  private _loggedInUser: Omit<AuthUser, 'authorized'> | undefined;
+  private _loggedInUser: AuthUser | undefined;
   private _generator!: AsyncGenerator<string, string>;
   private _registration: Registration | undefined;
   private _interval!: ReturnType<typeof setInterval>;
 
-  public get loggedInUser(): Omit<AuthUser, 'authorized'> | undefined {
+  public get loggedInUser(): AuthUser | undefined {
     return this._loggedInUser;
   }
 
-  public set loggedInUser(user: Omit<AuthUser, 'authorized'> | undefined) {
+  public set loggedInUser(user: AuthUser | undefined) {
     this._loggedInUser = user;
   }
 
@@ -125,6 +127,14 @@ class AuthWorker {
     if (failed) {
       await this._generator.throw(new AuthorizationError("Invalid credentials"));
     } else {
+
+      if (this.loggedInUser) {
+        this.loggedInUser = {
+          ...this.loggedInUser,
+          authorized: true
+        }
+      }
+
       this.startSessionInterval();
       await this._generator?.next()
     }
@@ -193,6 +203,8 @@ class AuthWorker {
     if (!this.loggedInUser) {
       this.loggedInUser = {
         username,
+        authorized: true,
+        unlocked: true,
         loggedInKeyType: keyType,
         registeredKeyTypes: await this.getRegisteredKeyTypes(username)
       }
@@ -217,7 +229,16 @@ class AuthWorker {
       const w = await this.getWallet(username);
 
       if (w && w.name === username) {
-        w.unlock(password);
+        await this.unlock(username, password);
+
+        this.loggedInUser = {
+          username,
+          unlocked: true,
+          authorized: false,
+          loggedInKeyType: keyType,
+          registeredKeyTypes: await this.getRegisteredKeyTypes(username)
+        }
+
         return await this.sign(username, digest, keyType);
       } else {
         throw new AuthorizationError("User not found");
@@ -252,6 +273,7 @@ class AuthWorker {
 
       return {
         authorized: !!wallet.unlocked,
+        unlocked: !!wallet.unlocked,
         username: wallet.name,
         loggedInKeyType: this.loggedInUser?.username === username ? this.loggedInUser.loggedInKeyType : undefined,
         registeredKeyTypes: await this.getRegisteredKeyTypes(username)
@@ -300,6 +322,8 @@ class AuthWorker {
       if (!this.loggedInUser) {
         this.loggedInUser = {
           username,
+          unlocked: true,
+          authorized: true,
           loggedInKeyType: keyType,
           registeredKeyTypes: await this.getRegisteredKeyTypes(username)
         }
@@ -332,6 +356,9 @@ class AuthWorker {
       } else {
         const wallet = await this.getWallet(this.loggedInUser.username);
         wallet?.unlocked?.lock();
+        if (this.loggedInUser) {
+          this.loggedInUser.unlocked = false;
+        }
       }
     } catch (error) {
       if (error instanceof AuthorizationError) {

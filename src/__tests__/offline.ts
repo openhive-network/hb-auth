@@ -136,21 +136,21 @@ test.describe('HB Auth Offline Client base tests', () => {
     });
 
     test('Should logout user on logout() call', async () => {
-        const authUser = await page.evaluate(async ({ username }) => {
+        const authorized = await page.evaluate(async ({ username }) => {
             await authInstance.logout();
             return (await authInstance.getAuthByUser(username))?.authorized;
         }, user)
 
-        expect(authUser).toBeFalsy();
+        expect(authorized).toBeFalsy();
     });
 
     test('Should user login with username and password', async () => {
-        const authUser = await page.evaluate(async ({ username, password, keys }) => {
+        const authorized = await page.evaluate(async ({ username, password, keys }) => {
             await authInstance.authenticate(username, password, keys[0].type as KeyAuthorityType);
             return (await authInstance.getAuthByUser(username))?.authorized;
         }, user)
 
-        expect(authUser).toBeTruthy();
+        expect(authorized).toBeTruthy();
     })
 
     test('Should return error if user tries to login while already logged in', async () => {
@@ -281,23 +281,23 @@ test.describe('HB Auth Offline Client base tests', () => {
     });
 
     test('Should user able to lock/unlock wallet during user\'s session time', async () => {
-        const authorized = await page.evaluate(async ({ username, password, keys }) => {
+        const locked = await page.evaluate(async ({ username, password, keys }) => {
             await authInstance.logout();
             await authInstance.authenticate(username, password, keys[0].type as KeyAuthorityType);
             await authInstance.lock();
             const authUser = await authInstance.getAuthByUser(username)
-            return authUser?.authorized;
+            return authUser?.unlocked;
         }, user);
 
-        expect(authorized).toBeFalsy();
+        expect(locked).toBeFalsy();
 
-        const authorizedAfterUnlock = await page.evaluate(async ({ username, password }) => {
+        const unlocked = await page.evaluate(async ({ username, password }) => {
             await authInstance.unlock(username, password);
             const authUser = await authInstance.getAuthByUser(username)
-            return authUser?.authorized;
+            return authUser?.unlocked;
         }, user);
 
-        expect(authorizedAfterUnlock).toBeTruthy();
+        expect(unlocked).toBeTruthy();
     });
 
     test('Should user get error when trying to lock wallet if not authenticated', async () => {

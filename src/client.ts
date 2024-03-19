@@ -9,7 +9,7 @@ import {
 import { AuthorizationError, GenericError } from "./errors";
 import { isSupportSharedWorker, isSupportWebWorker } from "./environment";
 import type { Auth, WorkerExpose, AuthUser, KeyAuthorityType } from "./worker";
-export type { AuthUser, KeyAuthorityType };
+export type { AuthUser, KeyAuthorityType, AuthorizationError };
 
 export interface AuthStatus {
   /**

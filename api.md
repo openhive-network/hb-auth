@@ -93,7 +93,7 @@ Client.constructor
 
 #### Defined in
 
-hb-auth.d.ts:193
+hb-auth.d.ts:201
 
 ## Properties
 
@@ -121,7 +121,7 @@ Client.clientOptions
 
 #### Defined in
 
-hb-auth.d.ts:192
+hb-auth.d.ts:200
 
 ## Methods
 
@@ -147,7 +147,7 @@ Client.authenticate
 
 #### Defined in
 
-hb-auth.d.ts:196
+hb-auth.d.ts:204
 
 ___
 
@@ -165,7 +165,7 @@ Client.authorize
 
 #### Defined in
 
-hb-auth.d.ts:194
+hb-auth.d.ts:202
 
 ___
 
@@ -227,15 +227,22 @@ ___
 
 #### Parameters
 
-| Name | Type |
-| :------ | :------ |
-| `username` | `string` |
-| `wifKey` | `string` |
-| `keyType` | ``"active"`` \| ``"posting"`` |
+| Name | Type | Description |
+| :------ | :------ | :------ |
+| `username` | `string` | Username |
+| `wifKey` | `string` | WIF key |
+| `keyType` | ``"active"`` \| ``"posting"`` | Key authority type |
 
 #### Returns
 
 `Promise`\<`string`\>
+
+Public Key
+
+**`Description`**
+
+Method that imports a new key for given user
+This method requires user to be authenticated or unlocked first
 
 #### Inherited from
 
@@ -243,7 +250,7 @@ Client.importKey
 
 #### Defined in
 
-hb-auth.d.ts:171
+hb-auth.d.ts:179
 
 ___
 
@@ -316,7 +323,7 @@ Client.logout
 
 #### Defined in
 
-hb-auth.d.ts:176
+hb-auth.d.ts:184
 
 ___
 
@@ -343,7 +350,7 @@ Client.register
 
 #### Defined in
 
-hb-auth.d.ts:195
+hb-auth.d.ts:203
 
 ___
 
@@ -403,7 +410,7 @@ Client.sign
 
 #### Defined in
 
-hb-auth.d.ts:184
+hb-auth.d.ts:192
 
 ___
 
@@ -517,7 +524,7 @@ ___
 
 #### Defined in
 
-hb-auth.d.ts:204
+hb-auth.d.ts:212
 
 ## Methods
 
@@ -543,7 +550,7 @@ Client.authenticate
 
 #### Defined in
 
-hb-auth.d.ts:206
+hb-auth.d.ts:214
 
 ___
 
@@ -569,7 +576,7 @@ Client.authorize
 
 #### Defined in
 
-hb-auth.d.ts:203
+hb-auth.d.ts:211
 
 ___
 
@@ -631,15 +638,22 @@ ___
 
 #### Parameters
 
-| Name | Type |
-| :------ | :------ |
-| `username` | `string` |
-| `wifKey` | `string` |
-| `keyType` | ``"active"`` \| ``"posting"`` |
+| Name | Type | Description |
+| :------ | :------ | :------ |
+| `username` | `string` | Username |
+| `wifKey` | `string` | WIF key |
+| `keyType` | ``"active"`` \| ``"posting"`` | Key authority type |
 
 #### Returns
 
 `Promise`\<`string`\>
+
+Public Key
+
+**`Description`**
+
+Method that imports a new key for given user
+This method requires user to be authenticated or unlocked first
 
 #### Inherited from
 
@@ -647,7 +661,7 @@ Client.importKey
 
 #### Defined in
 
-hb-auth.d.ts:171
+hb-auth.d.ts:179
 
 ___
 
@@ -720,7 +734,7 @@ Client.logout
 
 #### Defined in
 
-hb-auth.d.ts:176
+hb-auth.d.ts:184
 
 ___
 
@@ -747,7 +761,7 @@ Client.register
 
 #### Defined in
 
-hb-auth.d.ts:205
+hb-auth.d.ts:213
 
 ___
 
@@ -807,7 +821,7 @@ Client.sign
 
 #### Defined in
 
-hb-auth.d.ts:184
+hb-auth.d.ts:192
 
 ___
 

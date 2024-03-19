@@ -93,7 +93,7 @@ Client.constructor
 
 #### Defined in
 
-hb-auth.d.ts:188
+hb-auth.d.ts:193
 
 ## Properties
 
@@ -107,7 +107,7 @@ Client.#private
 
 #### Defined in
 
-hb-auth.d.ts:80
+hb-auth.d.ts:83
 
 ___
 
@@ -121,7 +121,7 @@ Client.clientOptions
 
 #### Defined in
 
-hb-auth.d.ts:187
+hb-auth.d.ts:192
 
 ## Methods
 
@@ -147,7 +147,7 @@ Client.authenticate
 
 #### Defined in
 
-hb-auth.d.ts:191
+hb-auth.d.ts:196
 
 ___
 
@@ -165,7 +165,7 @@ Client.authorize
 
 #### Defined in
 
-hb-auth.d.ts:189
+hb-auth.d.ts:194
 
 ___
 
@@ -194,7 +194,7 @@ Client.getAuthByUser
 
 #### Defined in
 
-hb-auth.d.ts:134
+hb-auth.d.ts:137
 
 ___
 
@@ -217,7 +217,33 @@ Client.getAuths
 
 #### Defined in
 
-hb-auth.d.ts:127
+hb-auth.d.ts:130
+
+___
+
+### importKey
+
+▸ **importKey**(`username`, `wifKey`, `keyType`): `Promise`\<`string`\>
+
+#### Parameters
+
+| Name | Type |
+| :------ | :------ |
+| `username` | `string` |
+| `wifKey` | `string` |
+| `keyType` | ``"active"`` \| ``"posting"`` |
+
+#### Returns
+
+`Promise`\<`string`\>
+
+#### Inherited from
+
+Client.importKey
+
+#### Defined in
+
+hb-auth.d.ts:171
 
 ___
 
@@ -240,7 +266,7 @@ Client.initialize
 
 #### Defined in
 
-hb-auth.d.ts:115
+hb-auth.d.ts:118
 
 ___
 
@@ -263,7 +289,7 @@ Client.lock
 
 #### Defined in
 
-hb-auth.d.ts:159
+hb-auth.d.ts:162
 
 ___
 
@@ -290,7 +316,7 @@ Client.logout
 
 #### Defined in
 
-hb-auth.d.ts:171
+hb-auth.d.ts:176
 
 ___
 
@@ -317,7 +343,7 @@ Client.register
 
 #### Defined in
 
-hb-auth.d.ts:190
+hb-auth.d.ts:195
 
 ___
 
@@ -345,7 +371,7 @@ Client.setSessionEndCallback
 
 #### Defined in
 
-hb-auth.d.ts:121
+hb-auth.d.ts:124
 
 ___
 
@@ -377,18 +403,19 @@ Client.sign
 
 #### Defined in
 
-hb-auth.d.ts:179
+hb-auth.d.ts:184
 
 ___
 
 ### unlock
 
-▸ **unlock**(`password`): `Promise`\<`void`\>
+▸ **unlock**(`username`, `password`): `Promise`\<`void`\>
 
 #### Parameters
 
 | Name | Type | Description |
 | :------ | :------ | :------ |
+| `username` | `string` | Username |
 | `password` | `string` | Password |
 
 #### Returns
@@ -407,7 +434,7 @@ Client.unlock
 
 #### Defined in
 
-hb-auth.d.ts:166
+hb-auth.d.ts:170
 
 
 <a name="classesonlineclientmd"></a>
@@ -452,7 +479,7 @@ Client.constructor
 
 #### Defined in
 
-hb-auth.d.ts:104
+hb-auth.d.ts:107
 
 ## Properties
 
@@ -466,7 +493,7 @@ Client.#private
 
 #### Defined in
 
-hb-auth.d.ts:80
+hb-auth.d.ts:83
 
 ___
 
@@ -480,7 +507,7 @@ Client.clientOptions
 
 #### Defined in
 
-hb-auth.d.ts:82
+hb-auth.d.ts:85
 
 ___
 
@@ -490,7 +517,7 @@ ___
 
 #### Defined in
 
-hb-auth.d.ts:199
+hb-auth.d.ts:204
 
 ## Methods
 
@@ -516,7 +543,7 @@ Client.authenticate
 
 #### Defined in
 
-hb-auth.d.ts:201
+hb-auth.d.ts:206
 
 ___
 
@@ -542,7 +569,7 @@ Client.authorize
 
 #### Defined in
 
-hb-auth.d.ts:198
+hb-auth.d.ts:203
 
 ___
 
@@ -571,7 +598,7 @@ Client.getAuthByUser
 
 #### Defined in
 
-hb-auth.d.ts:134
+hb-auth.d.ts:137
 
 ___
 
@@ -594,7 +621,33 @@ Client.getAuths
 
 #### Defined in
 
-hb-auth.d.ts:127
+hb-auth.d.ts:130
+
+___
+
+### importKey
+
+▸ **importKey**(`username`, `wifKey`, `keyType`): `Promise`\<`string`\>
+
+#### Parameters
+
+| Name | Type |
+| :------ | :------ |
+| `username` | `string` |
+| `wifKey` | `string` |
+| `keyType` | ``"active"`` \| ``"posting"`` |
+
+#### Returns
+
+`Promise`\<`string`\>
+
+#### Inherited from
+
+Client.importKey
+
+#### Defined in
+
+hb-auth.d.ts:171
 
 ___
 
@@ -617,7 +670,7 @@ Client.initialize
 
 #### Defined in
 
-hb-auth.d.ts:115
+hb-auth.d.ts:118
 
 ___
 
@@ -640,7 +693,7 @@ Client.lock
 
 #### Defined in
 
-hb-auth.d.ts:159
+hb-auth.d.ts:162
 
 ___
 
@@ -667,7 +720,7 @@ Client.logout
 
 #### Defined in
 
-hb-auth.d.ts:171
+hb-auth.d.ts:176
 
 ___
 
@@ -694,7 +747,7 @@ Client.register
 
 #### Defined in
 
-hb-auth.d.ts:200
+hb-auth.d.ts:205
 
 ___
 
@@ -722,7 +775,7 @@ Client.setSessionEndCallback
 
 #### Defined in
 
-hb-auth.d.ts:121
+hb-auth.d.ts:124
 
 ___
 
@@ -754,18 +807,19 @@ Client.sign
 
 #### Defined in
 
-hb-auth.d.ts:179
+hb-auth.d.ts:184
 
 ___
 
 ### unlock
 
-▸ **unlock**(`password`): `Promise`\<`void`\>
+▸ **unlock**(`username`, `password`): `Promise`\<`void`\>
 
 #### Parameters
 
 | Name | Type | Description |
 | :------ | :------ | :------ |
+| `username` | `string` | Username |
 | `password` | `string` | Password |
 
 #### Returns
@@ -784,7 +838,7 @@ Client.unlock
 
 #### Defined in
 
-hb-auth.d.ts:166
+hb-auth.d.ts:170
 
 
 <a name="interfacesauthstatusmd"></a>
@@ -805,7 +859,7 @@ An error in case of unsuccessful authorization
 
 #### Defined in
 
-hb-auth.d.ts:48
+hb-auth.d.ts:51
 
 ___
 
@@ -819,7 +873,7 @@ Value that describes auth status
 
 #### Defined in
 
-hb-auth.d.ts:43
+hb-auth.d.ts:46
 
 
 <a name="interfacesauthusermd"></a>
@@ -834,17 +888,37 @@ hb-auth.d.ts:43
 
 #### Defined in
 
-hb-auth.d.ts:17
+hb-auth.d.ts:18
 
 ___
 
-### keyType
+### loggedInKeyType
 
-• **keyType**: `undefined` \| ``"active"`` \| ``"posting"``
+• **loggedInKeyType**: `undefined` \| ``"active"`` \| ``"posting"``
 
 #### Defined in
 
-hb-auth.d.ts:18
+hb-auth.d.ts:19
+
+___
+
+### registeredKeyTypes
+
+• **registeredKeyTypes**: (``"active"`` \| ``"posting"``)[]
+
+#### Defined in
+
+hb-auth.d.ts:20
+
+___
+
+### unlocked
+
+• **unlocked**: `boolean`
+
+#### Defined in
+
+hb-auth.d.ts:17
 
 ___
 
@@ -877,7 +951,7 @@ Blockchain ID used for calculating digest
 
 #### Defined in
 
-hb-auth.d.ts:56
+hb-auth.d.ts:59
 
 ___
 
@@ -895,7 +969,7 @@ Blockchain Node address for online account verification
 
 #### Defined in
 
-hb-auth.d.ts:62
+hb-auth.d.ts:65
 
 ___
 
@@ -913,7 +987,7 @@ Session timeout (in seconds) for Wallet, after that session will be destroyed an
 
 #### Defined in
 
-hb-auth.d.ts:74
+hb-auth.d.ts:77
 
 ___
 
@@ -931,4 +1005,4 @@ Url for worker script path provided by hb-auth library
 
 #### Defined in
 
-hb-auth.d.ts:68
+hb-auth.d.ts:71

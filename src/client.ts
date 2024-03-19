@@ -251,9 +251,9 @@ abstract class Client {
     const signature = await this.#auth.register(
       username,
       password,
+      txBuilder.sigDigest,
       wifKey,
       keyType,
-      txBuilder.sigDigest
     );
 
     txBuilder.build(signature);
@@ -328,10 +328,23 @@ abstract class Client {
    * @description Method that unlocks existing user's session.
    * This method will extend user's session time after unlocking.
    * This is different than authenticate method. 
+   * @param username Username
    * @param password Password
    */
-  public async unlock(password: string): Promise<void> {
-    await this.#auth.unlock(password);
+  public async unlock(username: string, password: string): Promise<void> {
+    await this.#auth.unlock(username, password);
+  }
+
+  /**
+   * @description Method that imports a new key for given user
+   * This method requires user to be authenticated or unlocked first
+   * @param username Username
+   * @param wifKey WIF key
+   * @param keyType Key authority type
+   * @returns {Promise<string>} Public Key
+   */
+  public async importKey(username: string, wifKey: string, keyType: KeyAuthorityType): Promise<string> {
+    return await this.#auth.importKey(username, wifKey, keyType);
   }
 
   /**

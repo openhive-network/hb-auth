@@ -152,21 +152,21 @@ test.describe('HB Auth Online Client base tests', () => {
     });
 
     test('Should logout user on logout() call', async () => {
-        const authUser = await page.evaluate(async ({ username }) => {
+        const authorized = await page.evaluate(async ({ username }) => {
             await authInstance.logout();
             return (await authInstance.getAuthByUser(username))?.authorized;
         }, user)
 
-        expect(authUser).toBeFalsy();
+        expect(authorized).toBeFalsy();
     });
 
     test('Should user login with username and password', async () => {
-        const authUser = await page.evaluate(async ({ username, password, keys }) => {
+        const authorized = await page.evaluate(async ({ username, password, keys }) => {
             await authInstance.authenticate(username, password, keys[0].type as KeyAuthorityType);
             return (await authInstance.getAuthByUser(username))?.authorized;
         }, user)
 
-        expect(authUser).toBeTruthy();
+        expect(authorized).toBeTruthy();
     })
 
     test('Should return error if user tries to login while already logged in', async () => {
@@ -217,11 +217,21 @@ test.describe('HB Auth Online Client base tests', () => {
         expect(username).toBe(user.username);
     });
 
+    test('Should getAuthByUser return registered key authority types', async () => {
+        const types = await page.evaluate(async ({ username }) => {
+            const authUser = await authInstance.getAuthByUser(username);
+            return authUser?.registeredKeyTypes;
+        }, user);
+
+        expect(types?.includes('posting')).toBeTruthy();
+        expect(types?.includes('active')).toBeTruthy();
+    });
+
     test('Should user login with different authority types', async () => {
         const authorizedKeyType1 = await page.evaluate(async ({ username, password, keys }) => {
             await authInstance.logout();
             await authInstance.authenticate(username, password, keys[0].type as KeyAuthorityType);
-            return (await authInstance.getAuthByUser(username))?.keyType;
+            return (await authInstance.getAuthByUser(username))?.loggedInKeyType;
         }, user)
 
         expect(authorizedKeyType1).toBe(user.keys[0].type);
@@ -229,7 +239,7 @@ test.describe('HB Auth Online Client base tests', () => {
         const authorizedKeyType2 = await page.evaluate(async ({ username, password, keys }) => {
             await authInstance.logout();
             await authInstance.authenticate(username, password, keys[1].type as KeyAuthorityType);
-            return (await authInstance.getAuthByUser(username))?.keyType;
+            return (await authInstance.getAuthByUser(username))?.loggedInKeyType;
         }, user)
 
         expect(authorizedKeyType2).toBe(user.keys[1].type);
@@ -249,7 +259,7 @@ test.describe('HB Auth Online Client base tests', () => {
         expect(authorized).toBeTruthy();
     });
 
-    test('Should user sign tx and get signed tx back with given key type', async () => {
+    test('Should user sign tx and get signed tx back with selected key type', async () => {
         const signed1 = await page.evaluate(async ({ username, password, keys, txs }) => {
             await authInstance.logout();
             await authInstance.authenticate(username, password, keys[0].type as KeyAuthorityType);
@@ -260,8 +270,6 @@ test.describe('HB Auth Online Client base tests', () => {
         expect(signed1).toBe(user.txs[0].signed);
 
         const signed2 = await page.evaluate(async ({ username, password, keys, txs }) => {
-            await authInstance.logout();
-            await authInstance.authenticate(username, password, keys[1].type as KeyAuthorityType);
             const signed = await authInstance.sign(username, txs[1].digest, keys[1].type as KeyAuthorityType)
             return signed
         }, user)
@@ -269,21 +277,24 @@ test.describe('HB Auth Online Client base tests', () => {
         expect(signed2).toBe(user.txs[1].signed);
     });
 
-    test('Should user get error when trying to sign with not authorized key', async () => {
-        const error = await page.evaluate(async ({ username, password, keys, txs }) => {
-            await authInstance.logout();
-            await authInstance.authenticate(username, password, keys[1].type as KeyAuthorityType);
+    test('Should user get error when trying to sign with not authorized key', async ({page: _page}) => {
+        await navigate(_page);
+        const error = await _page.evaluate(async ({ username, password, keys, txs }) => {
+            const instance = new AuthOnlineClient(false, { workerUrl: "/dist/worker.js" });
+            await instance.initialize();
+            await instance.register(username, password, keys[1].private, keys[1].type as KeyAuthorityType);
 
             try {
-                await authInstance.sign(username, txs[0].digest, keys[0].type as KeyAuthorityType)
-
+                await instance.sign(username, txs[0].digest, keys[0].type as KeyAuthorityType)
             } catch (error) {
                 return error.message
+            } finally {
+                await instance.logout();
             }
-        }, user)
+        }, user);
 
         expect(error).toBe('Not authorized, missing authority');
-    })
+    });
 
     test('Should user be verifed based on own key_auth in strict mode', async () => {
         const newContext = await browser.newContext();
@@ -332,29 +343,47 @@ test.describe('HB Auth Online Client base tests', () => {
         }, user)
 
         expect(signed).toBe(user.txs[2].signed);
-    })
+    });
+
+    test('Should user able to import key after login or unlock', async ({ page: _page }) => {
+        await navigate(_page);
+        const singnedWithNewKey = await _page.evaluate(async ({ username, password, keys, txs }) => {
+            const instance = new AuthOnlineClient(false, { workerUrl: "/dist/worker.js" });
+            await instance.initialize();
+            await instance.register(username, password, keys[0].private, keys[0].type as KeyAuthorityType);
+            // lock wallet and unlock, then add key
+            await instance.lock();
+            await instance.unlock(username, password);
+            await instance.importKey(username, keys[1].private, keys[1].type as KeyAuthorityType);
+
+            const signed = await instance.sign(username, txs[1].digest, keys[1].type as KeyAuthorityType);
+            return signed;
+        }, user);
+
+        expect(singnedWithNewKey).toBe(user.txs[1].signed);
+    });
 
     test('Should user able to lock/unlock wallet during user\'s session time', async () => {
-        const authorized = await page.evaluate(async ({ username, password, keys }) => {
+        const locked = await page.evaluate(async ({ username, password, keys }) => {
             await authInstance.logout();
             await authInstance.authenticate(username, password, keys[0].type as KeyAuthorityType);
             await authInstance.lock();
             const authUser = await authInstance.getAuthByUser(username)
-            return authUser?.authorized;
+            return authUser?.unlocked;
         }, user);
 
-        expect(authorized).toBeFalsy();
+        expect(locked).toBeFalsy();
 
-        const authorizedAfterUnlock = await page.evaluate(async ({ username, password }) => {
-            await authInstance.unlock(password);
+        const unlocked = await page.evaluate(async ({ username, password }) => {
+            await authInstance.unlock(username, password);
             const authUser = await authInstance.getAuthByUser(username)
-            return authUser?.authorized;
+            return authUser?.unlocked;
         }, user);
 
-        expect(authorizedAfterUnlock).toBeTruthy();
+        expect(unlocked).toBeTruthy();
     });
 
-    test('Should user get error when trying to lock/unlock wallet if not authenticated', async () => {
+    test('Should user get error when trying to lock wallet if not authenticated', async () => {
         const errorWhileLocking = await page.evaluate(async () => {
             await authInstance.logout();
             try {
@@ -365,17 +394,6 @@ test.describe('HB Auth Online Client base tests', () => {
         })
 
         expect(errorWhileLocking).toBe("There is no existing user session or session already expired");
-
-        const errorWhileUnlocking = await page.evaluate(async ({ password }) => {
-            await authInstance.logout();
-            try {
-                await authInstance.unlock(password);
-            } catch (error) {
-                return error.message;
-            }
-        }, user)
-
-        expect(errorWhileUnlocking).toBe("There is no existing user session or session already expired");
     });
 
     test.afterAll(async () => {

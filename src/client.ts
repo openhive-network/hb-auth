@@ -336,6 +336,18 @@ abstract class Client {
   }
 
   /**
+   * @description Method that imports a new key for given user
+   * This method requires user to be authenticated or unlocked first
+   * @param username Username
+   * @param wifKey WIF key
+   * @param keyType Key authority type
+   * @returns {Promise<string>} Public Key
+   */
+  public async importKey(username: string, wifKey: string, keyType: KeyAuthorityType): Promise<string> {
+    return await this.#auth.importKey(username, wifKey, keyType);
+  }
+
+  /**
    * @description Method that ends existing user session. This is different than locking user.
    * When this is called any callback set via @see {Client.setSessionCallback} will fire.
    */

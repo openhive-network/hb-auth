@@ -280,6 +280,24 @@ test.describe('HB Auth Offline Client base tests', () => {
         expect(error).toBe('Not authorized, missing authority');
     });
 
+    test('Should user able to import key after login or unlock', async ({ page: _page }) => {
+        await navigate(_page);
+        const singnedWithNewKey = await _page.evaluate(async ({ username, password, keys, txs }) => {
+            const instance = new AuthOfflineClient({ workerUrl: "/dist/worker.js" });
+            await instance.initialize();
+            await instance.register(username, password, keys[0].private, keys[0].type as KeyAuthorityType);
+            // lock wallet and unlock, then add key
+            await instance.lock();
+            await instance.unlock(username, password);
+            await instance.importKey(username, keys[1].private, keys[1].type as KeyAuthorityType);
+
+            const signed = await instance.sign(username, txs[1].digest, keys[1].type as KeyAuthorityType);
+            return signed;
+        }, user);
+
+        expect(singnedWithNewKey).toBe(user.txs[1].signed);
+    });
+
     test('Should user able to lock/unlock wallet during user\'s session time', async () => {
         const locked = await page.evaluate(async ({ username, password, keys }) => {
             await authInstance.logout();

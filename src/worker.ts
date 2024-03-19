@@ -255,7 +255,7 @@ class AuthWorker {
     }
   }
 
-  public async importKey(
+  private async importKey(
     wallet: IBeekeeperUnlockedWallet,
     wifKey: string,
     keyType: KeyAuthorityType
@@ -279,12 +279,21 @@ class AuthWorker {
     }
   }
 
-  public async getWallet(name: string): Promise<IBeekeeperWallet | undefined> {
+  public async importKeyForUser(username: string, wifKey: string, keyType: KeyAuthorityType): Promise<string> {
+    const wallet = await this.getWallet(username);
+    if (wallet?.unlocked) {
+      return await this.importKey(wallet?.unlocked, wifKey, keyType);
+    } else {
+      throw new AuthorizationError('User is not logged in. Please login for importing key');
+    }
+  }
+
+  private async getWallet(name: string): Promise<IBeekeeperWallet | undefined> {
     const wallets = await this.getWallets();
     return wallets.find((wallet) => wallet.name === name);
   }
 
-  public async getWallets(): Promise<IBeekeeperWallet[]> {
+  private async getWallets(): Promise<IBeekeeperWallet[]> {
     return this.session.listWallets();
   }
 
@@ -302,7 +311,7 @@ class AuthWorker {
         registeredKeyTypes: await this.getRegisteredKeyTypes(username)
       };
     } catch (error) {
-      throw new GenericError(`Internal error: \n${error as string}`);
+      throw new InternalError(error);
     }
   }
 
@@ -536,6 +545,10 @@ class Auth {
 
   public async unlock(username: string, password: string): Promise<void> {
     await (await this.getWorker()).unlock(username, password);
+  }
+
+  public async importKey(username: string, wifKey: string, keyType: KeyAuthorityType): Promise<string> {
+    return await (await this.getWorker()).importKeyForUser(username, wifKey, keyType);
   }
 
   public async authenticate(

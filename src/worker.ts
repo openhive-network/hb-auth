@@ -3,6 +3,7 @@ import createBeekeeperApp, {
   type IBeekeeperSession,
   type IBeekeeperInstance,
   type IBeekeeperWallet,
+  type IBeekeeperUnlockedWallet,
 } from "@hive/beekeeper";
 import { AuthorizationError, GenericError, InternalError } from "./errors";
 
@@ -140,7 +141,7 @@ class AuthWorker {
     }
   }
 
-  private async * processNewRegistration(username: string, password: string, wifKey: string, keyType: KeyAuthorityType, digest: string): AsyncGenerator<any> {
+  private async * processNewRegistration(username: string, password: string, digest: string, wifKey: string, keyType: KeyAuthorityType): AsyncGenerator<any> {
     try {
       this._registration = new Registration();
       const signed = await this._registration.request(username, wifKey, digest);
@@ -160,20 +161,20 @@ class AuthWorker {
         if (String(error).includes("key")) {
           throw new AuthorizationError("Invalid key or key format");
         } else {
-          throw new AuthorizationError("Invalid credentials");
+          throw new AuthorizationError(error);
         }
       }
     }
   }
 
-  public async registerUser(username: string, password: string, wifKey: string, keyType: KeyAuthorityType, digest: string): Promise<string> {
+  public async registerUser(username: string, password: string, digest: string, wifKey: string, keyType: KeyAuthorityType): Promise<string> {
     if (!username || !password || !wifKey || !keyType) {
       throw new AuthorizationError("Empty field");
     }
 
     this.checkKeyType(keyType);
 
-    this._generator = this.processNewRegistration(username, password, wifKey, keyType, digest);
+    this._generator = this.processNewRegistration(username, password, digest, wifKey, keyType);
 
     return (await this._generator.next()).value
   }
@@ -184,20 +185,18 @@ class AuthWorker {
     wifKey: string,
     keyType: KeyAuthorityType,
   ): Promise<string> {
-    const wallets = await this.getWallets();
-    const exist = wallets.find((wallet) => wallet.name === username);
+    const exist = await this.getWallet(username);
 
     if (exist) {
-      const alias = await this.getAlias(`${username}@${keyType}`);
-      if (alias?.alias) throw new AuthorizationError(`This user is already registered with '${keyType}' authority`);
-
-      const unlocked = exist.unlock(password);
-      const pubKey = await unlocked.importKey(wifKey);
-      await this.addAlias(username, pubKey, keyType);
+      if (exist?.unlocked) {
+        await this.importKey(exist.unlocked, wifKey, keyType);
+      } else {
+        const unlocked = exist.unlock(password);
+        await this.importKey(unlocked, wifKey, keyType);
+      }
     } else {
-      const unlocked = await this.session.createWallet(username, password);
-      const pubKey = await unlocked.wallet.importKey(wifKey);
-      await this.addAlias(username, pubKey, keyType);
+      const { wallet } = await this.session.createWallet(username, password);
+      await this.importKey(wallet, wifKey, keyType);
     }
 
     if (!this.loggedInUser) {
@@ -252,6 +251,30 @@ class AuthWorker {
         } else {
           throw new InternalError(error);
         }
+      }
+    }
+  }
+
+  public async importKey(
+    wallet: IBeekeeperUnlockedWallet,
+    wifKey: string,
+    keyType: KeyAuthorityType
+  ): Promise<string> {
+    this.checkKeyType(keyType);
+
+    try {
+      const alias = await this.getAlias(`${wallet.name}@${keyType}`);
+      if (alias?.alias) throw new AuthorizationError(`This user is already registered with '${keyType}' authority`);
+
+      const pubKey = await wallet.importKey(wifKey);
+      await this.addAlias(wallet.name, pubKey, keyType);
+      return pubKey;
+
+    } catch (error) {
+      if (error instanceof AuthorizationError) {
+        throw error;
+      } else {
+        throw new InternalError(error);
       }
     }
   }
@@ -487,13 +510,13 @@ class Auth {
   public async register(
     username: string,
     password: string,
+    digest: string,
     wifKey: string,
     keyType: KeyAuthorityType,
-    digest: string
   ): Promise<string> {
     return await (
       await this.getWorker()
-    ).registerUser(username, password, wifKey, keyType, digest);
+    ).registerUser(username, password, digest, wifKey, keyType);
   }
 
   public async onAuthComplete(failed: boolean): Promise<void> {

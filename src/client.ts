@@ -251,9 +251,9 @@ abstract class Client {
     const signature = await this.#auth.register(
       username,
       password,
+      txBuilder.sigDigest,
       wifKey,
       keyType,
-      txBuilder.sigDigest
     );
 
     txBuilder.build(signature);

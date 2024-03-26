@@ -195,6 +195,31 @@ test.describe('HB Auth Online Client base tests', () => {
         expect(error).toBe('Not authorized, missing authority');
     });
 
+    test('Should throw if invalid password given', async () => {
+        const error = await page.evaluate(async ({ username, keys }) => {
+           try {
+            await authInstance.logout();
+            await authInstance.authenticate(username, 'abc', keys[0].type as KeyAuthorityType);
+           } catch (error) {
+            return error.message;
+           }
+        }, user)
+
+        expect(error).toBe("Invalid credentials");
+
+        const error2 = await page.evaluate(async ({ username, password, keys }) => {
+           try {
+            await authInstance.authenticate(username, password, keys[0].type as KeyAuthorityType);
+            await authInstance.lock();
+            await authInstance.unlock(username, 'abc');
+           } catch (error) {
+            return error.message;
+           }
+        }, user)
+
+        expect(error2).toBe("Invalid credentials");
+    })
+
     test('Should user register/login only with supported authorities active and posting authority', async () => {
         const error = await page.evaluate(async ({ username, password }) => {
             try {

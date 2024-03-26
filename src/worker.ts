@@ -248,6 +248,8 @@ class AuthWorker {
       } else {
         if (String(error).includes("already")) {
           throw new AuthorizationError("User is already logged in");
+        } else if (String(error).toLowerCase().includes("invalid password")) {
+          throw new AuthorizationError("Invalid credentials");
         } else {
           throw new InternalError(error);
         }
@@ -418,7 +420,11 @@ class AuthWorker {
       if (error instanceof AuthorizationError) {
         throw error;
       } else {
-        throw new InternalError(error);
+        if (String(error).toLowerCase().includes("invalid password")) {
+          throw new AuthorizationError("Invalid credentials");
+        } else {
+          throw new InternalError(error);
+        }
       }
     }
   }

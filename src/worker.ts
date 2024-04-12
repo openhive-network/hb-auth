@@ -1,4 +1,5 @@
 import { type IDBPDatabase, openDB } from "idb";
+import * as Comlink from 'comlink';
 import createBeekeeperApp, {
   type IBeekeeperSession,
   type IBeekeeperInstance,
@@ -6,10 +7,6 @@ import createBeekeeperApp, {
   type IBeekeeperUnlockedWallet,
 } from "@hive/beekeeper";
 import { AuthorizationError, GenericError, InternalError } from "./errors";
-
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment, @typescript-eslint/prefer-ts-expect-error
-// @ts-ignore
-importScripts("https://unpkg.com/comlink/dist/umd/comlink.js");
 
 const BEEKEEPER_LOGS = true;
 const KEY_TYPES = ["active", "posting"] as const;
@@ -598,7 +595,6 @@ const exports = {
   Auth,
 };
 
-declare const Comlink: any;
 declare let onconnect: any;
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars, prefer-const

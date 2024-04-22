@@ -8,7 +8,7 @@ declare const AuthOfflineClient: typeof OfflineClient;
 let browser!: ChromiumBrowser;
 
 const user = {
-    username: 'test',
+    username: 'test.user',
     password: 'banana',
     keys: [
         {

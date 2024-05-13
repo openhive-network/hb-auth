@@ -26,12 +26,12 @@ const user = {
         // posting
         {
             'digest': '390f34297cfcb8fa4b37353431ecbab05b8dc0c9c15fb9ca1a3d510c52177542',
-            'signed': '206fef91d06a7fbf0c987b68c6793820c8262232c8b76ab1469c042a1edd07c02761818a108d8faf94d886dd37f351e49b4cb96646eb3665ffd61e881805571d44'
+            'signed': '1fb4cce36092f0422dfd96b4435a28f2edfb3348940e05fd9958a6304344649ae3097ecb7d4723aba1e6ae00ce76c2cf692898176fd68c93265d1f9c960a09fc28'
         },
         // active
         {
             'digest': '390f34297cfcb8fa4b37353431ecbab05b8dc0c9c15fb9ca1a3d510c52177542',
-            'signed': '1f3345fb4b04cb1b8729ad2f1eca1d707463a0b57cb73000366290a37f3f53311d05394a2ddbf82f854d013b24e20f6e8aa46a8c7d12c1208630654836e7faf504'
+            'signed': '1ff05a765007d6da4de2626e4e15cb79aab2df9ab6077acb12090e24df64310a1f46d6dc4b0a2a7e3c5b43cb6959e2b33fcaf1f416c7bd506d7a8ac305261ec8fd'
         },
 
     ]

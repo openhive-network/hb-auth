@@ -1,5 +1,5 @@
 {
-  "name": "@hive/hb-auth",
+  "name": "@hiveio/hb-auth",
   "version": "0.0.1-LastGitTagPlaceholder.GitHashPlaceholder",
   "description": "Auth library for browser applications that uses Beekeeper",
   "license": "SEE LICENSE IN LICENSE.md",
@@ -70,8 +70,8 @@
     "typescript": "^5.2.2"
   },
   "dependencies": {
-    "@hive/beekeeper": "1.27.5-rc7-240422122957",
-    "@hive/wax": "0.3.8-240425134437",
+    "@hiveio/beekeeper": "1.27.5-rc7-240510204534",
+    "@hiveio/wax": "0.3.8-240510195012",
     "comlink": "^4.4.1",
     "idb": "^7.1.1"
   }

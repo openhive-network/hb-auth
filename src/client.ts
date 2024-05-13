@@ -1,4 +1,4 @@
-import { type IHiveChainInterface, type ITransactionBuilder, createHiveChain } from "@hive/wax";
+import { type IHiveChainInterface, type ITransactionBuilder, createHiveChain } from "@hiveio/wax";
 import {
   proxy,
   wrap,
@@ -251,7 +251,7 @@ abstract class Client {
     const signature = await this.#auth.register(
       username,
       password,
-      txBuilder.sigDigest,
+      txBuilder.legacy_sigDigest,
       wifKey,
       keyType,
     );
@@ -292,7 +292,7 @@ abstract class Client {
         username,
         password,
         keyType,
-        txBuilder.sigDigest,
+        txBuilder.legacy_sigDigest,
       );
 
       txBuilder.build(signature);
@@ -413,7 +413,7 @@ class OnlineClient extends Client {
     txBuilder: ITransactionBuilder,
     keyType: KeyAuthorityType,
   ): Promise<boolean> {
-    const verificationResult = await this.verify(username, txBuilder.sigDigest, txBuilder.build().signatures[0], keyType);
+    const verificationResult = await this.verify(username, txBuilder.legacy_sigDigest, txBuilder.build().signatures[0], keyType);
 
     if (this.isStrict && verificationResult) {
       const accounts = await this.hiveChain.api.database_api.find_accounts({ accounts: [username] });
@@ -454,12 +454,10 @@ class OnlineClient extends Client {
     const verifyResponse = await fetch(this.options.node, {
       method: "post",
       body: JSON.stringify(body),
-    });
-
-    const {
-      result: { valid },
-    } = await verifyResponse.json();
-    return valid;
+    })
+    
+    const response = await verifyResponse.json();
+    return !!response?.result?.valid;
   }
 
   public async register(

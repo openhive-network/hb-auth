@@ -16,17 +16,18 @@ include:
       - '/templates/wasm_build.gitlab-ci.yml'
 
 build_hb_auth:
-  extends: .job-defaults
+  extends: .npm_build_template
   stage: build
-  image: ${EMSCRIPTEN_IMAGE}
-  before_script:
-    - pnpm install --frozen-lockfile
-  script:
-    - pnpm run build
+  variables:
+    DIST_DIR: "${CI_PROJECT_DIR}/dist"
+    NPM_PACKAGE_SCOPE: "@hiveio"
+    NPM_PACKAGE_NAME: "hb-auth"
+
   tags:
     - public-runner-docker
   artifacts:
     paths:
+      - "${DIST_DIR}/*.tgz"  # Built package
       - "$CI_PROJECT_DIR/package.json"
       - "$CI_PROJECT_DIR/dist"
       - "$CI_PROJECT_DIR/README.md"
@@ -34,37 +35,24 @@ build_hb_auth:
       - "$CI_PROJECT_DIR/LICENSE.md"
 
 test_hb_auth:
-  extends: .job-defaults
+  extends: .npm_test_template
+  variables:
+    PACKAGE_TGZ_PATH: "${BUILT_PACKAGE_PATH}"
+
   needs: 
     - job: build_hb_auth
       artifacts: true
   stage: test
-  image: ${EMSCRIPTEN_IMAGE}
-  before_script:
-    - pnpm install --frozen-lockfile
-  script:
-    - . "$NVM_DIR/nvm.sh"  # This loads nvm
-    - npm run test
   tags:
     - public-runner-docker
-  artifacts:
-    reports:
-      junit: results.xml
-    paths:
-      - "$CI_PROJECT_DIR/results.json"
-
 
 publish_hb_auth:
-  extends: .job-defaults
+  extends: .npm_deploy_package_template
   stage: publish
-  image: ${EMSCRIPTEN_IMAGE}
   variables:
-    PUBLISH_TOKEN: "$NPM_TOKEN"
-    NPM_SCOPE: "@hive"
-    NPM_REGISTRY: "gitlab.syncad.com/api/v4/projects/${CI_PROJECT_ID}/packages/npm/"
-  script:
-    - scripts/ci-helpers/bump_npm_version.sh "$PUBLISH_TOKEN" "$NPM_SCOPE" "$NPM_REGISTRY"
-    - scripts/ci-helpers/npm_publish.sh "$NPM_REGISTRY"
+    PACKAGE_TGZ_PATH: "${BUILT_PACKAGE_PATH}"
+    NPM_PACKAGE_SCOPE: "@hiveio"
+
   needs:
     - job: test_hb_auth
     - job: build_hb_auth

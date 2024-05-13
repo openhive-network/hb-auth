@@ -7,7 +7,7 @@
   "module": "dist/hb-auth.js",
   "types": "dist/hb-auth.d.ts",
   "type": "module",
-  "packageManager": "pnpm@9.1.1",
+  "packageManager": "pnpm@9.1.1+sha256.9551e803dcb7a1839fdf5416153a844060c7bce013218ce823410532504ac10b",
   "scripts": {
     "build": "pnpm run clean && rollup -c --bundleConfigAsCjs",
     "clean": "rm -rf ./dist",
@@ -70,8 +70,8 @@
     "typescript": "^5.2.2"
   },
   "dependencies": {
-    "@hiveio/beekeeper": "1.27.5-rc7-240510204534",
-    "@hiveio/wax": "0.3.8-240510195012",
+    "@hiveio/beekeeper": "1.27.5-rc7-stable.240510204534",
+    "@hiveio/wax": "0.3.8-stable.240513130853",
     "comlink": "^4.4.1",
     "idb": "^7.1.1"
   }

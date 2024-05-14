@@ -1,11 +1,11 @@
-import { type IHiveChainInterface, type ITransactionBuilder, createHiveChain } from "@hiveio/wax";
 import {
-  proxy,
-  wrap,
-  type Endpoint,
-  type Remote,
-  type Local,
-} from "comlink";
+  type ApiTransaction,
+  type IHiveChainInterface,
+  type ITransactionBuilder,
+  TTransactionPackType,
+  createHiveChain,
+} from "@hiveio/wax";
+import { proxy, wrap, type Endpoint, type Remote, type Local } from "comlink";
 import { AuthorizationError, GenericError } from "./errors";
 import { isSupportSharedWorker, isSupportWebWorker } from "./environment";
 import type { Auth, WorkerExpose, AuthUser, KeyAuthorityType } from "./worker";
@@ -45,7 +45,7 @@ export interface ClientOptions {
   workerUrl: string;
   /**
    * @description Session timeout (in seconds) for Wallet, after that session will be destroyed and user must authenticate again
-   * @type {number} 
+   * @type {number}
    * @defaultValue `900`
    */
   sessionTimeout: number;
@@ -56,7 +56,7 @@ const defaultOptions: ClientOptions = {
   chainId: "beeab0de00000000000000000000000000000000000000000000000000000000",
   node: "https://api.hive.blog",
   workerUrl: "/auth/worker.js",
-  sessionTimeout: 900
+  sessionTimeout: 900,
 };
 
 /**
@@ -74,7 +74,7 @@ abstract class Client {
   /** @hidden */
   protected hiveChain!: IHiveChainInterface;
   /** @hidden */
-  #sessionEndCallback: () => Promise<void> = async () => { };
+  #sessionEndCallback: () => Promise<void> = async () => {};
 
   /** @hidden */
   protected set options(options: ClientOptions) {
@@ -112,7 +112,10 @@ abstract class Client {
    * @param strict @type {boolean} - Strict authorization by checking if public key in signature matches user's public key, so other authorities will be ignored. Note that this doesn't affect OfflineClient's behaviour.
    * @param clientOptions @type {ClientOptions} - Options
    */
-  constructor(private readonly strict: boolean, readonly clientOptions: Partial<ClientOptions> = {}) {
+  constructor(
+    private readonly strict: boolean,
+    readonly clientOptions: Partial<ClientOptions> = {},
+  ) {
     this.isStrict = strict;
     this.options = { ...defaultOptions, ...clientOptions };
     if (!isSupportWebWorker) {
@@ -130,8 +133,6 @@ abstract class Client {
   }
 
   private async getWorkerEndpoint(): Promise<Endpoint> {
-
-
     // TODO: detect missing worker file and throw
 
     return new Promise((resolve, reject) => {
@@ -143,7 +144,7 @@ abstract class Client {
         worker = new Worker(this.options.workerUrl);
         return resolve(worker);
       }
-    })
+    });
   }
 
   /** @hidden */
@@ -160,7 +161,10 @@ abstract class Client {
     try {
       await this.loadWebWorker();
       this.#auth = await new this.#worker.Auth(this.options.sessionTimeout);
-      this.hiveChain = await createHiveChain({ apiEndpoint: this.options.node, chainId: this.options.chainId });
+      this.hiveChain = await createHiveChain({
+        apiEndpoint: this.options.node,
+        chainId: this.options.chainId,
+      });
 
       return Promise.resolve(this);
     } catch (err) {
@@ -201,12 +205,15 @@ abstract class Client {
   private async getVerificationTx(
     username: string,
     keyType: KeyAuthorityType,
-    offline?: boolean
+    offline?: boolean,
   ): Promise<ITransactionBuilder> {
     let txBuilder: ITransactionBuilder;
 
     if (offline) {
-      txBuilder = new this.hiveChain.TransactionBuilder('04e3256d94edee6ac72add19c1439260fbb00701', "+1m");
+      txBuilder = new this.hiveChain.TransactionBuilder(
+        "04e3256d94edee6ac72add19c1439260fbb00701",
+        "+1m",
+      );
     } else {
       txBuilder = await this.hiveChain.getTransactionBuilder("+1m");
     }
@@ -245,24 +252,20 @@ abstract class Client {
     password: string,
     wifKey: string,
     keyType: KeyAuthorityType,
-    offline?: boolean
+    offline?: boolean,
   ): Promise<AuthStatus> {
     const txBuilder = await this.getVerificationTx(username, keyType, offline);
     const signature = await this.#auth.register(
       username,
       password,
-      txBuilder.legacy_sigDigest,
+      txBuilder.sigDigest,
       wifKey,
       keyType,
     );
 
     txBuilder.build(signature);
 
-    const authenticated = await this.authorize(
-      username,
-      txBuilder,
-      keyType,
-    );
+    const authenticated = await this.authorize(username, txBuilder, keyType);
 
     if (authenticated) {
       await this.#auth.onAuthComplete(false);
@@ -284,24 +287,24 @@ abstract class Client {
     username: string,
     password: string,
     keyType: KeyAuthorityType,
-    offline?: boolean
+    offline?: boolean,
   ): Promise<AuthStatus> {
     try {
-      const txBuilder = await this.getVerificationTx(username, keyType, offline);
+      const txBuilder = await this.getVerificationTx(
+        username,
+        keyType,
+        offline,
+      );
       const signature = await this.#auth.authenticate(
         username,
         password,
         keyType,
-        txBuilder.legacy_sigDigest,
+        txBuilder.sigDigest,
       );
 
       txBuilder.build(signature);
 
-      const authenticated = await this.authorize(
-        username,
-        txBuilder,
-        keyType,
-      );
+      const authenticated = await this.authorize(username, txBuilder, keyType);
 
       if (authenticated) {
         await this.#auth.onAuthComplete(false);
@@ -327,7 +330,7 @@ abstract class Client {
   /**
    * @description Method that unlocks existing user's session.
    * This method will extend user's session time after unlocking.
-   * This is different than authenticate method. 
+   * This is different than authenticate method.
    * @param username Username
    * @param password Password
    */
@@ -343,7 +346,11 @@ abstract class Client {
    * @param keyType Key authority type
    * @returns {Promise<string>} Public Key
    */
-  public async importKey(username: string, wifKey: string, keyType: KeyAuthorityType): Promise<string> {
+  public async importKey(
+    username: string,
+    wifKey: string,
+    keyType: KeyAuthorityType,
+  ): Promise<string> {
     return await this.#auth.importKey(username, wifKey, keyType);
   }
 
@@ -390,14 +397,15 @@ class OfflineClient extends Client {
     username: string,
     password: string,
     wifKey: string,
-    keyType: KeyAuthorityType): Promise<AuthStatus> {
+    keyType: KeyAuthorityType,
+  ): Promise<AuthStatus> {
     return await super.register(username, password, wifKey, keyType, true);
   }
 
   public async authenticate(
     username: string,
     password: string,
-    keyType: KeyAuthorityType
+    keyType: KeyAuthorityType,
   ): Promise<AuthStatus> {
     return await super.authenticate(username, password, keyType, true);
   }
@@ -413,10 +421,14 @@ class OnlineClient extends Client {
     txBuilder: ITransactionBuilder,
     keyType: KeyAuthorityType,
   ): Promise<boolean> {
-    const verificationResult = await this.verify(username, txBuilder.sigDigest, txBuilder.build().signatures[0], keyType);
+    const verificationResult = await this.verify(
+      txBuilder.toApiJson() as ApiTransaction,
+    );
 
     if (this.isStrict && verificationResult) {
-      const accounts = await this.hiveChain.api.database_api.find_accounts({ accounts: [username] });
+      const accounts = await this.hiveChain.api.database_api.find_accounts({
+        accounts: [username],
+      });
       const account_key = accounts.accounts[0][keyType].key_auths[0][0];
 
       return account_key.endsWith(txBuilder.signatureKeys[0]);
@@ -425,53 +437,32 @@ class OnlineClient extends Client {
     return verificationResult;
   }
 
-  private async verify(
-    username: string,
-    digest: string,
-    signature: string,
-    keyType: KeyAuthorityType,
-  ): Promise<boolean> {
-    const body: any = {
-      jsonrpc: "2.0",
-      method: "database_api.verify_signatures",
-      params: {
-        hash: digest,
-        signatures: [signature],
-        required_other: [],
-        required_active: [],
-        required_owner: [],
-        required_posting: [],
-      },
-      id: 1,
-    };
+  private async verify(trx: ApiTransaction): Promise<boolean> {
+    try {
+      const response = await this.hiveChain.api.database_api.verify_authority({
+        trx,
+        pack: TTransactionPackType.HF_26,
+      });
 
-    if (keyType === "posting") {
-      body.params.required_posting.push(username);
-    } else {
-      body.params.required_active.push(username);
+      return response.valid;
+    } catch (err) {
+      return false;
     }
-
-    const verifyResponse = await fetch(this.options.node, {
-      method: "post",
-      body: JSON.stringify(body),
-    })
-    
-    const response = await verifyResponse.json();
-    return !!response?.result?.valid;
   }
 
   public async register(
     username: string,
     password: string,
     wifKey: string,
-    keyType: KeyAuthorityType): Promise<AuthStatus> {
+    keyType: KeyAuthorityType,
+  ): Promise<AuthStatus> {
     return await super.register(username, password, wifKey, keyType, false);
   }
 
   public async authenticate(
     username: string,
     password: string,
-    keyType: KeyAuthorityType
+    keyType: KeyAuthorityType,
   ): Promise<AuthStatus> {
     return await super.authenticate(username, password, keyType, false);
   }

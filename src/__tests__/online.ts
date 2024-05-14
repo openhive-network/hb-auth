@@ -38,7 +38,7 @@ const user = {
         // other authority
         {
             'digest': '390f34297cfcb8fa4b37353431ecbab05b8dc0c9c15fb9ca1a3d510c52177542',
-            'signed': '207b3b7d17d1056e759891b50165e8c649b8e8499646a7b52ee78032b2753277b24d55f166871c5aff7607d00cfd64b1d0d9b353eee46f343e351b7bef81eb4d34'
+            'signed': '20a11af04841840e5bc3ddc6a451ab9bb2f3e5351615178acb127b176dc254886b353912011da4e612671cc18e9b126ae22bc662938e3f8b218ad65fb89d14e3c9'
         },
     ]
 }

@@ -413,7 +413,7 @@ class OnlineClient extends Client {
     txBuilder: ITransactionBuilder,
     keyType: KeyAuthorityType,
   ): Promise<boolean> {
-    const verificationResult = await this.verify(username, txBuilder.legacy_sigDigest, txBuilder.build().signatures[0], keyType);
+    const verificationResult = await this.verify(username, txBuilder.sigDigest, txBuilder.build().signatures[0], keyType);
 
     if (this.isStrict && verificationResult) {
       const accounts = await this.hiveChain.api.database_api.find_accounts({ accounts: [username] });

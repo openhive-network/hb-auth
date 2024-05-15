@@ -1,4 +1,4 @@
-import { OfflineClient } from "@hive/hb-auth";
+import { OfflineClient } from "@hiveio/hb-auth";
 
 const CHAIN_ID =
   "beeab0de00000000000000000000000000000000000000000000000000000000";

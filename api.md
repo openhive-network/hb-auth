@@ -1,7 +1,7 @@
 
 <a name="_modulesmd"></a>
 
-# @hive/hb-auth
+# @hiveio/hb-auth
 
 ## Classes
 

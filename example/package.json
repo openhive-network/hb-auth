@@ -10,7 +10,7 @@
   "keywords": [],
   "author": "",
   "dependencies": {
-    "@hive/hb-auth": "file:../"
+    "@hiveio/hb-auth": "file:../"
   },
   "devDependencies": {
     "parcel": "^2.10.2",

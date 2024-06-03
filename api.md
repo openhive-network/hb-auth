@@ -5,7 +5,6 @@
 
 ## Classes
 
-- [AuthorizationError](#classesauthorizationerrormd)
 - [OfflineClient](#classesofflineclientmd)
 - [OnlineClient](#classesonlineclientmd)
 
@@ -23,7 +22,7 @@
 
 #### Defined in
 
-dist/hb-auth.d.ts:14
+hb-auth.d.ts:13
 
 ## Variables
 
@@ -33,7 +32,7 @@ dist/hb-auth.d.ts:14
 
 #### Defined in
 
-dist/hb-auth.d.ts:4
+hb-auth.d.ts:3
 
 ___
 
@@ -43,7 +42,7 @@ ___
 
 #### Defined in
 
-dist/hb-auth.d.ts:6
+hb-auth.d.ts:5
 
 ___
 
@@ -53,160 +52,7 @@ ___
 
 #### Defined in
 
-dist/hb-auth.d.ts:5
-
-
-<a name="classesauthorizationerrormd"></a>
-
-# Class: AuthorizationError
-
-## Hierarchy
-
-- `Error`
-
-  ↳ **`AuthorizationError`**
-
-## Constructors
-
-### constructor
-
-• **new AuthorizationError**(`message`): [`AuthorizationError`](#classesauthorizationerrormd)
-
-#### Parameters
-
-| Name | Type |
-| :------ | :------ |
-| `message` | `any` |
-
-#### Returns
-
-[`AuthorizationError`](#classesauthorizationerrormd)
-
-#### Overrides
-
-Error.constructor
-
-#### Defined in
-
-dist/hb-auth.d.ts:10
-
-## Properties
-
-### message
-
-• **message**: `any`
-
-#### Overrides
-
-Error.message
-
-#### Defined in
-
-dist/hb-auth.d.ts:9
-
-___
-
-### name
-
-• **name**: `string`
-
-#### Inherited from
-
-Error.name
-
-#### Defined in
-
-node_modules/.pnpm/typescript@5.2.2/node_modules/typescript/lib/lib.es5.d.ts:1067
-
-___
-
-### stack
-
-• `Optional` **stack**: `string`
-
-#### Inherited from
-
-Error.stack
-
-#### Defined in
-
-node_modules/.pnpm/typescript@5.2.2/node_modules/typescript/lib/lib.es5.d.ts:1069
-
-___
-
-### prepareStackTrace
-
-▪ `Static` `Optional` **prepareStackTrace**: (`err`: `Error`, `stackTraces`: `CallSite`[]) => `any`
-
-#### Type declaration
-
-▸ (`err`, `stackTraces`): `any`
-
-Optional override for formatting stack traces
-
-##### Parameters
-
-| Name | Type |
-| :------ | :------ |
-| `err` | `Error` |
-| `stackTraces` | `CallSite`[] |
-
-##### Returns
-
-`any`
-
-**`See`**
-
-https://v8.dev/docs/stack-trace-api#customizing-stack-traces
-
-#### Inherited from
-
-Error.prepareStackTrace
-
-#### Defined in
-
-node_modules/.pnpm/@types+node@20.10.8/node_modules/@types/node/globals.d.ts:28
-
-___
-
-### stackTraceLimit
-
-▪ `Static` **stackTraceLimit**: `number`
-
-#### Inherited from
-
-Error.stackTraceLimit
-
-#### Defined in
-
-node_modules/.pnpm/@types+node@20.10.8/node_modules/@types/node/globals.d.ts:30
-
-## Methods
-
-### captureStackTrace
-
-▸ **captureStackTrace**(`targetObject`, `constructorOpt?`): `void`
-
-Create .stack property on a target object
-
-#### Parameters
-
-| Name | Type |
-| :------ | :------ |
-| `targetObject` | `object` |
-| `constructorOpt?` | `Function` |
-
-#### Returns
-
-`void`
-
-#### Inherited from
-
-Error.captureStackTrace
-
-#### Defined in
-
-node_modules/.pnpm/@types+node@20.10.8/node_modules/@types/node/globals.d.ts:21
+hb-auth.d.ts:4
 
 
 <a name="classesofflineclientmd"></a>
@@ -241,13 +87,17 @@ for imported keys' validity.
 
 [`OfflineClient`](#classesofflineclientmd)
 
-#### Overrides
+**`Description`**
+
+Additional options for auth client
+
+#### Inherited from
 
 Client.constructor
 
 #### Defined in
 
-dist/hb-auth.d.ts:201
+hb-auth.d.ts:85
 
 ## Properties
 
@@ -261,21 +111,7 @@ Client.#private
 
 #### Defined in
 
-dist/hb-auth.d.ts:83
-
-___
-
-### clientOptions
-
-• `Readonly` **clientOptions**: `Partial`\<[`ClientOptions`](#interfacesclientoptionsmd)\>
-
-#### Overrides
-
-Client.clientOptions
-
-#### Defined in
-
-dist/hb-auth.d.ts:200
+hb-auth.d.ts:69
 
 ## Methods
 
@@ -301,7 +137,7 @@ Client.authenticate
 
 #### Defined in
 
-dist/hb-auth.d.ts:204
+hb-auth.d.ts:158
 
 ___
 
@@ -319,7 +155,7 @@ Client.authorize
 
 #### Defined in
 
-dist/hb-auth.d.ts:202
+hb-auth.d.ts:156
 
 ___
 
@@ -348,7 +184,7 @@ Client.getAuthByUser
 
 #### Defined in
 
-dist/hb-auth.d.ts:137
+hb-auth.d.ts:115
 
 ___
 
@@ -371,40 +207,7 @@ Client.getAuths
 
 #### Defined in
 
-dist/hb-auth.d.ts:130
-
-___
-
-### importKey
-
-▸ **importKey**(`username`, `wifKey`, `keyType`): `Promise`\<`string`\>
-
-#### Parameters
-
-| Name | Type | Description |
-| :------ | :------ | :------ |
-| `username` | `string` | Username |
-| `wifKey` | `string` | WIF key |
-| `keyType` | ``"active"`` \| ``"posting"`` | Key authority type |
-
-#### Returns
-
-`Promise`\<`string`\>
-
-Public Key
-
-**`Description`**
-
-Method that imports a new key for given user
-This method requires user to be authenticated or unlocked first
-
-#### Inherited from
-
-Client.importKey
-
-#### Defined in
-
-dist/hb-auth.d.ts:179
+hb-auth.d.ts:108
 
 ___
 
@@ -427,30 +230,7 @@ Client.initialize
 
 #### Defined in
 
-dist/hb-auth.d.ts:118
-
-___
-
-### lock
-
-▸ **lock**(): `Promise`\<`void`\>
-
-#### Returns
-
-`Promise`\<`void`\>
-
-**`Description`**
-
-Method that locks user session and keeps user session during session time.
-Note that when user session time ends, user should authenticate again.
-
-#### Inherited from
-
-Client.lock
-
-#### Defined in
-
-dist/hb-auth.d.ts:162
+hb-auth.d.ts:96
 
 ___
 
@@ -464,7 +244,7 @@ ___
 
 **`Description`**
 
-Method that ends existing user session. This is different than locking user.
+Method that ends existing user session.
 When this is called any callback set via
 
 **`See`**
@@ -477,7 +257,7 @@ Client.logout
 
 #### Defined in
 
-dist/hb-auth.d.ts:184
+hb-auth.d.ts:140
 
 ___
 
@@ -504,7 +284,7 @@ Client.register
 
 #### Defined in
 
-dist/hb-auth.d.ts:203
+hb-auth.d.ts:157
 
 ___
 
@@ -532,7 +312,7 @@ Client.setSessionEndCallback
 
 #### Defined in
 
-dist/hb-auth.d.ts:124
+hb-auth.d.ts:102
 
 ___
 
@@ -564,38 +344,7 @@ Client.sign
 
 #### Defined in
 
-dist/hb-auth.d.ts:192
-
-___
-
-### unlock
-
-▸ **unlock**(`username`, `password`): `Promise`\<`void`\>
-
-#### Parameters
-
-| Name | Type | Description |
-| :------ | :------ | :------ |
-| `username` | `string` | Username |
-| `password` | `string` | Password |
-
-#### Returns
-
-`Promise`\<`void`\>
-
-**`Description`**
-
-Method that unlocks existing user's session.
-This method will extend user's session time after unlocking.
-This is different than authenticate method.
-
-#### Inherited from
-
-Client.unlock
-
-#### Defined in
-
-dist/hb-auth.d.ts:170
+hb-auth.d.ts:148
 
 
 <a name="classesonlineclientmd"></a>
@@ -617,13 +366,12 @@ user by verifying user's signature through the network.
 
 ### constructor
 
-• **new OnlineClient**(`strict`, `clientOptions?`): [`OnlineClient`](#classesonlineclientmd)
+• **new OnlineClient**(`clientOptions?`): [`OnlineClient`](#classesonlineclientmd)
 
 #### Parameters
 
 | Name | Type |
 | :------ | :------ |
-| `strict` | `boolean` |
 | `clientOptions?` | `Partial`\<[`ClientOptions`](#interfacesclientoptionsmd)\> |
 
 #### Returns
@@ -640,7 +388,7 @@ Client.constructor
 
 #### Defined in
 
-dist/hb-auth.d.ts:107
+hb-auth.d.ts:85
 
 ## Properties
 
@@ -654,21 +402,7 @@ Client.#private
 
 #### Defined in
 
-dist/hb-auth.d.ts:83
-
-___
-
-### clientOptions
-
-• `Readonly` **clientOptions**: `Partial`\<[`ClientOptions`](#interfacesclientoptionsmd)\>
-
-#### Inherited from
-
-Client.clientOptions
-
-#### Defined in
-
-dist/hb-auth.d.ts:85
+hb-auth.d.ts:69
 
 ___
 
@@ -678,7 +412,7 @@ ___
 
 #### Defined in
 
-dist/hb-auth.d.ts:212
+hb-auth.d.ts:166
 
 ## Methods
 
@@ -704,20 +438,21 @@ Client.authenticate
 
 #### Defined in
 
-dist/hb-auth.d.ts:214
+hb-auth.d.ts:168
 
 ___
 
 ### authorize
 
-▸ **authorize**(`username`, `txBuilder`, `keyType`): `Promise`\<`boolean`\>
+▸ **authorize**(`username`, `digest`, `signature`, `keyType`): `Promise`\<`boolean`\>
 
 #### Parameters
 
 | Name | Type |
 | :------ | :------ |
 | `username` | `string` |
-| `txBuilder` | `ITransactionBuilder` |
+| `digest` | `string` |
+| `signature` | `string` |
 | `keyType` | ``"active"`` \| ``"posting"`` |
 
 #### Returns
@@ -730,7 +465,7 @@ Client.authorize
 
 #### Defined in
 
-dist/hb-auth.d.ts:211
+hb-auth.d.ts:165
 
 ___
 
@@ -759,7 +494,7 @@ Client.getAuthByUser
 
 #### Defined in
 
-dist/hb-auth.d.ts:137
+hb-auth.d.ts:115
 
 ___
 
@@ -782,40 +517,7 @@ Client.getAuths
 
 #### Defined in
 
-dist/hb-auth.d.ts:130
-
-___
-
-### importKey
-
-▸ **importKey**(`username`, `wifKey`, `keyType`): `Promise`\<`string`\>
-
-#### Parameters
-
-| Name | Type | Description |
-| :------ | :------ | :------ |
-| `username` | `string` | Username |
-| `wifKey` | `string` | WIF key |
-| `keyType` | ``"active"`` \| ``"posting"`` | Key authority type |
-
-#### Returns
-
-`Promise`\<`string`\>
-
-Public Key
-
-**`Description`**
-
-Method that imports a new key for given user
-This method requires user to be authenticated or unlocked first
-
-#### Inherited from
-
-Client.importKey
-
-#### Defined in
-
-dist/hb-auth.d.ts:179
+hb-auth.d.ts:108
 
 ___
 
@@ -838,30 +540,7 @@ Client.initialize
 
 #### Defined in
 
-dist/hb-auth.d.ts:118
-
-___
-
-### lock
-
-▸ **lock**(): `Promise`\<`void`\>
-
-#### Returns
-
-`Promise`\<`void`\>
-
-**`Description`**
-
-Method that locks user session and keeps user session during session time.
-Note that when user session time ends, user should authenticate again.
-
-#### Inherited from
-
-Client.lock
-
-#### Defined in
-
-dist/hb-auth.d.ts:162
+hb-auth.d.ts:96
 
 ___
 
@@ -875,7 +554,7 @@ ___
 
 **`Description`**
 
-Method that ends existing user session. This is different than locking user.
+Method that ends existing user session.
 When this is called any callback set via
 
 **`See`**
@@ -888,7 +567,7 @@ Client.logout
 
 #### Defined in
 
-dist/hb-auth.d.ts:184
+hb-auth.d.ts:140
 
 ___
 
@@ -915,7 +594,7 @@ Client.register
 
 #### Defined in
 
-dist/hb-auth.d.ts:213
+hb-auth.d.ts:167
 
 ___
 
@@ -943,7 +622,7 @@ Client.setSessionEndCallback
 
 #### Defined in
 
-dist/hb-auth.d.ts:124
+hb-auth.d.ts:102
 
 ___
 
@@ -975,38 +654,7 @@ Client.sign
 
 #### Defined in
 
-dist/hb-auth.d.ts:192
-
-___
-
-### unlock
-
-▸ **unlock**(`username`, `password`): `Promise`\<`void`\>
-
-#### Parameters
-
-| Name | Type | Description |
-| :------ | :------ | :------ |
-| `username` | `string` | Username |
-| `password` | `string` | Password |
-
-#### Returns
-
-`Promise`\<`void`\>
-
-**`Description`**
-
-Method that unlocks existing user's session.
-This method will extend user's session time after unlocking.
-This is different than authenticate method.
-
-#### Inherited from
-
-Client.unlock
-
-#### Defined in
-
-dist/hb-auth.d.ts:170
+hb-auth.d.ts:148
 
 
 <a name="interfacesauthstatusmd"></a>
@@ -1017,7 +665,7 @@ dist/hb-auth.d.ts:170
 
 ### error
 
-• `Optional` **error**: ``null`` \| [`AuthorizationError`](#classesauthorizationerrormd)
+• `Optional` **error**: ``null`` \| `AuthorizationError`
 
 **`Description`**
 
@@ -1027,7 +675,7 @@ An error in case of unsuccessful authorization
 
 #### Defined in
 
-dist/hb-auth.d.ts:51
+hb-auth.d.ts:43
 
 ___
 
@@ -1041,7 +689,7 @@ Value that describes auth status
 
 #### Defined in
 
-dist/hb-auth.d.ts:46
+hb-auth.d.ts:38
 
 
 <a name="interfacesauthusermd"></a>
@@ -1056,37 +704,17 @@ dist/hb-auth.d.ts:46
 
 #### Defined in
 
-dist/hb-auth.d.ts:18
+hb-auth.d.ts:16
 
 ___
 
-### loggedInKeyType
+### keyType
 
-• **loggedInKeyType**: `undefined` \| ``"active"`` \| ``"posting"``
-
-#### Defined in
-
-dist/hb-auth.d.ts:19
-
-___
-
-### registeredKeyTypes
-
-• **registeredKeyTypes**: (``"active"`` \| ``"posting"``)[]
+• **keyType**: `undefined` \| ``"active"`` \| ``"posting"``
 
 #### Defined in
 
-dist/hb-auth.d.ts:20
-
-___
-
-### unlocked
-
-• **unlocked**: `boolean`
-
-#### Defined in
-
-dist/hb-auth.d.ts:17
+hb-auth.d.ts:17
 
 ___
 
@@ -1096,7 +724,7 @@ ___
 
 #### Defined in
 
-dist/hb-auth.d.ts:16
+hb-auth.d.ts:15
 
 
 <a name="interfacesclientoptionsmd"></a>
@@ -1119,7 +747,7 @@ Blockchain ID used for calculating digest
 
 #### Defined in
 
-dist/hb-auth.d.ts:59
+hb-auth.d.ts:51
 
 ___
 
@@ -1137,25 +765,7 @@ Blockchain Node address for online account verification
 
 #### Defined in
 
-dist/hb-auth.d.ts:65
-
-___
-
-### sessionTimeout
-
-• **sessionTimeout**: `number`
-
-**`Description`**
-
-Session timeout (in seconds) for Wallet, after that session will be destroyed and user must authenticate again
-
-**`Default Value`**
-
-`900`
-
-#### Defined in
-
-dist/hb-auth.d.ts:77
+hb-auth.d.ts:57
 
 ___
 
@@ -1173,4 +783,4 @@ Url for worker script path provided by hb-auth library
 
 #### Defined in
 
-dist/hb-auth.d.ts:71
+hb-auth.d.ts:63

@@ -60,8 +60,8 @@ class AuthWorker {
   public readonly Ready: Promise<AuthWorker>;
   private api!: IBeekeeperInstance;
   private session!: IBeekeeperSession;
-  private readonly storage = "/storage_root";
-  private readonly aliasStorage = "/aliases";
+  private readonly storage = "/storage_root_v2";
+  private readonly aliasStorage = "/aliases_v2";
   private sessionEndCallback = noop;
   private _loggedInUser: AuthUser | undefined;
   private _generator!: AsyncGenerator<string, string>;

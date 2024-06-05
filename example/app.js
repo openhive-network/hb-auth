@@ -22,7 +22,7 @@ client.initialize().then(async (authClient) => {
         statusEl.style.color = "grey";
       } else {
         if (auth.authorized) {
-          statusEl.innerHTML = `Authorized with username: <b>${auth.username}</b> and keyType: ${auth.keyType}`;
+          statusEl.innerHTML = `Authorized with username: <b>${auth.username}</b> and keyType: ${auth.loggedInKeyType}`;
           statusEl.style.color = "green";
         } else {
           statusEl.innerHTML = `User: <b>${auth.username}</b> requires authorization`;

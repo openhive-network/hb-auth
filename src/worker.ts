@@ -5,7 +5,7 @@ import createBeekeeperApp, {
   type IBeekeeperInstance,
   type IBeekeeperWallet,
   type IBeekeeperUnlockedWallet,
-} from "@hiveio/beekeeper";
+} from "@hiveio/honeycomb/src/beekeeper";
 import { AuthorizationError, GenericError, InternalError } from "./errors";
 
 const BEEKEEPER_LOGS = true;

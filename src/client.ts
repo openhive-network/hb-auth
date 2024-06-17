@@ -4,7 +4,7 @@ import {
   type ITransactionBuilder,
   TTransactionPackType,
   createHiveChain,
-} from "@hiveio/wax";
+} from "@hiveio/honeycomb/src/wax";
 import { proxy, wrap, type Endpoint, type Remote, type Local } from "comlink";
 import { AuthorizationError, GenericError } from "./errors";
 import { isSupportSharedWorker, isSupportWebWorker } from "./environment";

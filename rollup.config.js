@@ -5,13 +5,13 @@ import commonjs from "@rollup/plugin-commonjs";
 import resolve from "@rollup/plugin-node-resolve";
 import replace from "@rollup/plugin-replace";
 
-import data from './package.json' assert { type: "json" };
+import data from "./package.json" assert { type: "json" };
 
 const name = data.main.replace(/\.js$/, "").replace(".mjs", "");
 
 const bundle = (config) => ({
   ...config,
-  input: ["src/index.ts"]
+  input: ["src/index.ts"],
 });
 
 export default [
@@ -19,33 +19,37 @@ export default [
     output: [
       {
         file: `${name}.js`,
-        format: "es"
+        format: "es",
       },
     ],
     plugins: [
       esbuild(),
-      resolve(),
+      resolve({
+        preferBuiltins: false,
+      }),
       replace({
         "from 'worker'": "from './worker.js'",
         delimiters: ["", ""],
         preventAssignment: true,
       }),
-      commonjs()
+      commonjs(),
     ],
   }),
   bundle({
     output: [
       {
         file: `${name}.full.js`,
-        format: 'es',
-        sourcemap: false
-      }
+        format: "es",
+        sourcemap: false,
+      },
     ],
     plugins: [
       esbuild(),
-      resolve(),
-      commonjs()
-    ]
+      resolve({
+        preferBuiltins: false,
+      }),
+      commonjs(),
+    ],
   }),
   bundle({
     plugins: [dts()],
@@ -65,7 +69,7 @@ export default [
     plugins: [
       esbuild(),
       resolve({
-        moduleDirectories: ['node_modules']
+        moduleDirectories: ["node_modules"],
       }),
       terser({
         warnings: true,

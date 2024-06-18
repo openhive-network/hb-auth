@@ -5,7 +5,7 @@ import createBeekeeperApp, {
   type IBeekeeperInstance,
   type IBeekeeperWallet,
   type IBeekeeperUnlockedWallet,
-} from "@hiveio/honeycomb/src/beekeeper";
+} from "@hiveio/honeycomb/beekeeper";
 import { AuthorizationError, GenericError, InternalError } from "./errors";
 
 const BEEKEEPER_LOGS = true;
@@ -262,6 +262,7 @@ class AuthWorker {
     this.checkKeyType(keyType);
 
     try {
+      // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
       const alias = await this.getAlias(`${wallet.name}@${keyType}`);
       if (alias?.alias) throw new AuthorizationError(`This user is already registered with '${keyType}' authority`);
 

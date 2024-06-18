@@ -23,6 +23,9 @@ module.exports = {
     "n/handle-callback-err": "off",
     "@typescript-eslint/strict-boolean-expressions": "off",
     "new-cap": "off",
-    "@typescript-eslint/naming-convention": "off"
+    "@typescript-eslint/naming-convention": "off",
+    "@typescript-eslint/return-await": "off",
+    "@typescript-eslint/no-confusing-void-expression": "off",
+    "@typescript-eslint/no-misused-promises": "off",
   },
 };

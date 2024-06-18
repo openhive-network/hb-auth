@@ -6,7 +6,7 @@
       "DOM"
     ],
     "target": "ES2022",
-    "moduleResolution": "Node",
+    "moduleResolution": "Bundler",
   },
   "include": [
     "./src/index.ts",

@@ -262,6 +262,7 @@ class AuthWorker {
     this.checkKeyType(keyType);
 
     try {
+      // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
       const alias = await this.getAlias(`${wallet.name}@${keyType}`);
       if (alias?.alias) throw new AuthorizationError(`This user is already registered with '${keyType}' authority`);
 

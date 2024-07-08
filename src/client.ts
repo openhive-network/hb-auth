@@ -219,7 +219,7 @@ abstract class Client {
     }
 
     if (keyType === "posting") {
-      txBuilder.push({
+      txBuilder.pushRawOperation({
         vote: {
           voter: username,
           author: "author",
@@ -228,7 +228,7 @@ abstract class Client {
         },
       });
     } else {
-      txBuilder.push({
+      txBuilder.pushRawOperation({
         limit_order_cancel: { owner: username, orderid: 0 },
       });
     }

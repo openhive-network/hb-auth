@@ -210,16 +210,16 @@ abstract class Client {
     let txBuilder: ITransactionBuilder;
 
     if (offline) {
-      txBuilder = new this.hiveChain.TransactionBuilder(
+      txBuilder = new this.hiveChain.Transaction(
         "04e3256d94edee6ac72add19c1439260fbb00701",
         "+1m",
       );
     } else {
-      txBuilder = await this.hiveChain.getTransactionBuilder("+1m");
+      txBuilder = await this.hiveChain.createTransaction("+1m");
     }
 
     if (keyType === "posting") {
-      txBuilder.pushRawOperation({
+      txBuilder.pushOperation({
         vote: {
           voter: username,
           author: "author",
@@ -228,7 +228,7 @@ abstract class Client {
         },
       });
     } else {
-      txBuilder.pushRawOperation({
+      txBuilder.pushOperation({
         limit_order_cancel: { owner: username, orderid: 0 },
       });
     }

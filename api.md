@@ -116,7 +116,7 @@ Error.name
 
 #### Defined in
 
-node_modules/.pnpm/typescript@5.3.3/node_modules/typescript/lib/lib.es5.d.ts:1075
+node_modules/.pnpm/typescript@5.4.5/node_modules/typescript/lib/lib.es5.d.ts:1076
 
 ___
 
@@ -130,7 +130,7 @@ Error.stack
 
 #### Defined in
 
-node_modules/.pnpm/typescript@5.3.3/node_modules/typescript/lib/lib.es5.d.ts:1077
+node_modules/.pnpm/typescript@5.4.5/node_modules/typescript/lib/lib.es5.d.ts:1078
 
 ___
 
@@ -138,11 +138,15 @@ ___
 
 ▪ `Static` `Optional` **prepareStackTrace**: (`err`: `Error`, `stackTraces`: `CallSite`[]) => `any`
 
+Optional override for formatting stack traces
+
+**`See`**
+
+https://v8.dev/docs/stack-trace-api#customizing-stack-traces
+
 #### Type declaration
 
 ▸ (`err`, `stackTraces`): `any`
-
-Optional override for formatting stack traces
 
 ##### Parameters
 
@@ -155,17 +159,13 @@ Optional override for formatting stack traces
 
 `any`
 
-**`See`**
-
-https://v8.dev/docs/stack-trace-api#customizing-stack-traces
-
 #### Inherited from
 
 Error.prepareStackTrace
 
 #### Defined in
 
-node_modules/.pnpm/@types+node@20.10.8/node_modules/@types/node/globals.d.ts:28
+node_modules/.pnpm/@types+node@20.14.14/node_modules/@types/node/globals.d.ts:28
 
 ___
 
@@ -179,7 +179,7 @@ Error.stackTraceLimit
 
 #### Defined in
 
-node_modules/.pnpm/@types+node@20.10.8/node_modules/@types/node/globals.d.ts:30
+node_modules/.pnpm/@types+node@20.14.14/node_modules/@types/node/globals.d.ts:30
 
 ## Methods
 
@@ -206,7 +206,7 @@ Error.captureStackTrace
 
 #### Defined in
 
-node_modules/.pnpm/@types+node@20.10.8/node_modules/@types/node/globals.d.ts:21
+node_modules/.pnpm/@types+node@20.14.14/node_modules/@types/node/globals.d.ts:21
 
 
 <a name="classesofflineclientmd"></a>

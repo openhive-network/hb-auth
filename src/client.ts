@@ -1,7 +1,7 @@
 import {
   type ApiTransaction,
   type IHiveChainInterface,
-  type ITransactionBuilder,
+  type ITransaction,
   TTransactionPackType,
   createHiveChain,
 } from "@hiveio/wax";
@@ -103,7 +103,7 @@ abstract class Client {
    */
   protected abstract authorize(
     username: string,
-    txBuilder: ITransactionBuilder,
+    txBuilder: ITransaction,
     keyType: KeyAuthorityType,
   ): Promise<boolean>;
 
@@ -206,8 +206,8 @@ abstract class Client {
     username: string,
     keyType: KeyAuthorityType,
     offline?: boolean,
-  ): Promise<ITransactionBuilder> {
-    let txBuilder: ITransactionBuilder;
+  ): Promise<ITransaction> {
+    let txBuilder: ITransaction;
 
     if (offline) {
       txBuilder = new this.hiveChain.Transaction(
@@ -418,7 +418,7 @@ class OfflineClient extends Client {
 class OnlineClient extends Client {
   protected async authorize(
     username: string,
-    txBuilder: ITransactionBuilder,
+    txBuilder: ITransaction,
     keyType: KeyAuthorityType,
   ): Promise<boolean> {
     const verificationResult = await this.verify(

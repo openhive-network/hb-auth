@@ -717,7 +717,7 @@ ___
 | Name | Type |
 | :------ | :------ |
 | `username` | `string` |
-| `txBuilder` | `ITransactionBuilder` |
+| `txBuilder` | `ITransaction` |
 | `keyType` | ``"active"`` \| ``"posting"`` |
 
 #### Returns

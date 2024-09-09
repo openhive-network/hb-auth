@@ -210,7 +210,7 @@ abstract class Client {
     let txBuilder: ITransaction;
 
     if (offline) {
-      txBuilder = new this.hiveChain.Transaction(
+      txBuilder = this.hiveChain.createTransactionWithTaPoS(
         "04e3256d94edee6ac72add19c1439260fbb00701",
         "+1m",
       );
@@ -263,7 +263,7 @@ abstract class Client {
       keyType,
     );
 
-    txBuilder.build(signature);
+    txBuilder.sign(signature);
 
     const authenticated = await this.authorize(username, txBuilder, keyType);
 
@@ -302,7 +302,7 @@ abstract class Client {
         txBuilder.sigDigest,
       );
 
-      txBuilder.build(signature);
+      txBuilder.sign(signature);
 
       const authenticated = await this.authorize(username, txBuilder, keyType);
 

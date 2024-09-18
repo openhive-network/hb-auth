@@ -422,7 +422,7 @@ class OnlineClient extends Client {
     keyType: KeyAuthorityType,
   ): Promise<boolean> {
     const verificationResult = await this.verify(
-      txBuilder.toApiJson() as ApiTransaction,
+      txBuilder.toApiJson(),
     );
 
     if (this.isStrict && verificationResult) {

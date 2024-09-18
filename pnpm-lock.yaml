@@ -9,11 +9,11 @@ importers:
   .:
     dependencies:
       '@hiveio/beekeeper':
-        specifier: 1.27.6-rc2
-        version: 1.27.6-rc2
+        specifier: 1.27.6-rc3-stable.240916231926
+        version: 1.27.6-rc3-stable.240916231926
       '@hiveio/wax':
-        specifier: 1.27.6-rc4
-        version: 1.27.6-rc4
+        specifier: 1.27.6-rc4-240917114249
+        version: 1.27.6-rc4-240917114249
       comlink:
         specifier: ^4.4.1
         version: 4.4.1
@@ -870,16 +870,12 @@ packages:
     resolution: {integrity: sha512-Ys+3g2TaW7gADOJzPt83SJtCDhMjndcDMFVQ/Tj9iA1BfJzFKD9mAUXT3OenpuPHbI6P/myECxRJrofUsDx/5g==}
     engines: {node: ^12.22.0 || ^14.17.0 || >=16.0.0}
 
-  '@hiveio/beekeeper@1.27.6-rc2':
-    resolution: {integrity: sha1-ROAefT23gneFl3cdXV21q62+eOc=, tarball: https://gitlab.syncad.com/api/v4/projects/198/packages/npm/@hiveio/beekeeper/-/@hiveio/beekeeper-1.27.6-rc2.tgz}
+  '@hiveio/beekeeper@1.27.6-rc3-stable.240916231926':
+    resolution: {integrity: sha1-GhsyYwb56QgPSawZNrgz+24gzRA=, tarball: https://gitlab.syncad.com/api/v4/projects/198/packages/npm/@hiveio/beekeeper/-/@hiveio/beekeeper-1.27.6-rc3-stable.240916231926.tgz}
     engines: {node: '>= 18'}
 
-  '@hiveio/beekeeper@1.27.6-rc3':
-    resolution: {integrity: sha1-+tV/0zANMNTgBA7WJAT5DKO9Bk0=, tarball: https://gitlab.syncad.com/api/v4/projects/198/packages/npm/@hiveio/beekeeper/-/@hiveio/beekeeper-1.27.6-rc3.tgz}
-    engines: {node: '>= 18'}
-
-  '@hiveio/wax@1.27.6-rc4':
-    resolution: {integrity: sha1-NZnSU6P8zkdBvnkHsWG1uswa6Es=, tarball: https://gitlab.syncad.com/api/v4/projects/419/packages/npm/@hiveio/wax/-/@hiveio/wax-1.27.6-rc4.tgz}
+  '@hiveio/wax@1.27.6-rc4-240917114249':
+    resolution: {integrity: sha1-j18QGKOBnErxkQurOlWQ5IgHqkI=, tarball: https://gitlab.syncad.com/api/v4/projects/419/packages/npm/@hiveio/wax/-/@hiveio/wax-1.27.6-rc4-240917114249.tgz}
     engines: {node: '>= 18'}
 
   '@humanwhocodes/config-array@0.11.14':
@@ -1094,8 +1090,8 @@ packages:
   '@types/unist@2.0.10':
     resolution: {integrity: sha512-IfYcSBWE3hLpBg8+X2SEa8LVkJdJEkT2Ese2aaLs3ptGdVtABxndrMaxuFlQ1qdFf9Q5rDvDpxI3WwgvKFAsQA==}
 
-  '@types/validator@13.12.0':
-    resolution: {integrity: sha512-nH45Lk7oPIJ1RVOF6JgFI6Dy0QpHEzq4QecZhvguxYPDwT8c93prCMqAtiIttm39voZ+DDR+qkNnMpJmMBRqag==}
+  '@types/validator@13.12.2':
+    resolution: {integrity: sha512-6SlHBzUW8Jhf3liqrGGXyTJSIFe4nqlJ5A5KaMZ2l/vbM3Wh3KSybots/wfWVzNLK4D1NZluDlSQIbIEPx6oyA==}
 
   '@typescript-eslint/eslint-plugin@5.62.0':
     resolution: {integrity: sha512-TiZzBSJja/LbhNPvk6yc0JrX9XqhQ0hdh6M2svYfsHGejaKFIAGd9MQ+ERIMzLGlN/kZoYIgdxFV0PuljTKXag==}
@@ -2044,8 +2040,8 @@ packages:
     resolution: {integrity: sha512-+bT2uH4E5LGE7h/n3evcS/sQlJXCpIp6ym8OWJ5eV6+67Dsql/LaaT7qJBAt2rzfoa/5QBGBhxDix1dMt2kQKQ==}
     engines: {node: '>= 0.8.0'}
 
-  libphonenumber-js@1.11.5:
-    resolution: {integrity: sha512-TwHR5BZxGRODtAfz03szucAkjT5OArXr+94SMtAM2pYXIlQNVMrxvb6uSCbnaJJV6QXEyICk7+l6QPgn72WHhg==}
+  libphonenumber-js@1.11.8:
+    resolution: {integrity: sha512-0fv/YKpJBAgXKy0kaS3fnqoUVN8901vUYAKIGD/MWZaDfhJt1nZjPL3ZzdZBt/G8G8Hw2J1xOIrXWdNHFHPAvg==}
 
   lines-and-columns@1.2.4:
     resolution: {integrity: sha512-7ylylesZQ/PV29jhEDl3Ufjo6ZX7gCqJr5F7PKrqc93v7fzSymt1BpwEU8nAUXs8qzzvqhbjhK5QZg6Mt/HkBg==}
@@ -3669,13 +3665,11 @@ snapshots:
 
   '@eslint/js@8.57.0': {}
 
-  '@hiveio/beekeeper@1.27.6-rc2': {}
+  '@hiveio/beekeeper@1.27.6-rc3-stable.240916231926': {}
 
-  '@hiveio/beekeeper@1.27.6-rc3': {}
-
-  '@hiveio/wax@1.27.6-rc4':
+  '@hiveio/wax@1.27.6-rc4-240917114249':
     dependencies:
-      '@hiveio/beekeeper': 1.27.6-rc3
+      '@hiveio/beekeeper': 1.27.6-rc3-stable.240916231926
       class-transformer: 0.5.1
       class-validator: 0.14.1
       events: 3.3.0
@@ -3865,7 +3859,7 @@ snapshots:
 
   '@types/unist@2.0.10': {}
 
-  '@types/validator@13.12.0': {}
+  '@types/validator@13.12.2': {}
 
   '@typescript-eslint/eslint-plugin@5.62.0(@typescript-eslint/parser@5.62.0(eslint@8.57.0)(typescript@5.4.5))(eslint@8.57.0)(typescript@5.4.5)':
     dependencies:
@@ -4150,8 +4144,8 @@ snapshots:
 
   class-validator@0.14.1:
     dependencies:
-      '@types/validator': 13.12.0
-      libphonenumber-js: 1.11.5
+      '@types/validator': 13.12.2
+      libphonenumber-js: 1.11.8
       validator: 13.12.0
 
   color-convert@1.9.3:
@@ -4962,7 +4956,7 @@ snapshots:
       prelude-ls: 1.2.1
       type-check: 0.4.0
 
-  libphonenumber-js@1.11.5: {}
+  libphonenumber-js@1.11.8: {}
 
   lines-and-columns@1.2.4: {}
 

@@ -70,8 +70,8 @@
     "typescript": "^5.4.5"
   },
   "dependencies": {
-    "@hiveio/beekeeper": "1.27.6-rc2",
-    "@hiveio/wax": "1.27.6-rc4",
+    "@hiveio/beekeeper": "1.27.6-rc3-stable.240916231926",
+    "@hiveio/wax": "1.27.6-rc4-240917114249",
     "comlink": "^4.4.1",
     "idb": "^7.1.1"
   }

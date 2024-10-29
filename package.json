@@ -71,7 +71,7 @@
   },
   "dependencies": {
     "@hiveio/beekeeper": "1.27.6-rc3-stable.240916231926",
-    "@hiveio/wax": "1.27.6-rc4-240917114249",
+    "@hiveio/wax": "1.27.6-rc5-stable.241029104701",
     "comlink": "^4.4.1",
     "idb": "^7.1.1"
   }

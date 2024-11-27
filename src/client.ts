@@ -113,7 +113,7 @@ abstract class Client {
    * @param clientOptions @type {ClientOptions} - Options
    */
   constructor(
-    private readonly strict: boolean,
+    private readonly strict: boolean = true,
     readonly clientOptions: Partial<ClientOptions> = {},
   ) {
     this.isStrict = strict;
@@ -416,6 +416,13 @@ class OfflineClient extends Client {
  * user by verifying user's signature through the network.
  */
 class OnlineClient extends Client {
+  constructor(
+    strict: boolean = true,
+    clientOptions: Partial<ClientOptions> = {},
+  ) {
+    super(strict, clientOptions);
+  }
+
   protected async authorize(
     username: string,
     txBuilder: ITransaction,

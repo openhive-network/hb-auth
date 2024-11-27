@@ -617,30 +617,26 @@ user by verifying user's signature through the network.
 
 ### constructor
 
-• **new OnlineClient**(`strict`, `clientOptions?`): [`OnlineClient`](#classesonlineclientmd)
+• **new OnlineClient**(`strict?`, `clientOptions?`): [`OnlineClient`](#classesonlineclientmd)
 
 #### Parameters
 
 | Name | Type |
 | :------ | :------ |
-| `strict` | `boolean` |
+| `strict?` | `boolean` |
 | `clientOptions?` | `Partial`\<[`ClientOptions`](#interfacesclientoptionsmd)\> |
 
 #### Returns
 
 [`OnlineClient`](#classesonlineclientmd)
 
-**`Description`**
-
-Additional options for auth client
-
-#### Inherited from
+#### Overrides
 
 Client.constructor
 
 #### Defined in
 
-dist/hb-auth.d.ts:107
+dist/hb-auth.d.ts:211
 
 ## Properties
 
@@ -678,7 +674,7 @@ ___
 
 #### Defined in
 
-dist/hb-auth.d.ts:212
+dist/hb-auth.d.ts:213
 
 ## Methods
 
@@ -704,7 +700,7 @@ Client.authenticate
 
 #### Defined in
 
-dist/hb-auth.d.ts:214
+dist/hb-auth.d.ts:215
 
 ___
 
@@ -730,7 +726,7 @@ Client.authorize
 
 #### Defined in
 
-dist/hb-auth.d.ts:211
+dist/hb-auth.d.ts:212
 
 ___
 
@@ -915,7 +911,7 @@ Client.register
 
 #### Defined in
 
-dist/hb-auth.d.ts:213
+dist/hb-auth.d.ts:214
 
 ___
 

@@ -638,6 +638,56 @@ test.describe("HB Auth Online Client base tests", () => {
     expect(signed).toBe(user.txs[2].signed);
   });
 
+  test("Should persist strict mode and authority settings across sessions", async () => {
+    const newContext = await browser.newContext();
+    const newPage = await newContext.newPage();
+    await navigate(newPage);
+
+    // First register with strict mode off and authority user
+    await newPage.evaluate(async ({ username, password, keys }) => {
+      const instance = new AuthOnlineClient(false, {
+        workerUrl: "/dist/worker.js",
+      });
+      await instance.initialize();
+      await instance.register(
+        username,
+        password,
+        keys[2].private, // Using authority user's key
+        keys[2].type as KeyAuthorityType,
+      );
+      await instance.logout();
+    }, user);
+
+    // Now try to authenticate in a new session - should work with authority
+    const authResult = await newPage.evaluate(async ({ username, password, keys, txs }) => {
+      const instance = new AuthOnlineClient(true, { // Even with strict true
+        workerUrl: "/dist/worker.js",
+      });
+      await instance.initialize();
+      
+      try {
+        await instance.authenticate(
+          username,
+          password,
+          keys[2].type as KeyAuthorityType,
+        );
+        
+        // Try to sign something
+        const signed = await instance.sign(
+          username,
+          txs[2].digest,
+          keys[2].type as KeyAuthorityType,
+        );
+        return { success: true, signed };
+      } catch (error) {
+        return { success: false, error: error.message };
+      }
+    }, user);
+
+    expect(authResult.success).toBeTruthy();
+    expect(authResult.signed).toBe(user.txs[2].signed);
+  });
+
   test.afterAll(async () => {
     await browser.close();
   });

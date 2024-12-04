@@ -227,10 +227,18 @@ abstract class Client {
           weight: 10000,
         },
       });
-    } else {
+    } else if (keyType === "active") {
       txBuilder.pushOperation({
         limit_order_cancel: { owner: username, orderid: 0 },
       });
+    } else if (keyType === "owner") {
+      txBuilder.pushOperation({
+        decline_voting_rights: { account: username, decline: false },
+      });
+    } else {
+      throw new AuthorizationError(
+        `Invalid key type. Only 'active', 'posting' or 'owner' key supported`,
+      );
     }
 
     txBuilder.validate();
@@ -376,6 +384,34 @@ abstract class Client {
   ): Promise<string> {
     return await this.#auth.sign(username, transactionDigest, keyType);
   }
+
+  /**
+   * @description Method that signs given transaction as an authorized user based on selected authority type.
+   * @param username Username
+   * @param transactionDigest Transaction digest string
+   * @param wifKey WIF key
+   * @param keyType Key authority type
+   * @returns {Promise<string>} Signature
+   */
+  public async singleSign(
+    username: string,
+    transactionDigest: string,
+    wifKey: string,
+    keyType: KeyAuthorityType,
+  ): Promise<string> {
+    try {
+      return await this.#auth.singleSign(
+        username,
+        transactionDigest,
+        wifKey,
+        keyType,
+      );
+    } catch (err) {
+      return Promise.reject(
+        new AuthorizationError(`Unexpected error: ${err as string}`),
+      );
+    }
+  }
 }
 
 /**
@@ -428,9 +464,7 @@ class OnlineClient extends Client {
     txBuilder: ITransaction,
     keyType: KeyAuthorityType,
   ): Promise<boolean> {
-    const verificationResult = await this.verify(
-      txBuilder.toApiJson(),
-    );
+    const verificationResult = await this.verify(txBuilder.toApiJson());
 
     if (this.isStrict && verificationResult) {
       const accounts = await this.hiveChain.api.database_api.find_accounts({
@@ -455,15 +489,6 @@ class OnlineClient extends Client {
     } catch (err) {
       return false;
     }
-  }
-
-  public async register(
-    username: string,
-    password: string,
-    wifKey: string,
-    keyType: KeyAuthorityType,
-  ): Promise<AuthStatus> {
-    return await super.register(username, password, wifKey, keyType, false);
   }
 
   public async authenticate(

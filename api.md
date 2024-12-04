@@ -247,395 +247,6 @@ Client.constructor
 
 #### Defined in
 
-dist/hb-auth.d.ts:201
-
-## Properties
-
-### #private
-
-• `Private` **#private**: `any`
-
-#### Inherited from
-
-Client.#private
-
-#### Defined in
-
-dist/hb-auth.d.ts:83
-
-___
-
-### clientOptions
-
-• `Readonly` **clientOptions**: `Partial`\<[`ClientOptions`](#interfacesclientoptionsmd)\>
-
-#### Overrides
-
-Client.clientOptions
-
-#### Defined in
-
-dist/hb-auth.d.ts:200
-
-## Methods
-
-### authenticate
-
-▸ **authenticate**(`username`, `password`, `keyType`): `Promise`\<[`AuthStatus`](#interfacesauthstatusmd)\>
-
-#### Parameters
-
-| Name | Type |
-| :------ | :------ |
-| `username` | `string` |
-| `password` | `string` |
-| `keyType` | ``"active"`` \| ``"posting"`` |
-
-#### Returns
-
-`Promise`\<[`AuthStatus`](#interfacesauthstatusmd)\>
-
-#### Overrides
-
-Client.authenticate
-
-#### Defined in
-
-dist/hb-auth.d.ts:204
-
-___
-
-### authorize
-
-▸ **authorize**(): `Promise`\<`boolean`\>
-
-#### Returns
-
-`Promise`\<`boolean`\>
-
-#### Overrides
-
-Client.authorize
-
-#### Defined in
-
-dist/hb-auth.d.ts:202
-
-___
-
-### getAuthByUser
-
-▸ **getAuthByUser**(`username`): `Promise`\<``null`` \| [`AuthUser`](#interfacesauthusermd)\>
-
-#### Parameters
-
-| Name | Type | Description |
-| :------ | :------ | :------ |
-| `username` | `string` | Username |
-
-#### Returns
-
-`Promise`\<``null`` \| [`AuthUser`](#interfacesauthusermd)\>
-
-**`Description`**
-
-Method to get auth status for a given user.
-If there is no user it will return null.
-
-#### Inherited from
-
-Client.getAuthByUser
-
-#### Defined in
-
-dist/hb-auth.d.ts:137
-
-___
-
-### getAuths
-
-▸ **getAuths**(): `Promise`\<[`AuthUser`](#interfacesauthusermd)[]\>
-
-#### Returns
-
-`Promise`\<[`AuthUser`](#interfacesauthusermd)[]\>
-
-**`Description`**
-
-Method to get all registered users with their active auth status.
-If there is no user registered, it will return an empty array.
-
-#### Inherited from
-
-Client.getAuths
-
-#### Defined in
-
-dist/hb-auth.d.ts:130
-
-___
-
-### importKey
-
-▸ **importKey**(`username`, `wifKey`, `keyType`): `Promise`\<`string`\>
-
-#### Parameters
-
-| Name | Type | Description |
-| :------ | :------ | :------ |
-| `username` | `string` | Username |
-| `wifKey` | `string` | WIF key |
-| `keyType` | ``"active"`` \| ``"posting"`` | Key authority type |
-
-#### Returns
-
-`Promise`\<`string`\>
-
-Public Key
-
-**`Description`**
-
-Method that imports a new key for given user
-This method requires user to be authenticated or unlocked first
-
-#### Inherited from
-
-Client.importKey
-
-#### Defined in
-
-dist/hb-auth.d.ts:179
-
-___
-
-### initialize
-
-▸ **initialize**(): `Promise`\<[`OfflineClient`](#classesofflineclientmd)\>
-
-#### Returns
-
-`Promise`\<[`OfflineClient`](#classesofflineclientmd)\>
-
-**`Description`**
-
-Async method that prepares client to run.
-That method should be called first before calling other methods.
-
-#### Inherited from
-
-Client.initialize
-
-#### Defined in
-
-dist/hb-auth.d.ts:118
-
-___
-
-### lock
-
-▸ **lock**(): `Promise`\<`void`\>
-
-#### Returns
-
-`Promise`\<`void`\>
-
-**`Description`**
-
-Method that locks user session and keeps user session during session time.
-Note that when user session time ends, user should authenticate again.
-
-#### Inherited from
-
-Client.lock
-
-#### Defined in
-
-dist/hb-auth.d.ts:162
-
-___
-
-### logout
-
-▸ **logout**(): `Promise`\<`void`\>
-
-#### Returns
-
-`Promise`\<`void`\>
-
-**`Description`**
-
-Method that ends existing user session. This is different than locking user.
-When this is called any callback set via
-
-**`See`**
-
-will fire.
-
-#### Inherited from
-
-Client.logout
-
-#### Defined in
-
-dist/hb-auth.d.ts:184
-
-___
-
-### register
-
-▸ **register**(`username`, `password`, `wifKey`, `keyType`): `Promise`\<[`AuthStatus`](#interfacesauthstatusmd)\>
-
-#### Parameters
-
-| Name | Type |
-| :------ | :------ |
-| `username` | `string` |
-| `password` | `string` |
-| `wifKey` | `string` |
-| `keyType` | ``"active"`` \| ``"posting"`` |
-
-#### Returns
-
-`Promise`\<[`AuthStatus`](#interfacesauthstatusmd)\>
-
-#### Overrides
-
-Client.register
-
-#### Defined in
-
-dist/hb-auth.d.ts:203
-
-___
-
-### setSessionEndCallback
-
-▸ **setSessionEndCallback**(`cb`): `Promise`\<`void`\>
-
-#### Parameters
-
-| Name | Type | Description |
-| :------ | :------ | :------ |
-| `cb` | () => `Promise`\<`void`\> | Async callback function that fires on session end |
-
-#### Returns
-
-`Promise`\<`void`\>
-
-**`Description`**
-
-Method to set callback for being notified on session and or logout action.
-
-#### Inherited from
-
-Client.setSessionEndCallback
-
-#### Defined in
-
-dist/hb-auth.d.ts:124
-
-___
-
-### sign
-
-▸ **sign**(`username`, `transactionDigest`, `keyType`): `Promise`\<`string`\>
-
-#### Parameters
-
-| Name | Type | Description |
-| :------ | :------ | :------ |
-| `username` | `string` | Username |
-| `transactionDigest` | `string` | Transaction digest string |
-| `keyType` | ``"active"`` \| ``"posting"`` | Key authority type |
-
-#### Returns
-
-`Promise`\<`string`\>
-
-Signature
-
-**`Description`**
-
-Method that signs given transaction as an authorized user based on selected authority type.
-
-#### Inherited from
-
-Client.sign
-
-#### Defined in
-
-dist/hb-auth.d.ts:192
-
-___
-
-### unlock
-
-▸ **unlock**(`username`, `password`): `Promise`\<`void`\>
-
-#### Parameters
-
-| Name | Type | Description |
-| :------ | :------ | :------ |
-| `username` | `string` | Username |
-| `password` | `string` | Password |
-
-#### Returns
-
-`Promise`\<`void`\>
-
-**`Description`**
-
-Method that unlocks existing user's session.
-This method will extend user's session time after unlocking.
-This is different than authenticate method.
-
-#### Inherited from
-
-Client.unlock
-
-#### Defined in
-
-dist/hb-auth.d.ts:170
-
-
-<a name="classesonlineclientmd"></a>
-
-# Class: OnlineClient
-
-**`Description`**
-
-Auth client that additionally authorizes
-user by verifying user's signature through the network.
-
-## Hierarchy
-
-- `Client`
-
-  ↳ **`OnlineClient`**
-
-## Constructors
-
-### constructor
-
-• **new OnlineClient**(`strict?`, `clientOptions?`): [`OnlineClient`](#classesonlineclientmd)
-
-#### Parameters
-
-| Name | Type |
-| :------ | :------ |
-| `strict?` | `boolean` |
-| `clientOptions?` | `Partial`\<[`ClientOptions`](#interfacesclientoptionsmd)\> |
-
-#### Returns
-
-[`OnlineClient`](#classesonlineclientmd)
-
-#### Overrides
-
-Client.constructor
-
-#### Defined in
-
 dist/hb-auth.d.ts:211
 
 ## Properties
@@ -650,7 +261,7 @@ Client.#private
 
 #### Defined in
 
-dist/hb-auth.d.ts:83
+dist/hb-auth.d.ts:84
 
 ___
 
@@ -658,23 +269,13 @@ ___
 
 • `Readonly` **clientOptions**: `Partial`\<[`ClientOptions`](#interfacesclientoptionsmd)\>
 
-#### Inherited from
+#### Overrides
 
 Client.clientOptions
 
 #### Defined in
 
-dist/hb-auth.d.ts:85
-
-___
-
-### verify
-
-• `Private` **verify**: `any`
-
-#### Defined in
-
-dist/hb-auth.d.ts:213
+dist/hb-auth.d.ts:210
 
 ## Methods
 
@@ -688,7 +289,7 @@ dist/hb-auth.d.ts:213
 | :------ | :------ |
 | `username` | `string` |
 | `password` | `string` |
-| `keyType` | ``"active"`` \| ``"posting"`` |
+| `keyType` | ``"active"`` \| ``"posting"`` \| ``"owner"`` |
 
 #### Returns
 
@@ -700,21 +301,13 @@ Client.authenticate
 
 #### Defined in
 
-dist/hb-auth.d.ts:215
+dist/hb-auth.d.ts:214
 
 ___
 
 ### authorize
 
-▸ **authorize**(`username`, `txBuilder`, `keyType`): `Promise`\<`boolean`\>
-
-#### Parameters
-
-| Name | Type |
-| :------ | :------ |
-| `username` | `string` |
-| `txBuilder` | `ITransaction` |
-| `keyType` | ``"active"`` \| ``"posting"`` |
+▸ **authorize**(): `Promise`\<`boolean`\>
 
 #### Returns
 
@@ -755,7 +348,7 @@ Client.getAuthByUser
 
 #### Defined in
 
-dist/hb-auth.d.ts:137
+dist/hb-auth.d.ts:138
 
 ___
 
@@ -778,7 +371,7 @@ Client.getAuths
 
 #### Defined in
 
-dist/hb-auth.d.ts:130
+dist/hb-auth.d.ts:131
 
 ___
 
@@ -792,7 +385,7 @@ ___
 | :------ | :------ | :------ |
 | `username` | `string` | Username |
 | `wifKey` | `string` | WIF key |
-| `keyType` | ``"active"`` \| ``"posting"`` | Key authority type |
+| `keyType` | ``"active"`` \| ``"posting"`` \| ``"owner"`` | Key authority type |
 
 #### Returns
 
@@ -811,17 +404,17 @@ Client.importKey
 
 #### Defined in
 
-dist/hb-auth.d.ts:179
+dist/hb-auth.d.ts:180
 
 ___
 
 ### initialize
 
-▸ **initialize**(): `Promise`\<[`OnlineClient`](#classesonlineclientmd)\>
+▸ **initialize**(): `Promise`\<[`OfflineClient`](#classesofflineclientmd)\>
 
 #### Returns
 
-`Promise`\<[`OnlineClient`](#classesonlineclientmd)\>
+`Promise`\<[`OfflineClient`](#classesofflineclientmd)\>
 
 **`Description`**
 
@@ -834,7 +427,7 @@ Client.initialize
 
 #### Defined in
 
-dist/hb-auth.d.ts:118
+dist/hb-auth.d.ts:119
 
 ___
 
@@ -857,7 +450,7 @@ Client.lock
 
 #### Defined in
 
-dist/hb-auth.d.ts:162
+dist/hb-auth.d.ts:163
 
 ___
 
@@ -884,7 +477,7 @@ Client.logout
 
 #### Defined in
 
-dist/hb-auth.d.ts:184
+dist/hb-auth.d.ts:185
 
 ___
 
@@ -899,7 +492,7 @@ ___
 | `username` | `string` |
 | `password` | `string` |
 | `wifKey` | `string` |
-| `keyType` | ``"active"`` \| ``"posting"`` |
+| `keyType` | ``"active"`` \| ``"posting"`` \| ``"owner"`` |
 
 #### Returns
 
@@ -911,7 +504,7 @@ Client.register
 
 #### Defined in
 
-dist/hb-auth.d.ts:214
+dist/hb-auth.d.ts:213
 
 ___
 
@@ -939,7 +532,7 @@ Client.setSessionEndCallback
 
 #### Defined in
 
-dist/hb-auth.d.ts:124
+dist/hb-auth.d.ts:125
 
 ___
 
@@ -953,7 +546,7 @@ ___
 | :------ | :------ | :------ |
 | `username` | `string` | Username |
 | `transactionDigest` | `string` | Transaction digest string |
-| `keyType` | ``"active"`` \| ``"posting"`` | Key authority type |
+| `keyType` | ``"active"`` \| ``"posting"`` \| ``"owner"`` | Key authority type |
 
 #### Returns
 
@@ -971,7 +564,40 @@ Client.sign
 
 #### Defined in
 
-dist/hb-auth.d.ts:192
+dist/hb-auth.d.ts:193
+
+___
+
+### singleSign
+
+▸ **singleSign**(`username`, `transactionDigest`, `wifKey`, `keyType`): `Promise`\<`string`\>
+
+#### Parameters
+
+| Name | Type | Description |
+| :------ | :------ | :------ |
+| `username` | `string` | Username |
+| `transactionDigest` | `string` | Transaction digest string |
+| `wifKey` | `string` | WIF key |
+| `keyType` | ``"active"`` \| ``"posting"`` \| ``"owner"`` | Key authority type |
+
+#### Returns
+
+`Promise`\<`string`\>
+
+Signature
+
+**`Description`**
+
+Method that signs given transaction as an authorized user based on selected authority type.
+
+#### Inherited from
+
+Client.singleSign
+
+#### Defined in
+
+dist/hb-auth.d.ts:202
 
 ___
 
@@ -1002,7 +628,453 @@ Client.unlock
 
 #### Defined in
 
-dist/hb-auth.d.ts:170
+dist/hb-auth.d.ts:171
+
+
+<a name="classesonlineclientmd"></a>
+
+# Class: OnlineClient
+
+**`Description`**
+
+Auth client that additionally authorizes
+user by verifying user's signature through the network.
+
+## Hierarchy
+
+- `Client`
+
+  ↳ **`OnlineClient`**
+
+## Constructors
+
+### constructor
+
+• **new OnlineClient**(`strict?`, `clientOptions?`): [`OnlineClient`](#classesonlineclientmd)
+
+#### Parameters
+
+| Name | Type |
+| :------ | :------ |
+| `strict?` | `boolean` |
+| `clientOptions?` | `Partial`\<[`ClientOptions`](#interfacesclientoptionsmd)\> |
+
+#### Returns
+
+[`OnlineClient`](#classesonlineclientmd)
+
+#### Overrides
+
+Client.constructor
+
+#### Defined in
+
+dist/hb-auth.d.ts:221
+
+## Properties
+
+### #private
+
+• `Private` **#private**: `any`
+
+#### Inherited from
+
+Client.#private
+
+#### Defined in
+
+dist/hb-auth.d.ts:84
+
+___
+
+### clientOptions
+
+• `Readonly` **clientOptions**: `Partial`\<[`ClientOptions`](#interfacesclientoptionsmd)\>
+
+#### Inherited from
+
+Client.clientOptions
+
+#### Defined in
+
+dist/hb-auth.d.ts:86
+
+___
+
+### verify
+
+• `Private` **verify**: `any`
+
+#### Defined in
+
+dist/hb-auth.d.ts:223
+
+## Methods
+
+### authenticate
+
+▸ **authenticate**(`username`, `password`, `keyType`): `Promise`\<[`AuthStatus`](#interfacesauthstatusmd)\>
+
+#### Parameters
+
+| Name | Type |
+| :------ | :------ |
+| `username` | `string` |
+| `password` | `string` |
+| `keyType` | ``"active"`` \| ``"posting"`` \| ``"owner"`` |
+
+#### Returns
+
+`Promise`\<[`AuthStatus`](#interfacesauthstatusmd)\>
+
+#### Overrides
+
+Client.authenticate
+
+#### Defined in
+
+dist/hb-auth.d.ts:224
+
+___
+
+### authorize
+
+▸ **authorize**(`username`, `txBuilder`, `keyType`): `Promise`\<`boolean`\>
+
+#### Parameters
+
+| Name | Type |
+| :------ | :------ |
+| `username` | `string` |
+| `txBuilder` | `ITransaction` |
+| `keyType` | ``"active"`` \| ``"posting"`` \| ``"owner"`` |
+
+#### Returns
+
+`Promise`\<`boolean`\>
+
+#### Overrides
+
+Client.authorize
+
+#### Defined in
+
+dist/hb-auth.d.ts:222
+
+___
+
+### getAuthByUser
+
+▸ **getAuthByUser**(`username`): `Promise`\<``null`` \| [`AuthUser`](#interfacesauthusermd)\>
+
+#### Parameters
+
+| Name | Type | Description |
+| :------ | :------ | :------ |
+| `username` | `string` | Username |
+
+#### Returns
+
+`Promise`\<``null`` \| [`AuthUser`](#interfacesauthusermd)\>
+
+**`Description`**
+
+Method to get auth status for a given user.
+If there is no user it will return null.
+
+#### Inherited from
+
+Client.getAuthByUser
+
+#### Defined in
+
+dist/hb-auth.d.ts:138
+
+___
+
+### getAuths
+
+▸ **getAuths**(): `Promise`\<[`AuthUser`](#interfacesauthusermd)[]\>
+
+#### Returns
+
+`Promise`\<[`AuthUser`](#interfacesauthusermd)[]\>
+
+**`Description`**
+
+Method to get all registered users with their active auth status.
+If there is no user registered, it will return an empty array.
+
+#### Inherited from
+
+Client.getAuths
+
+#### Defined in
+
+dist/hb-auth.d.ts:131
+
+___
+
+### importKey
+
+▸ **importKey**(`username`, `wifKey`, `keyType`): `Promise`\<`string`\>
+
+#### Parameters
+
+| Name | Type | Description |
+| :------ | :------ | :------ |
+| `username` | `string` | Username |
+| `wifKey` | `string` | WIF key |
+| `keyType` | ``"active"`` \| ``"posting"`` \| ``"owner"`` | Key authority type |
+
+#### Returns
+
+`Promise`\<`string`\>
+
+Public Key
+
+**`Description`**
+
+Method that imports a new key for given user
+This method requires user to be authenticated or unlocked first
+
+#### Inherited from
+
+Client.importKey
+
+#### Defined in
+
+dist/hb-auth.d.ts:180
+
+___
+
+### initialize
+
+▸ **initialize**(): `Promise`\<[`OnlineClient`](#classesonlineclientmd)\>
+
+#### Returns
+
+`Promise`\<[`OnlineClient`](#classesonlineclientmd)\>
+
+**`Description`**
+
+Async method that prepares client to run.
+That method should be called first before calling other methods.
+
+#### Inherited from
+
+Client.initialize
+
+#### Defined in
+
+dist/hb-auth.d.ts:119
+
+___
+
+### lock
+
+▸ **lock**(): `Promise`\<`void`\>
+
+#### Returns
+
+`Promise`\<`void`\>
+
+**`Description`**
+
+Method that locks user session and keeps user session during session time.
+Note that when user session time ends, user should authenticate again.
+
+#### Inherited from
+
+Client.lock
+
+#### Defined in
+
+dist/hb-auth.d.ts:163
+
+___
+
+### logout
+
+▸ **logout**(): `Promise`\<`void`\>
+
+#### Returns
+
+`Promise`\<`void`\>
+
+**`Description`**
+
+Method that ends existing user session. This is different than locking user.
+When this is called any callback set via
+
+**`See`**
+
+will fire.
+
+#### Inherited from
+
+Client.logout
+
+#### Defined in
+
+dist/hb-auth.d.ts:185
+
+___
+
+### register
+
+▸ **register**(`username`, `password`, `wifKey`, `keyType`, `offline?`): `Promise`\<[`AuthStatus`](#interfacesauthstatusmd)\>
+
+#### Parameters
+
+| Name | Type | Description |
+| :------ | :------ | :------ |
+| `username` | `string` | Username |
+| `password` | `string` | Password |
+| `wifKey` | `string` | Private key |
+| `keyType` | ``"active"`` \| ``"posting"`` \| ``"owner"`` | Key authority type |
+| `offline?` | `boolean` | - |
+
+#### Returns
+
+`Promise`\<[`AuthStatus`](#interfacesauthstatusmd)\>
+
+**`Description`**
+
+Method that registers a new user or adding
+another key with different authority to existing user.
+
+#### Inherited from
+
+Client.register
+
+#### Defined in
+
+dist/hb-auth.d.ts:150
+
+___
+
+### setSessionEndCallback
+
+▸ **setSessionEndCallback**(`cb`): `Promise`\<`void`\>
+
+#### Parameters
+
+| Name | Type | Description |
+| :------ | :------ | :------ |
+| `cb` | () => `Promise`\<`void`\> | Async callback function that fires on session end |
+
+#### Returns
+
+`Promise`\<`void`\>
+
+**`Description`**
+
+Method to set callback for being notified on session and or logout action.
+
+#### Inherited from
+
+Client.setSessionEndCallback
+
+#### Defined in
+
+dist/hb-auth.d.ts:125
+
+___
+
+### sign
+
+▸ **sign**(`username`, `transactionDigest`, `keyType`): `Promise`\<`string`\>
+
+#### Parameters
+
+| Name | Type | Description |
+| :------ | :------ | :------ |
+| `username` | `string` | Username |
+| `transactionDigest` | `string` | Transaction digest string |
+| `keyType` | ``"active"`` \| ``"posting"`` \| ``"owner"`` | Key authority type |
+
+#### Returns
+
+`Promise`\<`string`\>
+
+Signature
+
+**`Description`**
+
+Method that signs given transaction as an authorized user based on selected authority type.
+
+#### Inherited from
+
+Client.sign
+
+#### Defined in
+
+dist/hb-auth.d.ts:193
+
+___
+
+### singleSign
+
+▸ **singleSign**(`username`, `transactionDigest`, `wifKey`, `keyType`): `Promise`\<`string`\>
+
+#### Parameters
+
+| Name | Type | Description |
+| :------ | :------ | :------ |
+| `username` | `string` | Username |
+| `transactionDigest` | `string` | Transaction digest string |
+| `wifKey` | `string` | WIF key |
+| `keyType` | ``"active"`` \| ``"posting"`` \| ``"owner"`` | Key authority type |
+
+#### Returns
+
+`Promise`\<`string`\>
+
+Signature
+
+**`Description`**
+
+Method that signs given transaction as an authorized user based on selected authority type.
+
+#### Inherited from
+
+Client.singleSign
+
+#### Defined in
+
+dist/hb-auth.d.ts:202
+
+___
+
+### unlock
+
+▸ **unlock**(`username`, `password`): `Promise`\<`void`\>
+
+#### Parameters
+
+| Name | Type | Description |
+| :------ | :------ | :------ |
+| `username` | `string` | Username |
+| `password` | `string` | Password |
+
+#### Returns
+
+`Promise`\<`void`\>
+
+**`Description`**
+
+Method that unlocks existing user's session.
+This method will extend user's session time after unlocking.
+This is different than authenticate method.
+
+#### Inherited from
+
+Client.unlock
+
+#### Defined in
+
+dist/hb-auth.d.ts:171
 
 
 <a name="interfacesauthstatusmd"></a>
@@ -1023,7 +1095,7 @@ An error in case of unsuccessful authorization
 
 #### Defined in
 
-dist/hb-auth.d.ts:51
+dist/hb-auth.d.ts:52
 
 ___
 
@@ -1037,7 +1109,7 @@ Value that describes auth status
 
 #### Defined in
 
-dist/hb-auth.d.ts:46
+dist/hb-auth.d.ts:47
 
 
 <a name="interfacesauthusermd"></a>
@@ -1058,7 +1130,7 @@ ___
 
 ### loggedInKeyType
 
-• **loggedInKeyType**: `undefined` \| ``"active"`` \| ``"posting"``
+• **loggedInKeyType**: `undefined` \| ``"active"`` \| ``"posting"`` \| ``"owner"``
 
 #### Defined in
 
@@ -1068,7 +1140,7 @@ ___
 
 ### registeredKeyTypes
 
-• **registeredKeyTypes**: (``"active"`` \| ``"posting"``)[]
+• **registeredKeyTypes**: (``"active"`` \| ``"posting"`` \| ``"owner"``)[]
 
 #### Defined in
 
@@ -1115,7 +1187,7 @@ Blockchain ID used for calculating digest
 
 #### Defined in
 
-dist/hb-auth.d.ts:59
+dist/hb-auth.d.ts:60
 
 ___
 
@@ -1133,7 +1205,7 @@ Blockchain Node address for online account verification
 
 #### Defined in
 
-dist/hb-auth.d.ts:65
+dist/hb-auth.d.ts:66
 
 ___
 
@@ -1151,7 +1223,7 @@ Session timeout (in seconds) for Wallet, after that session will be destroyed an
 
 #### Defined in
 
-dist/hb-auth.d.ts:77
+dist/hb-auth.d.ts:78
 
 ___
 
@@ -1169,4 +1241,4 @@ Url for worker script path provided by hb-auth library
 
 #### Defined in
 
-dist/hb-auth.d.ts:71
+dist/hb-auth.d.ts:72

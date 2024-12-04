@@ -275,7 +275,7 @@ test.describe("HB Auth Online Client base tests", () => {
     expect(error2).toBe("Invalid credentials");
   });
 
-  test("Should user register/login only with supported authorities active and posting authority", async () => {
+  test("Should user register/login only with supported authorities active, posting or owner authority", async () => {
     const error = await page.evaluate(async ({ username, password }) => {
       try {
         await authInstance.authenticate(
@@ -289,7 +289,7 @@ test.describe("HB Auth Online Client base tests", () => {
     }, user);
 
     expect(error).toBe(
-      `Invalid key type. Only 'active' or 'posting' key supported`,
+      `Invalid key type. Only 'active', 'posting' or 'owner' key supported`,
     );
   });
 
@@ -636,6 +636,64 @@ test.describe("HB Auth Online Client base tests", () => {
     );
 
     expect(signed).toBe(user.txs[2].signed);
+  });
+
+  test("Should allow singleSign without any prior registration", async ({
+    page: _page,
+  }) => {
+    await navigate(_page);
+
+    const signed = await _page.evaluate(async ({ username, keys, txs }) => {
+      const instance = new AuthOnlineClient(false, {
+        workerUrl: "/dist/worker.js",
+      });
+      await instance.initialize();
+      const signed = await instance.singleSign(
+        username,
+        txs[0].digest,
+        keys[0].private,
+        keys[0].type as KeyAuthorityType,
+      );
+      return signed;
+    }, user);
+
+    expect(signed).toBe(user.txs[0].signed);
+  });
+
+  test("Should allow singleSign with unregistered key type", async ({
+    page: _page,
+  }) => {
+    await navigate(_page);
+    // First register with posting key
+    await _page.evaluate(async ({ username, password, keys }) => {
+      const instance = new AuthOnlineClient(false, {
+        workerUrl: "/dist/worker.js",
+      });
+      await instance.initialize();
+      await instance.register(
+        username,
+        password,
+        keys[0].private,
+        keys[0].type as KeyAuthorityType,
+      );
+    }, user);
+
+    // Try singleSign with active key (not registered)
+    const signed = await page.evaluate(async ({ username, keys, txs }) => {
+      const instance = new AuthOnlineClient(false, {
+        workerUrl: "/dist/worker.js",
+      });
+      await instance.initialize();
+      const signed = await instance.singleSign(
+        username,
+        txs[1].digest,
+        keys[1].private,
+        keys[1].type as KeyAuthorityType,
+      );
+      return signed;
+    }, user);
+
+    expect(signed).toBe(user.txs[1].signed);
   });
 
   test.afterAll(async () => {

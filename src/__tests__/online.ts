@@ -199,7 +199,11 @@ test.describe("HB Auth Online Client base tests", () => {
   test("Should user login with username and password", async () => {
     const authorized = await page.evaluate(
       async ({ username, password, keys }) => {
-        await authInstance.logout();
+        const authUser = await authInstance.getAuthByUser(username);
+
+        if (authUser?.authorized) {
+          await authInstance.logout();
+        }
         await authInstance.authenticate(
           username,
           password,

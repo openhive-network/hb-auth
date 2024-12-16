@@ -255,12 +255,19 @@ class AuthWorker {
     this.checkKeyType(keyType);
 
     try {
+      const authUser = await this.getAuthByUser(username);
+
+      // Check if user is already logged in and authorized
+      if (authUser?.authorized && this.isValidSession()) {
+        throw new AuthorizationError("User is already logged in");
+      }
+
       const w = await this.getWallet(username);
 
       if (w && w.name === username) {
         await this.unlock(username, password);
 
-        this.loggedInUser = {
+        this._loggedInUser = {
           username,
           unlocked: true,
           authorized: false,
@@ -274,11 +281,9 @@ class AuthWorker {
       }
     } catch (error) {
       if (error instanceof AuthorizationError) {
-        throw new AuthorizationError(error.message);
+        throw error;
       } else {
-        if (String(error).includes("already")) {
-          throw new AuthorizationError("User is already logged in");
-        } else if (String(error).toLowerCase().includes("invalid password")) {
+        if (String(error).toLowerCase().includes("invalid password")) {
           throw new AuthorizationError("Invalid credentials");
         } else {
           throw new InternalError(error);
@@ -344,14 +349,18 @@ class AuthWorker {
 
       if (!wallet) return null;
 
+      const isCurrentUser = this.loggedInUser?.username === username;
+
       return {
-        authorized: !!wallet.unlocked,
-        unlocked: !!wallet.unlocked,
-        username: wallet.name,
-        loggedInKeyType:
-          this.loggedInUser?.username === username
-            ? this.loggedInUser.loggedInKeyType
-            : undefined,
+        authorized:
+          isCurrentUser &&
+          !!this.loggedInUser?.authorized &&
+          !!wallet?.unlocked,
+        unlocked: !!wallet?.unlocked,
+        username: wallet?.name ?? username,
+        loggedInKeyType: isCurrentUser
+          ? this.loggedInUser?.loggedInKeyType
+          : undefined,
         registeredKeyTypes: await this.getRegisteredKeyTypes(username),
       };
     } catch (error) {
@@ -443,13 +452,15 @@ class AuthWorker {
   }
 
   public async logout(): Promise<void> {
-    try {
-      await this.sessionEndCallback();
-      this.clearSessionInterval();
-      this.loggedInUser = undefined;
-    } catch (error) {
-      throw new InternalError(error);
+    await this.sessionEndCallback();
+    this.clearSessionInterval();
+    // Clear the session
+    if (this.loggedInUser) {
+      const wallet = await this.getWallet(this.loggedInUser.username);
+      wallet?.unlocked?.lock();
     }
+    // Clear the logged in user state completely
+    this._loggedInUser = undefined;
   }
 
   public async lock(): Promise<void> {
@@ -486,8 +497,11 @@ class AuthWorker {
 
       if (!wallet) {
         throw new AuthorizationError("User not found");
-      } else {
-        wallet?.unlock(password);
+      }
+
+      // Add check for already unlocked wallet
+      if (!wallet.unlocked) {
+        wallet.unlock(password);
       }
     } catch (error) {
       if (error instanceof AuthorizationError) {
@@ -735,11 +749,16 @@ class Auth {
     return await (await this.getWorker()).getAuths();
   }
 
-  public async getUserSettings(username: string): Promise<UserSettings | undefined> {
+  public async getUserSettings(
+    username: string,
+  ): Promise<UserSettings | undefined> {
     return await (await this.getWorker()).getUserSettings(username);
   }
 
-  public async setUserSettings(username: string, settings: Partial<UserSettings>): Promise<void> {
+  public async setUserSettings(
+    username: string,
+    settings: Partial<UserSettings>,
+  ): Promise<void> {
     await (await this.getWorker()).setUserSettings(username, settings);
   }
 }

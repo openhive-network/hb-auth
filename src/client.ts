@@ -8,7 +8,13 @@ import {
 import { proxy, wrap, type Endpoint, type Remote, type Local } from "comlink";
 import { AuthorizationError, GenericError } from "./errors";
 import { isSupportSharedWorker, isSupportWebWorker } from "./environment";
-import type { Auth, WorkerExpose, AuthUser, KeyAuthorityType } from "./worker";
+import type {
+  Auth,
+  WorkerExpose,
+  AuthUser,
+  KeyAuthorityType,
+  UserSettings,
+} from "./worker";
 export type { AuthUser, KeyAuthorityType, AuthorizationError };
 
 export interface AuthStatus {
@@ -86,16 +92,6 @@ abstract class Client {
     return this.#options;
   }
 
-  /** @hidden */
-  protected set isStrict(strict: boolean) {
-    this.#strict = strict;
-  }
-
-  /** @hidden */
-  protected get isStrict(): boolean {
-    return this.#strict;
-  }
-
   /**
    * @hidden
    * Authentication method to implement in derived classes
@@ -112,11 +108,7 @@ abstract class Client {
    * @param strict @type {boolean} - Strict authorization by checking if public key in signature matches user's public key, so other authorities will be ignored. Note that this doesn't affect OfflineClient's behaviour.
    * @param clientOptions @type {ClientOptions} - Options
    */
-  constructor(
-    private readonly strict: boolean = true,
-    readonly clientOptions: Partial<ClientOptions> = {},
-  ) {
-    this.isStrict = strict;
+  constructor(readonly clientOptions: Partial<ClientOptions> = {}) {
     this.options = { ...defaultOptions, ...clientOptions };
     if (!isSupportWebWorker) {
       throw new GenericError(
@@ -201,6 +193,12 @@ abstract class Client {
     return await this.#auth.getAuthByUser(username);
   }
 
+  public async getUserSettings(
+    username: string,
+  ): Promise<UserSettings | undefined> {
+    return await this.#auth.getUserSettings(username);
+  }
+
   /** @hidden */
   private async getVerificationTx(
     username: string,
@@ -260,6 +258,7 @@ abstract class Client {
     password: string,
     wifKey: string,
     keyType: KeyAuthorityType,
+    strict: boolean = true,
     offline?: boolean,
   ): Promise<AuthStatus> {
     const txBuilder = await this.getVerificationTx(username, keyType, offline);
@@ -269,6 +268,7 @@ abstract class Client {
       txBuilder.sigDigest,
       wifKey,
       keyType,
+      strict,
     );
 
     txBuilder.sign(signature);
@@ -298,32 +298,79 @@ abstract class Client {
     offline?: boolean,
   ): Promise<AuthStatus> {
     try {
-      const txBuilder = await this.getVerificationTx(
-        username,
-        keyType,
-        offline,
-      );
-      const signature = await this.#auth.authenticate(
-        username,
-        password,
-        keyType,
-        txBuilder.sigDigest,
-      );
+        const userSettings = await this.getUserSettings(username);
+        const isStrict = userSettings?.strict ?? true;
 
-      txBuilder.sign(signature);
+        if (!offline) {
+            // Get the account's authorities from the blockchain
+            const accounts = await this.hiveChain.api.database_api.find_accounts({
+                accounts: [username],
+            });
 
-      const authenticated = await this.authorize(username, txBuilder, keyType);
+            // Create a verification transaction to get the public key
+            const txBuilder = await this.getVerificationTx(username, keyType, offline);
+            const signature = await this.#auth.authenticate(
+                username,
+                password,
+                keyType,
+                txBuilder.sigDigest,
+            );
 
-      if (authenticated) {
-        await this.#auth.onAuthComplete(false);
-        return Promise.resolve({ ok: true });
-      } else {
-        await this.#auth.logout();
-        // TODO: handle that case more clearly
-        return Promise.reject(new AuthorizationError("Invalid credentials"));
-      }
+            txBuilder.sign(signature);
+            const publicKey = txBuilder.signatureKeys[0];
+
+            if (isStrict) {
+                // In strict mode, only check against key_auths
+                const account_key = accounts.accounts[0][keyType].key_auths[0][0];
+                if (publicKey && !publicKey.endsWith(account_key)) {
+                    await this.#auth.logout();
+                    return Promise.reject(new AuthorizationError("Invalid credentials"));
+                }
+            } else {
+                // When not in strict mode, check both key_auths and account_auths
+                const account = accounts.accounts[0];
+                const key_auth_match = account[keyType].key_auths.some((keyAuths) => 
+                    publicKey.endsWith(keyAuths[0])
+                );
+                
+                if (!key_auth_match) {
+                    // If no direct key match, check if the key belongs to an authorized account
+                    const key_references = await this.hiveChain.api.account_by_key_api.get_key_references({ 
+                        keys: [publicKey]
+                    });
+                    
+                    const key_owner = key_references.accounts[0]?.[0];
+                    if (!key_owner || !account[keyType].account_auths.some((accountAuths) => 
+                        accountAuths[0] === key_owner
+                    )) {
+                        await this.#auth.logout();
+                        return Promise.reject(new AuthorizationError("Invalid credentials"));
+                    }
+                }
+            }
+        }
+
+        // Continue with normal authentication
+        const txBuilder = await this.getVerificationTx(username, keyType, offline);
+        const signature = await this.#auth.authenticate(
+            username,
+            password,
+            keyType,
+            txBuilder.sigDigest,
+        );
+
+        txBuilder.sign(signature);
+        const authenticated = await this.authorize(username, txBuilder, keyType);
+
+        if (authenticated) {
+            await this.#auth.onAuthComplete(false);
+            return Promise.resolve({ ok: true });
+        } else {
+            await this.#auth.logout();
+            return Promise.reject(new AuthorizationError("Invalid credentials"));
+        }
     } catch (err) {
-      return Promise.reject(err);
+        return Promise.reject(err);
     }
   }
 
@@ -421,7 +468,7 @@ abstract class Client {
  */
 class OfflineClient extends Client {
   constructor(readonly clientOptions: Partial<ClientOptions> = {}) {
-    super(false, clientOptions);
+    super(clientOptions);
   }
 
   // simple auth based on wallet auth status
@@ -434,8 +481,16 @@ class OfflineClient extends Client {
     password: string,
     wifKey: string,
     keyType: KeyAuthorityType,
+    strict: boolean = true,
   ): Promise<AuthStatus> {
-    return await super.register(username, password, wifKey, keyType, true);
+    return await super.register(
+      username,
+      password,
+      wifKey,
+      keyType,
+      strict,
+      true,
+    );
   }
 
   public async authenticate(
@@ -452,11 +507,8 @@ class OfflineClient extends Client {
  * user by verifying user's signature through the network.
  */
 class OnlineClient extends Client {
-  constructor(
-    strict: boolean = true,
-    clientOptions: Partial<ClientOptions> = {},
-  ) {
-    super(strict, clientOptions);
+  constructor(readonly clientOptions: Partial<ClientOptions> = {}) {
+    super(clientOptions);
   }
 
   protected async authorize(
@@ -465,8 +517,10 @@ class OnlineClient extends Client {
     keyType: KeyAuthorityType,
   ): Promise<boolean> {
     const verificationResult = await this.verify(txBuilder.toApiJson());
+    const userSettings = await this.getUserSettings(username);
+    const isStrict = userSettings?.strict ?? true;
 
-    if (this.isStrict && verificationResult) {
+    if (isStrict && verificationResult) {
       const accounts = await this.hiveChain.api.database_api.find_accounts({
         accounts: [username],
       });
@@ -497,6 +551,23 @@ class OnlineClient extends Client {
     keyType: KeyAuthorityType,
   ): Promise<AuthStatus> {
     return await super.authenticate(username, password, keyType, false);
+  }
+
+  public async register(
+    username: string,
+    password: string,
+    wifKey: string,
+    keyType: KeyAuthorityType,
+    strict: boolean = true,
+  ): Promise<AuthStatus> {
+    return await super.register(
+      username,
+      password,
+      wifKey,
+      keyType,
+      strict,
+      false,
+    );
   }
 }
 

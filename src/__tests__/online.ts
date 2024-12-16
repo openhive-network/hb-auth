@@ -105,7 +105,7 @@ test.describe("HB Auth Online Client base tests", () => {
   test.skip("Should throw error if there is no worker file found", async () => {
     const err = await page.evaluate(async () => {
       try {
-        const instance = new AuthOnlineClient(false);
+        const instance = new AuthOnlineClient();
         await instance.initialize();
       } catch (error) {
         return true;
@@ -117,7 +117,7 @@ test.describe("HB Auth Online Client base tests", () => {
 
   test("Should be able to create new OnlineClient instance", async () => {
     await page.evaluate(async () => {
-      authInstance = new AuthOnlineClient(false, {
+      authInstance = new AuthOnlineClient({
         workerUrl: "/dist/worker.js",
         node: "https://api.hive.blog",
       });
@@ -199,6 +199,11 @@ test.describe("HB Auth Online Client base tests", () => {
   test("Should user login with username and password", async () => {
     const authorized = await page.evaluate(
       async ({ username, password, keys }) => {
+        const authUser = await authInstance.getAuthByUser(username);
+
+        if (authUser?.authorized) {
+          await authInstance.logout();
+        }
         await authInstance.authenticate(
           username,
           password,
@@ -362,7 +367,7 @@ test.describe("HB Auth Online Client base tests", () => {
 
     const authorized = await newTab.evaluate(async ({ username }) => {
       // get new instance on new page
-      const newAuthInstance = new AuthOnlineClient(false, {
+      const newAuthInstance = new AuthOnlineClient({
         workerUrl: "/dist/worker.js",
       });
       await newAuthInstance.initialize();
@@ -414,7 +419,7 @@ test.describe("HB Auth Online Client base tests", () => {
     await navigate(_page);
     const error = await _page.evaluate(
       async ({ username, password, keys, txs }) => {
-        const instance = new AuthOnlineClient(false, {
+        const instance = new AuthOnlineClient({
           workerUrl: "/dist/worker.js",
         });
         await instance.initialize();
@@ -447,11 +452,12 @@ test.describe("HB Auth Online Client base tests", () => {
     const newContext = await browser.newContext();
     const newPage = await newContext.newPage();
     await navigate(newPage);
+
+    // First register with strict mode true
     const error = await newPage.evaluate(
       async ({ username, password, keys }) => {
         try {
-          // strict mode is on
-          const instance = new AuthOnlineClient(true, {
+          const instance = new AuthOnlineClient({
             workerUrl: "/dist/worker.js",
           });
           await instance.initialize();
@@ -460,6 +466,7 @@ test.describe("HB Auth Online Client base tests", () => {
             password,
             keys[2].private,
             keys[2].type as KeyAuthorityType,
+            true, // strict mode
           );
         } catch (error) {
           return error.message;
@@ -470,11 +477,10 @@ test.describe("HB Auth Online Client base tests", () => {
 
     expect(error).toBe("Invalid credentials");
 
-    // User is authorizied only with own private key in strict mode
+    // User is authorized only with own private key in strict mode
     const registered = await newPage.evaluate(
       async ({ username, password, keys }) => {
-        // strict mode is on
-        const instance = new AuthOnlineClient(true, {
+        const instance = new AuthOnlineClient({
           workerUrl: "/dist/worker.js",
         });
         await instance.initialize();
@@ -483,6 +489,7 @@ test.describe("HB Auth Online Client base tests", () => {
           password,
           keys[0].private,
           keys[0].type as KeyAuthorityType,
+          true, // strict mode
         );
         return response.ok;
       },
@@ -500,7 +507,8 @@ test.describe("HB Auth Online Client base tests", () => {
       async ({ username, password, keys, txs }) => {
         try {
           // strict mode is off
-          const instance = new AuthOnlineClient(false, {
+          const strictMode = false;
+          const instance = new AuthOnlineClient({
             workerUrl: "/dist/worker.js",
           });
           await instance.initialize();
@@ -509,6 +517,7 @@ test.describe("HB Auth Online Client base tests", () => {
             password,
             keys[2].private,
             keys[2].type as KeyAuthorityType,
+            strictMode,
           );
           const signed = await instance.sign(
             username,
@@ -532,7 +541,7 @@ test.describe("HB Auth Online Client base tests", () => {
     await navigate(_page);
     const singnedWithNewKey = await _page.evaluate(
       async ({ username, password, keys, txs }) => {
-        const instance = new AuthOnlineClient(false, {
+        const instance = new AuthOnlineClient({
           workerUrl: "/dist/worker.js",
         });
         await instance.initialize();
@@ -611,8 +620,7 @@ test.describe("HB Auth Online Client base tests", () => {
     const signed = await newPage.evaluate(
       async ({ username, password, keys, txs }) => {
         try {
-          // strict mode is off
-          const instance = new AuthOnlineClient(false, {
+          const instance = new AuthOnlineClient({
             workerUrl: "/dist/worker.js",
           });
           await instance.initialize();
@@ -621,6 +629,7 @@ test.describe("HB Auth Online Client base tests", () => {
             password,
             keys[2].private,
             keys[2].type as KeyAuthorityType,
+            false // strict mode off
           );
           const signed = await instance.sign(
             username,
@@ -644,7 +653,7 @@ test.describe("HB Auth Online Client base tests", () => {
     await navigate(_page);
 
     const signed = await _page.evaluate(async ({ username, keys, txs }) => {
-      const instance = new AuthOnlineClient(false, {
+      const instance = new AuthOnlineClient({
         workerUrl: "/dist/worker.js",
       });
       await instance.initialize();
@@ -666,7 +675,7 @@ test.describe("HB Auth Online Client base tests", () => {
     await navigate(_page);
     // First register with posting key
     await _page.evaluate(async ({ username, password, keys }) => {
-      const instance = new AuthOnlineClient(false, {
+      const instance = new AuthOnlineClient({
         workerUrl: "/dist/worker.js",
       });
       await instance.initialize();
@@ -680,7 +689,7 @@ test.describe("HB Auth Online Client base tests", () => {
 
     // Try singleSign with active key (not registered)
     const signed = await page.evaluate(async ({ username, keys, txs }) => {
-      const instance = new AuthOnlineClient(false, {
+      const instance = new AuthOnlineClient({
         workerUrl: "/dist/worker.js",
       });
       await instance.initialize();
@@ -694,6 +703,64 @@ test.describe("HB Auth Online Client base tests", () => {
     }, user);
 
     expect(signed).toBe(user.txs[1].signed);
+  });
+
+  test("Should maintain strict mode setting between sessions", async () => {
+    const newContext = await browser.newContext();
+    const newPage = await newContext.newPage();
+    await navigate(newPage);
+    
+    // First register with user's own key in strict mode
+    await newPage.evaluate(
+      async ({ username, password, keys }) => {
+        const instance = new AuthOnlineClient({
+          workerUrl: "/dist/worker.js",
+        });
+        await instance.initialize();
+        await instance.register(
+          username,
+          password,
+          keys[0].private,
+          keys[0].type as KeyAuthorityType,
+          true // strict mode
+        );
+      },
+      user,
+    );
+
+    // Try to register with another authority's key - should fail in strict mode
+    const error = await newPage.evaluate(
+      async ({ username, password, keys }) => {
+        try {
+          const instance = new AuthOnlineClient({
+            workerUrl: "/dist/worker.js",
+          });
+          await instance.initialize();
+          await instance.register(
+            username,
+            password,
+            keys[2].private,
+            keys[2].type as KeyAuthorityType,
+          );
+        } catch (error) {
+          return error.message;
+        }
+      },
+      user,
+    );
+
+    expect(error).toBe("Invalid credentials");
+
+    // Create new instance to verify strict mode persists
+    const settings = await newPage.evaluate(async ({ username }) => {
+      const instance = new AuthOnlineClient({
+        workerUrl: "/dist/worker.js",
+      });
+      await instance.initialize();
+      return await instance.getUserSettings(username);
+    }, user);
+
+    expect(settings?.strict).toBe(true);
   });
 
   test.afterAll(async () => {

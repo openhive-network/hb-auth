@@ -8,12 +8,20 @@ import createBeekeeperApp, {
 } from "@hiveio/beekeeper";
 import { AuthorizationError, GenericError, InternalError } from "./errors";
 
+// adjust this when breaking changes are made
+const IDB_VERSION = "v3";
+
 const BEEKEEPER_LOGS = true;
 const KEY_TYPES = ["active", "posting", "owner"] as const;
 const SESSION_HEALTH_CHECK = 2000;
 const noop = async (): Promise<void> => {};
 
 export type KeyAuthorityType = (typeof KEY_TYPES)[number];
+
+export interface UserSettings {
+  strict: boolean;
+  alias: string;
+}
 
 export interface AuthUser {
   username: string;
@@ -28,7 +36,7 @@ export interface AuthUser {
 class Registration {
   private api!: IBeekeeperInstance;
   private session!: IBeekeeperSession;
-  private readonly storage = "/registration";
+  private readonly storage = `/registration_${IDB_VERSION}`;
 
   public async request(
     username: string,
@@ -59,13 +67,14 @@ class AuthWorker {
   public readonly Ready: Promise<AuthWorker>;
   private api!: IBeekeeperInstance;
   private session!: IBeekeeperSession;
-  private readonly storage = "/storage_root_v2";
-  private readonly aliasStorage = "/aliases_v2";
+  private readonly storage = `/storage_root_${IDB_VERSION}`;
+  private readonly aliasStorage = `/aliases_${IDB_VERSION}`;
   private sessionEndCallback = noop;
   private _loggedInUser: AuthUser | undefined;
   private _generator!: AsyncGenerator<string, string>;
   private _registration: Registration | undefined;
   private _interval!: ReturnType<typeof setInterval>;
+  private readonly settingsStorage = `/settings_${IDB_VERSION}`;
 
   public get loggedInUser(): AuthUser | undefined {
     return this._loggedInUser;
@@ -176,12 +185,16 @@ class AuthWorker {
     digest: string,
     wifKey: string,
     keyType: KeyAuthorityType,
+    strict: boolean = true,
   ): Promise<string> {
     if (!username || !password || !wifKey || !keyType) {
       throw new AuthorizationError("Empty field");
     }
 
     this.checkKeyType(keyType);
+
+    // Save user settings before registration
+    await this.setUserSettings(username, { strict });
 
     this._generator = this.processNewRegistration(
       username,
@@ -199,6 +212,7 @@ class AuthWorker {
     password: string,
     wifKey: string,
     keyType: KeyAuthorityType,
+    strict: boolean = true,
   ): Promise<string> {
     const exist = await this.getWallet(username);
 
@@ -224,6 +238,7 @@ class AuthWorker {
       };
     }
 
+    await this.setUserSettings(username, { strict });
     return "success";
   }
 
@@ -240,12 +255,19 @@ class AuthWorker {
     this.checkKeyType(keyType);
 
     try {
+      const authUser = await this.getAuthByUser(username);
+
+      // Check if user is already logged in and authorized
+      if (authUser?.authorized && this.isValidSession()) {
+        throw new AuthorizationError("User is already logged in");
+      }
+
       const w = await this.getWallet(username);
 
       if (w && w.name === username) {
         await this.unlock(username, password);
 
-        this.loggedInUser = {
+        this._loggedInUser = {
           username,
           unlocked: true,
           authorized: false,
@@ -259,11 +281,9 @@ class AuthWorker {
       }
     } catch (error) {
       if (error instanceof AuthorizationError) {
-        throw new AuthorizationError(error.message);
+        throw error;
       } else {
-        if (String(error).includes("already")) {
-          throw new AuthorizationError("User is already logged in");
-        } else if (String(error).toLowerCase().includes("invalid password")) {
+        if (String(error).toLowerCase().includes("invalid password")) {
           throw new AuthorizationError("Invalid credentials");
         } else {
           throw new InternalError(error);
@@ -329,14 +349,18 @@ class AuthWorker {
 
       if (!wallet) return null;
 
+      const isCurrentUser = this.loggedInUser?.username === username;
+
       return {
-        authorized: !!wallet.unlocked,
-        unlocked: !!wallet.unlocked,
-        username: wallet.name,
-        loggedInKeyType:
-          this.loggedInUser?.username === username
-            ? this.loggedInUser.loggedInKeyType
-            : undefined,
+        authorized:
+          isCurrentUser &&
+          !!this.loggedInUser?.authorized &&
+          !!wallet?.unlocked,
+        unlocked: !!wallet?.unlocked,
+        username: wallet?.name ?? username,
+        loggedInKeyType: isCurrentUser
+          ? this.loggedInUser?.loggedInKeyType
+          : undefined,
         registeredKeyTypes: await this.getRegisteredKeyTypes(username),
       };
     } catch (error) {
@@ -372,7 +396,11 @@ class AuthWorker {
       const timestamp = Date.now();
       const tempWalletName = `${username}_temp_${timestamp}`;
       const tempPassword = `${username}_${digest}_${timestamp}`;
-      const tempWallet = await this.session.createWallet(tempWalletName, tempPassword, true);
+      const tempWallet = await this.session.createWallet(
+        tempWalletName,
+        tempPassword,
+        true,
+      );
       const pKey = await tempWallet.wallet.importKey(wifKey);
       const signed = tempWallet.wallet.signDigest(pKey, digest);
       await tempWallet.wallet.removeKey(pKey);
@@ -424,13 +452,15 @@ class AuthWorker {
   }
 
   public async logout(): Promise<void> {
-    try {
-      await this.sessionEndCallback();
-      this.clearSessionInterval();
-      this.loggedInUser = undefined;
-    } catch (error) {
-      throw new InternalError(error);
+    await this.sessionEndCallback();
+    this.clearSessionInterval();
+    // Clear the session
+    if (this.loggedInUser) {
+      const wallet = await this.getWallet(this.loggedInUser.username);
+      wallet?.unlocked?.lock();
     }
+    // Clear the logged in user state completely
+    this._loggedInUser = undefined;
   }
 
   public async lock(): Promise<void> {
@@ -467,8 +497,11 @@ class AuthWorker {
 
       if (!wallet) {
         throw new AuthorizationError("User not found");
-      } else {
-        wallet?.unlock(password);
+      }
+
+      // Add check for already unlocked wallet
+      if (!wallet.unlocked) {
+        wallet.unlock(password);
       }
     } catch (error) {
       if (error instanceof AuthorizationError) {
@@ -565,6 +598,48 @@ class AuthWorker {
       );
     }
   }
+
+  public async getUserSettings(
+    username: string,
+  ): Promise<UserSettings | undefined> {
+    const db = await openDB(this.settingsStorage, 1, {
+      upgrade(db) {
+        if (!db.objectStoreNames.contains("settings")) {
+          const store = db.createObjectStore("settings", { keyPath: "alias" });
+          store.createIndex("alias", "alias", { unique: true });
+        }
+      },
+    });
+
+    return await db.get("settings", username);
+  }
+
+  public async setUserSettings(
+    username: string,
+    settings: Partial<UserSettings>,
+  ): Promise<void> {
+    const db = await openDB(this.settingsStorage, 1, {
+      upgrade(db) {
+        if (!db.objectStoreNames.contains("settings")) {
+          const store = db.createObjectStore("settings", { keyPath: "alias" });
+          store.createIndex("alias", "alias", { unique: true });
+        }
+      },
+    });
+
+    const tx = db.transaction(["settings"], "readwrite");
+    const store = tx.objectStore("settings");
+
+    const existing = await store.get(username);
+    await store.put({
+      ...existing,
+      alias: username,
+      ...settings,
+    });
+
+    await tx.done;
+    db.close();
+  }
 }
 
 class Auth {
@@ -589,10 +664,11 @@ class Auth {
     digest: string,
     wifKey: string,
     keyType: KeyAuthorityType,
+    strict: boolean = true,
   ): Promise<string> {
     return await (
       await this.getWorker()
-    ).registerUser(username, password, digest, wifKey, keyType);
+    ).registerUser(username, password, digest, wifKey, keyType, strict);
   }
 
   public async onAuthComplete(failed: boolean): Promise<void> {
@@ -671,6 +747,19 @@ class Auth {
 
   public async getAuths(): Promise<AuthUser[]> {
     return await (await this.getWorker()).getAuths();
+  }
+
+  public async getUserSettings(
+    username: string,
+  ): Promise<UserSettings | undefined> {
+    return await (await this.getWorker()).getUserSettings(username);
+  }
+
+  public async setUserSettings(
+    username: string,
+    settings: Partial<UserSettings>,
+  ): Promise<void> {
+    await (await this.getWorker()).setUserSettings(username, settings);
   }
 }
 

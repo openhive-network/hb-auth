@@ -31,38 +31,6 @@ export interface AuthUser {
   registeredKeyTypes: KeyAuthorityType[];
 }
 
-// This class is used to initiate new wasm application while registering a new user
-// It deals with signing process during first authorization phase
-class Registration {
-  private api!: IBeekeeperInstance;
-  private session!: IBeekeeperSession;
-  private readonly storage = `/registration_${IDB_VERSION}`;
-
-  public async request(
-    username: string,
-    wifKey: string,
-    digest: string,
-  ): Promise<string> {
-    this.api = await createBeekeeperApp({
-      unlockTimeout: 10,
-      storageRoot: this.storage,
-    });
-    this.session = this.api.createSession(self.crypto.randomUUID());
-    const wallet = await this.session.createWallet(username);
-    await wallet.wallet.importKey(wifKey);
-    const [pubKey] = wallet.wallet.getPublicKeys();
-
-    const signed = wallet.wallet.signDigest(pubKey, digest);
-    return signed;
-  }
-
-  public async clear(): Promise<void> {
-    await this.api.delete();
-    const db = await openDB(this.storage);
-    await db.clear("FILE_DATA");
-  }
-}
-
 class AuthWorker {
   public readonly Ready: Promise<AuthWorker>;
   private api!: IBeekeeperInstance;
@@ -72,7 +40,6 @@ class AuthWorker {
   private sessionEndCallback = noop;
   private _loggedInUser: AuthUser | undefined;
   private _generator!: AsyncGenerator<string, string>;
-  private _registration: Registration | undefined;
   private _interval!: ReturnType<typeof setInterval>;
   private readonly settingsStorage = `/settings_${IDB_VERSION}`;
 
@@ -127,9 +94,6 @@ class AuthWorker {
   }
 
   public async onAuthComplete(failed?: boolean): Promise<void> {
-    await this._registration?.clear();
-    this._registration = undefined;
-
     if (failed) {
       await this._generator.throw(
         new AuthorizationError("Invalid credentials"),
@@ -153,20 +117,27 @@ class AuthWorker {
     digest: string,
     wifKey: string,
     keyType: KeyAuthorityType,
+    strict: boolean,
   ): AsyncGenerator<any> {
     try {
-      this._registration = new Registration();
-      const signed = await this._registration.request(username, wifKey, digest);
+      const timestamp = Date.now();
+      const tempWalletName = `${username}_temp_${timestamp}`;
+      const registation = await this.session.createWallet(
+        tempWalletName,
+        password,
+        true,
+      );
+      const pKey = await registation.wallet.importKey(wifKey);
+      const signed = registation.wallet.signDigest(pKey, digest);
+      await registation.wallet.removeKey(pKey);
+      registation.wallet.close();
 
       // first yield signed transaction
       yield await Promise.resolve(signed);
 
       // later register new user
-      yield await this.saveUser(username, password, wifKey, keyType);
+      yield await this.saveUser(username, password, wifKey, keyType, strict);
     } catch (error: any) {
-      // clear registration on error
-      await this._registration?.clear();
-
       if (error instanceof AuthorizationError) {
         throw new AuthorizationError(error.message);
       } else {
@@ -193,15 +164,13 @@ class AuthWorker {
 
     this.checkKeyType(keyType);
 
-    // Save user settings before registration
-    await this.setUserSettings(username, { strict });
-
     this._generator = this.processNewRegistration(
       username,
       password,
       digest,
       wifKey,
       keyType,
+      strict,
     );
 
     return (await this._generator.next()).value;
@@ -284,7 +253,7 @@ class AuthWorker {
         throw error;
       } else {
         if (String(error).toLowerCase().includes("invalid password")) {
-          throw new AuthorizationError("Invalid credentials");
+          throw new AuthorizationError("Invalid credentials xxx");
         } else {
           throw new InternalError(error);
         }

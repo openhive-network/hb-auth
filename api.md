@@ -763,7 +763,7 @@ ___
 
 ### authorize
 
-▸ **authorize**(`username`, `txBuilder`, `keyType`): `Promise`\<`boolean`\>
+▸ **authorize**(`username`, `txBuilder`, `keyType`, `isStrict`): `Promise`\<`boolean`\>
 
 #### Parameters
 
@@ -772,6 +772,7 @@ ___
 | `username` | `string` |
 | `txBuilder` | `ITransaction` |
 | `keyType` | ``"active"`` \| ``"posting"`` \| ``"owner"`` |
+| `isStrict` | `boolean` |
 
 #### Returns
 

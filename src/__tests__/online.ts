@@ -763,6 +763,62 @@ test.describe("HB Auth Online Client base tests", () => {
     expect(settings?.strict).toBe(true);
   });
 
+  test("Should maintain non-strict mode setting between sessions", async () => {
+    const newContext = await browser.newContext();
+    const newPage = await newContext.newPage();
+    await navigate(newPage);
+    
+    // First register with authority's key in non-strict mode
+    await newPage.evaluate(
+      async ({ username, password, keys }) => {
+        const instance = new AuthOnlineClient({
+          workerUrl: "/dist/worker.js",
+        });
+        await instance.initialize();
+        await instance.register(
+          username,
+          password,
+          keys[2].private,
+          keys[2].type as KeyAuthorityType,
+          false // non-strict mode
+        );
+        await instance.logout();
+      },
+      user,
+    );
+
+    // Try to login again with the same authority key
+    const authorized = await newPage.evaluate(
+      async ({ username, password, keys }) => {
+        const instance = new AuthOnlineClient({
+          workerUrl: "/dist/worker.js",
+        });
+        await instance.initialize();
+        await instance.authenticate(
+          username,
+          password,
+          keys[2].type as KeyAuthorityType,
+        );
+        const authUser = await instance.getAuthByUser(username);
+        return authUser?.authorized;
+      },
+      user,
+    );
+
+    expect(authorized).toBeTruthy();
+
+    // Verify the settings are still non-strict
+    const settings = await newPage.evaluate(async ({ username }) => {
+      const instance = new AuthOnlineClient({
+        workerUrl: "/dist/worker.js",
+      });
+      await instance.initialize();
+      return await instance.getUserSettings(username);
+    }, user);
+
+    expect(settings?.strict).toBe(false);
+  });
+
   test.afterAll(async () => {
     await browser.close();
   });

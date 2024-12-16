@@ -298,63 +298,79 @@ abstract class Client {
     offline?: boolean,
   ): Promise<AuthStatus> {
     try {
-      // Get user settings first to check strict mode
-      const userSettings = await this.getUserSettings(username);
+        const userSettings = await this.getUserSettings(username);
+        const isStrict = userSettings?.strict ?? true;
 
-      if (!offline && userSettings?.strict) {
-        // Get the account's authorities from the blockchain
-        const accounts = await this.hiveChain.api.database_api.find_accounts({
-          accounts: [username],
-        });
+        if (!offline) {
+            // Get the account's authorities from the blockchain
+            const accounts = await this.hiveChain.api.database_api.find_accounts({
+                accounts: [username],
+            });
 
-        // Create a verification transaction to get the public key
-        const txBuilder = await this.getVerificationTx(
-          username,
-          keyType,
-          offline,
-        );
+            // Create a verification transaction to get the public key
+            const txBuilder = await this.getVerificationTx(username, keyType, offline);
+            const signature = await this.#auth.authenticate(
+                username,
+                password,
+                keyType,
+                txBuilder.sigDigest,
+            );
+
+            txBuilder.sign(signature);
+            const publicKey = txBuilder.signatureKeys[0];
+
+            if (isStrict) {
+                // In strict mode, only check against key_auths
+                const account_key = accounts.accounts[0][keyType].key_auths[0][0];
+                if (publicKey && !publicKey.endsWith(account_key)) {
+                    await this.#auth.logout();
+                    return Promise.reject(new AuthorizationError("Invalid credentials"));
+                }
+            } else {
+                // When not in strict mode, check both key_auths and account_auths
+                const account = accounts.accounts[0];
+                const key_auth_match = account[keyType].key_auths.some((keyAuths) => 
+                    publicKey.endsWith(keyAuths[0])
+                );
+                
+                if (!key_auth_match) {
+                    // If no direct key match, check if the key belongs to an authorized account
+                    const key_references = await this.hiveChain.api.account_by_key_api.get_key_references({ 
+                        keys: [publicKey]
+                    });
+                    
+                    const key_owner = key_references.accounts[0]?.[0];
+                    if (!key_owner || !account[keyType].account_auths.some((accountAuths) => 
+                        accountAuths[0] === key_owner
+                    )) {
+                        await this.#auth.logout();
+                        return Promise.reject(new AuthorizationError("Invalid credentials"));
+                    }
+                }
+            }
+        }
+
+        // Continue with normal authentication
+        const txBuilder = await this.getVerificationTx(username, keyType, offline);
         const signature = await this.#auth.authenticate(
-          username,
-          password,
-          keyType,
-          txBuilder.sigDigest,
+            username,
+            password,
+            keyType,
+            txBuilder.sigDigest,
         );
 
         txBuilder.sign(signature);
-        const publicKey = txBuilder.signatureKeys[0];
+        const authenticated = await this.authorize(username, txBuilder, keyType);
 
-        // Check if the key matches the account's authority
-        const account_key = accounts.accounts[0][keyType].key_auths[0][0];
-        if (!publicKey.endsWith(account_key)) {
-          return Promise.reject(new AuthorizationError("Invalid credentials"));
+        if (authenticated) {
+            await this.#auth.onAuthComplete(false);
+            return Promise.resolve({ ok: true });
+        } else {
+            await this.#auth.logout();
+            return Promise.reject(new AuthorizationError("Invalid credentials"));
         }
-      }
-
-      // Continue with normal authentication
-      const txBuilder = await this.getVerificationTx(
-        username,
-        keyType,
-        offline,
-      );
-      const signature = await this.#auth.authenticate(
-        username,
-        password,
-        keyType,
-        txBuilder.sigDigest,
-      );
-
-      txBuilder.sign(signature);
-      const authenticated = await this.authorize(username, txBuilder, keyType);
-
-      if (authenticated) {
-        await this.#auth.onAuthComplete(false);
-        return Promise.resolve({ ok: true });
-      } else {
-        await this.#auth.logout();
-        return Promise.reject(new AuthorizationError("Invalid credentials"));
-      }
     } catch (err) {
-      return Promise.reject(err);
+        return Promise.reject(err);
     }
   }
 

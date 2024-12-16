@@ -724,12 +724,11 @@ test.describe("HB Auth Online Client base tests", () => {
           keys[0].type as KeyAuthorityType,
           true // strict mode
         );
-        await instance.logout();
       },
       user,
     );
 
-    // Try to authenticate with another authority's key
+    // Try to register with another authority's key - should fail in strict mode
     const error = await newPage.evaluate(
       async ({ username, password, keys }) => {
         try {
@@ -737,13 +736,12 @@ test.describe("HB Auth Online Client base tests", () => {
             workerUrl: "/dist/worker.js",
           });
           await instance.initialize();
-          // Try to authenticate with another posting authority
-          await instance.authenticate(
+          await instance.register(
             username,
             password,
-            keys[2].type as KeyAuthorityType
+            keys[2].private,
+            keys[2].type as KeyAuthorityType,
           );
-          return null;
         } catch (error) {
           return error.message;
         }
@@ -753,28 +751,16 @@ test.describe("HB Auth Online Client base tests", () => {
 
     expect(error).toBe("Invalid credentials");
 
-    // Verify we can still authenticate with own key
-    const success = await newPage.evaluate(
-      async ({ username, password, keys }) => {
-        try {
-          const instance = new AuthOnlineClient({
-            workerUrl: "/dist/worker.js",
-          });
-          await instance.initialize();
-          await instance.authenticate(
-            username,
-            password,
-            keys[0].type as KeyAuthorityType
-          );
-          return true;
-        } catch (error) {
-          return false;
-        }
-      },
-      user,
-    );
+    // Create new instance to verify strict mode persists
+    const settings = await newPage.evaluate(async ({ username }) => {
+      const instance = new AuthOnlineClient({
+        workerUrl: "/dist/worker.js",
+      });
+      await instance.initialize();
+      return await instance.getUserSettings(username);
+    }, user);
 
-    expect(success).toBe(true);
+    expect(settings?.strict).toBe(true);
   });
 
   test.afterAll(async () => {

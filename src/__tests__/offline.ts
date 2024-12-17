@@ -162,7 +162,7 @@ test.describe("HB Auth Offline Client base tests", () => {
 
   test("Should logout user on logout() call", async () => {
     const authorized = await page.evaluate(async ({ username }) => {
-      await authInstance.logout();
+      await authInstance.logout(username);
       return (await authInstance.getAuthByUser(username))?.authorized;
     }, user);
 
@@ -185,25 +185,9 @@ test.describe("HB Auth Offline Client base tests", () => {
     expect(authorized).toBeTruthy();
   });
 
-  test("Should return error if user tries to login while already logged in", async () => {
-    const error = await page.evaluate(async ({ username, password, keys }) => {
-      try {
-        await authInstance.authenticate(
-          username,
-          password,
-          keys[0].type as KeyAuthorityType,
-        );
-      } catch (error) {
-        return error.message;
-      }
-    }, user);
-
-    expect(error).toBe("User is already logged in");
-  });
-
   test("Should return error if user tries to login with bad authority type", async () => {
     const error = await page.evaluate(async ({ username, password }) => {
-      await authInstance.logout();
+      await authInstance.logout(username);
 
       try {
         await authInstance.authenticate(username, password, "active");
@@ -218,7 +202,7 @@ test.describe("HB Auth Offline Client base tests", () => {
   test("Should throw if invalid password given", async () => {
     const error = await page.evaluate(async ({ username, keys }) => {
       try {
-        await authInstance.logout();
+        await authInstance.logout(username);
         await authInstance.authenticate(
           username,
           "abc",
@@ -297,7 +281,7 @@ test.describe("HB Auth Offline Client base tests", () => {
   test("Should user login with different authority types", async () => {
     const authorizedKeyType1 = await page.evaluate(
       async ({ username, password, keys }) => {
-        await authInstance.logout();
+        await authInstance.logout(username);
         await authInstance.authenticate(
           username,
           password,
@@ -312,7 +296,7 @@ test.describe("HB Auth Offline Client base tests", () => {
 
     const authorizedKeyType2 = await page.evaluate(
       async ({ username, password, keys }) => {
-        await authInstance.logout();
+        await authInstance.logout(username);
         await authInstance.authenticate(
           username,
           password,
@@ -345,12 +329,13 @@ test.describe("HB Auth Offline Client base tests", () => {
   test("Should user sign tx and get signed tx back with selected key type", async () => {
     const signed1 = await page.evaluate(
       async ({ username, password, keys, txs }) => {
-        await authInstance.logout();
+        await authInstance.logout(username);
         await authInstance.authenticate(
           username,
           password,
           keys[0].type as KeyAuthorityType,
         );
+
         const signed = await authInstance.sign(
           username,
           txs[0].digest,
@@ -404,7 +389,7 @@ test.describe("HB Auth Offline Client base tests", () => {
         } catch (error) {
           return error.message;
         } finally {
-          await instance.logout();
+          await instance.logout(username);
         }
       },
       user,
@@ -453,7 +438,7 @@ test.describe("HB Auth Offline Client base tests", () => {
 
   test("Should user able to lock/unlock wallet during user's session time", async () => {
     const locked = await page.evaluate(async ({ username, password, keys }) => {
-      await authInstance.logout();
+      await authInstance.logout(username);
       await authInstance.authenticate(
         username,
         password,
@@ -477,7 +462,7 @@ test.describe("HB Auth Offline Client base tests", () => {
 
   test("Should user get error when trying to lock wallet if not authenticated", async () => {
     const errorWhileLocking = await page.evaluate(async () => {
-      await authInstance.logout();
+      await authInstance.logoutAll();
       try {
         await authInstance.lock();
       } catch (error) {

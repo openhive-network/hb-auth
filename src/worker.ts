@@ -19,8 +19,13 @@ const noop = async (): Promise<void> => {};
 export type KeyAuthorityType = (typeof KEY_TYPES)[number];
 
 export interface UserSettings {
-  strict: boolean;
+  strict: {
+    [K in KeyAuthorityType]?: boolean;
+  };
   alias: string;
+  authorizedAccounts?: {
+    [K in KeyAuthorityType]?: string;
+  };
 }
 
 export interface AuthUser {
@@ -31,25 +36,19 @@ export interface AuthUser {
   registeredKeyTypes: KeyAuthorityType[];
 }
 
-class AuthWorker {
+export type LoggedInUsers = Record<string, AuthUser>;
+
+export class AuthWorker {
   public readonly Ready: Promise<AuthWorker>;
   private api!: IBeekeeperInstance;
   private session!: IBeekeeperSession;
   private readonly storage = `/storage_root_${IDB_VERSION}`;
   private readonly aliasStorage = `/aliases_${IDB_VERSION}`;
   private sessionEndCallback = noop;
-  private _loggedInUser: AuthUser | undefined;
   private _generator!: AsyncGenerator<string, string>;
-  private _interval!: ReturnType<typeof setInterval>;
+  private _intervals: Record<string, ReturnType<typeof setInterval>> = {};
   private readonly settingsStorage = `/settings_${IDB_VERSION}`;
-
-  public get loggedInUser(): AuthUser | undefined {
-    return this._loggedInUser;
-  }
-
-  public set loggedInUser(user: AuthUser | undefined) {
-    this._loggedInUser = user;
-  }
+  #loggedInUsers: LoggedInUsers = {};
 
   constructor(private readonly sessionTimeout: number) {
     this.Ready = new Promise((resolve, reject) => {
@@ -68,6 +67,14 @@ class AuthWorker {
       unlockTimeout: this.sessionTimeout,
     });
     this.session = this.api.createSession(self.crypto.randomUUID());
+
+    // Initialize intervals for any existing logged in users
+    const wallets = await this.getWallets();
+    for (const wallet of wallets) {
+      if (wallet.unlocked) {
+        this.startSessionInterval(wallet.name);
+      }
+    }
   }
 
   public setSessionEndCallback(callback: () => Promise<void> = noop): void {
@@ -79,34 +86,58 @@ class AuthWorker {
     return new Date(now).getTime() < new Date(timeout_time).getTime();
   }
 
-  private startSessionInterval(): void {
-    this._interval = setInterval(async () => {
+  private startSessionInterval(username: string): void {
+    // Clear any existing interval for this user
+    if (this._intervals[username]) {
+      this.clearSessionInterval(username);
+    }
+
+    this._intervals[username] = setInterval(async () => {
       if (!this.isValidSession()) {
-        await this.lock();
-      } else {
-        // still valid auth session
+        const wallet = await this.getWallet(username);
+        wallet?.unlocked?.lock();
+
+        // Update user state
+        if (this.#loggedInUsers[username]) {
+          this.#loggedInUsers[username].unlocked = false;
+        }
+
+        // Clear interval after locking
+        this.clearSessionInterval(username);
       }
     }, SESSION_HEALTH_CHECK);
   }
 
-  private clearSessionInterval(): void {
-    clearInterval(this._interval);
+  private clearSessionInterval(username: string): void {
+    if (this._intervals[username]) {
+      clearInterval(this._intervals[username]);
+      this._intervals = Object.fromEntries(
+        Object.entries(this._intervals).filter(([key]) => key !== username),
+      );
+    }
   }
 
-  public async onAuthComplete(failed?: boolean): Promise<void> {
+  // Add method to clear all intervals
+  private clearAllSessionIntervals(): void {
+    Object.keys(this._intervals).forEach((username) => {
+      this.clearSessionInterval(username);
+    });
+  }
+
+  public async onAuthComplete(
+    username: string,
+    failed?: boolean,
+  ): Promise<void> {
     if (failed) {
       await this._generator.throw(
         new AuthorizationError("Invalid credentials"),
       );
     } else {
-      if (this.loggedInUser) {
-        this.loggedInUser = {
-          ...this.loggedInUser,
-          authorized: true,
-        };
+      if (this.#loggedInUsers[username]) {
+        this.#loggedInUsers[username].authorized = true;
       }
 
-      this.startSessionInterval();
+      this.startSessionInterval(username);
       await this._generator?.next();
     }
   }
@@ -197,8 +228,9 @@ class AuthWorker {
       await this.importKey(wallet, wifKey, keyType);
     }
 
-    if (!this.loggedInUser) {
-      this.loggedInUser = {
+    // Initialize or update loggedInUsers state
+    if (!this.#loggedInUsers[username]) {
+      this.#loggedInUsers[username] = {
         username,
         authorized: true,
         unlocked: true,
@@ -207,7 +239,7 @@ class AuthWorker {
       };
     }
 
-    await this.setUserSettings(username, { strict });
+    await this.setUserSettings(username, { strict }, keyType);
     return "success";
   }
 
@@ -217,47 +249,54 @@ class AuthWorker {
     keyType: KeyAuthorityType,
     digest: string,
   ): Promise<string> {
-    if (!username || !password || !keyType) {
-      throw new AuthorizationError("Empty field");
+    const wallet = await this.getWallet(username);
+    if (!wallet) {
+      throw new AuthorizationError("Invalid credentials");
     }
 
-    this.checkKeyType(keyType);
+    const currentUserState = await this.getAuthByUser(username);
+    if (currentUserState?.authorized) {
+      // First ensure any existing session is cleaned up
+      await this.logout(username);
+    }
 
     try {
-      const authUser = await this.getAuthByUser(username);
+      const unlocked = wallet.unlock(password);
+      const keys = unlocked.getPublicKeys();
+      const alias = await this.getAlias(`${username}@${keyType}`);
 
-      // Check if user is already logged in and authorized
-      if (authUser?.authorized && this.isValidSession()) {
-        throw new AuthorizationError("User is already logged in");
+      if (!alias) {
+        unlocked.lock();
+        throw new AuthorizationError("Not authorized, missing authority");
       }
 
-      const w = await this.getWallet(username);
-
-      if (w && w.name === username) {
-        await this.unlock(username, password);
-
-        this._loggedInUser = {
-          username,
-          unlocked: true,
-          authorized: false,
-          loggedInKeyType: keyType,
-          registeredKeyTypes: await this.getRegisteredKeyTypes(username),
-        };
-
-        return await this.sign(username, digest, keyType);
-      } else {
-        throw new AuthorizationError("User not found");
+      const foundKey = keys.find((key) => key === alias.pubKey);
+      if (!foundKey) {
+        unlocked.lock();
+        throw new AuthorizationError("Not authorized, missing authority");
       }
+
+      // Get all registered key types for this user
+      const registeredKeyTypes = await this.getRegisteredKeyTypes(username);
+
+      // Update or create user session
+      this.#loggedInUsers[username] = {
+        username,
+        authorized: true,
+        unlocked: true,
+        loggedInKeyType: keyType,
+        registeredKeyTypes,
+      };
+
+      // Start session interval for this user
+      this.startSessionInterval(username);
+
+      return this.sign(username, digest, keyType);
     } catch (error) {
       if (error instanceof AuthorizationError) {
         throw error;
-      } else {
-        if (String(error).toLowerCase().includes("invalid password")) {
-          throw new AuthorizationError("Invalid credentials xxx");
-        } else {
-          throw new InternalError(error);
-        }
       }
+      throw new AuthorizationError("Invalid credentials");
     }
   }
 
@@ -313,28 +352,15 @@ class AuthWorker {
   }
 
   public async getAuthByUser(username: string): Promise<AuthUser | null> {
-    try {
-      const wallet = await this.getWallet(username);
+    const user = this.#loggedInUsers[username];
 
-      if (!wallet) return null;
-
-      const isCurrentUser = this.loggedInUser?.username === username;
-
-      return {
-        authorized:
-          isCurrentUser &&
-          !!this.loggedInUser?.authorized &&
-          !!wallet?.unlocked,
-        unlocked: !!wallet?.unlocked,
-        username: wallet?.name ?? username,
-        loggedInKeyType: isCurrentUser
-          ? this.loggedInUser?.loggedInKeyType
-          : undefined,
-        registeredKeyTypes: await this.getRegisteredKeyTypes(username),
-      };
-    } catch (error) {
-      throw new InternalError(error);
+    if (!user) {
+      return null;
     }
+
+    // Update registered key types for logged in user
+    user.registeredKeyTypes = await this.getRegisteredKeyTypes(username);
+    return user;
   }
 
   public async getAuths(): Promise<AuthUser[]> {
@@ -386,64 +412,80 @@ class AuthWorker {
     digest: string,
     keyType: KeyAuthorityType,
   ): Promise<string> {
-    try {
-      const wallet = await this.getWallet(username);
-      if (!wallet?.unlocked) throw new AuthorizationError("Not authorized");
-      const keys = wallet.unlocked.getPublicKeys();
-      const alias = await this.getAlias(`${username}@${keyType}`);
-      const foundKey = keys.find((key) => key === alias?.pubKey);
+    const wallet = await this.getWallet(username);
+    if (!wallet?.unlocked) throw new AuthorizationError("Not authorized");
 
-      if (!foundKey) {
-        wallet.unlocked?.lock();
-        throw new AuthorizationError("Not authorized, missing authority");
-      }
+    const keys = wallet.unlocked.getPublicKeys();
+    const alias = await this.getAlias(`${username}@${keyType}`);
+    const foundKey = keys.find((key) => key === alias?.pubKey);
 
-      const signed = wallet.unlocked.signDigest(foundKey, digest);
-
-      if (!this.loggedInUser) {
-        this.loggedInUser = {
-          username,
-          unlocked: true,
-          authorized: true,
-          loggedInKeyType: keyType,
-          registeredKeyTypes: await this.getRegisteredKeyTypes(username),
-        };
-      }
-
-      return signed;
-    } catch (error) {
-      if (error instanceof AuthorizationError) {
-        throw error;
-      } else {
-        throw new InternalError(error);
-      }
+    if (!foundKey) {
+      wallet.unlocked?.lock();
+      throw new AuthorizationError("Not authorized, missing authority");
     }
+
+    // Get key-specific strict mode setting
+    const settings = await this.getUserSettings(username);
+    const isStrictMode = settings?.strict[keyType] ?? true;
+
+    // In strict mode, verify the user is authorized with the correct key type
+    const userSession = this.#loggedInUsers[username];
+    if (isStrictMode && !userSession?.authorized) {
+      throw new AuthorizationError("Not authorized");
+    }
+
+    return wallet.unlocked.signDigest(foundKey, digest);
   }
 
-  public async logout(): Promise<void> {
+  public async logout(username: string): Promise<void> {
+    // Logout specific user
+    const wallet = await this.getWallet(username);
+    wallet?.unlocked?.lock();
+
+    // Remove from logged in users
+    this.#loggedInUsers = Object.fromEntries(
+      Object.entries(this.#loggedInUsers).filter(([key]) => key !== username),
+    );
+
+    // Clear interval for this specific user
+    this.clearSessionInterval(username);
+
     await this.sessionEndCallback();
-    this.clearSessionInterval();
-    // Clear the session
-    if (this.loggedInUser) {
-      const wallet = await this.getWallet(this.loggedInUser.username);
-      wallet?.unlocked?.lock();
+  }
+
+  public async logoutAll(): Promise<void> {
+    // Lock all wallets
+    const wallets = await this.getWallets();
+    for (const wallet of wallets) {
+      wallet.unlocked?.lock();
     }
-    // Clear the logged in user state completely
-    this._loggedInUser = undefined;
+
+    // Clear all logged in users
+    this.#loggedInUsers = {};
+
+    // Clear all session intervals
+    this.clearAllSessionIntervals();
+
+    await this.sessionEndCallback();
   }
 
   public async lock(): Promise<void> {
     try {
-      if (!this.isValidSession() || !this.loggedInUser) {
+      // Get all unlocked users
+      const unlockedUsers = Object.values(this.#loggedInUsers).filter(
+        (user) => user.unlocked,
+      );
+      if (unlockedUsers.length === 0) {
         throw new AuthorizationError(
           "There is no existing user session or session already expired",
         );
-      } else {
-        const wallet = await this.getWallet(this.loggedInUser.username);
+      }
+
+      // Lock all unlocked users
+      for (const user of unlockedUsers) {
+        const wallet = await this.getWallet(user.username);
         wallet?.unlocked?.lock();
-        if (this.loggedInUser) {
-          this.loggedInUser.unlocked = false;
-        }
+        this.#loggedInUsers[user.username].unlocked = false;
       }
     } catch (error) {
       if (error instanceof AuthorizationError) {
@@ -458,8 +500,8 @@ class AuthWorker {
     try {
       const wallet = await this.getWallet(username);
 
-      if (!this.isValidSession()) {
-        throw new InternalError(
+      if (!this.#loggedInUsers[username]?.authorized) {
+        throw new AuthorizationError(
           "There is no existing user session or session already expired",
         );
       }
@@ -471,6 +513,8 @@ class AuthWorker {
       // Add check for already unlocked wallet
       if (!wallet.unlocked) {
         wallet.unlock(password);
+        // Update user session state
+        this.#loggedInUsers[username].unlocked = true;
       }
     } catch (error) {
       if (error instanceof AuthorizationError) {
@@ -492,8 +536,10 @@ class AuthWorker {
     try {
       await this.api.delete();
       await this.removeAlias(`${username}@${keyType}`);
-      this.loggedInUser = undefined;
-      this.clearSessionInterval();
+      this.#loggedInUsers = Object.fromEntries(
+        Object.entries(this.#loggedInUsers).filter(([key]) => key !== username),
+      );
+      this.clearSessionInterval(username);
     } catch (error) {
       throw new InternalError(error);
     }
@@ -570,44 +616,74 @@ class AuthWorker {
 
   public async getUserSettings(
     username: string,
-  ): Promise<UserSettings | undefined> {
-    const db = await openDB(this.settingsStorage, 1, {
-      upgrade(db) {
-        if (!db.objectStoreNames.contains("settings")) {
-          const store = db.createObjectStore("settings", { keyPath: "alias" });
-          store.createIndex("alias", "alias", { unique: true });
-        }
-      },
-    });
+    keyType?: KeyAuthorityType,
+  ): Promise<UserSettings | null> {
+    try {
+      const db = await openDB(this.settingsStorage, 1, {
+        upgrade(db) {
+          db.createObjectStore("settings");
+        },
+      });
 
-    return await db.get("settings", username);
+      const settings = (await db.get("settings", username)) as UserSettings;
+
+      if (keyType) {
+        return settings
+          ? {
+              strict: { [keyType]: settings.strict[keyType] },
+              alias: settings.alias,
+            }
+          : null;
+      }
+
+      return settings || null;
+    } catch (error) {
+      throw new InternalError(error);
+    }
   }
 
   public async setUserSettings(
     username: string,
-    settings: Partial<UserSettings>,
+    settings: {
+      strict: boolean;
+      authorizedAccounts?: {
+        [K in KeyAuthorityType]?: string;
+      };
+    },
+    keyType: KeyAuthorityType,
   ): Promise<void> {
-    const db = await openDB(this.settingsStorage, 1, {
-      upgrade(db) {
-        if (!db.objectStoreNames.contains("settings")) {
-          const store = db.createObjectStore("settings", { keyPath: "alias" });
-          store.createIndex("alias", "alias", { unique: true });
-        }
-      },
-    });
+    try {
+      const db = await openDB(this.settingsStorage, 1, {
+        upgrade(db) {
+          db.createObjectStore("settings");
+        },
+      });
 
-    const tx = db.transaction(["settings"], "readwrite");
-    const store = tx.objectStore("settings");
+      const existingSettings = ((await db.get(
+        "settings",
+        username,
+      )) as UserSettings) || {
+        strict: {},
+        alias: username,
+        authorizedAccounts: {},
+      };
 
-    const existing = await store.get(username);
-    await store.put({
-      ...existing,
-      alias: username,
-      ...settings,
-    });
+      const updatedSettings = {
+        ...existingSettings,
+        strict: {
+          ...existingSettings.strict,
+          [keyType]: settings.strict,
+        },
+        authorizedAccounts: {
+          ...existingSettings.authorizedAccounts,
+          ...settings.authorizedAccounts,
+        },
+      };
 
-    await tx.done;
-    db.close();
+      await db.put("settings", updatedSettings, username);
+    } catch (error) {
+      throw new InternalError(error);
+    }
   }
 }
 
@@ -640,8 +716,11 @@ class Auth {
     ).registerUser(username, password, digest, wifKey, keyType, strict);
   }
 
-  public async onAuthComplete(failed: boolean): Promise<void> {
-    await (await this.getWorker()).onAuthComplete(failed);
+  public async onAuthComplete(
+    username: string,
+    failed: boolean,
+  ): Promise<void> {
+    await (await this.getWorker()).onAuthComplete(username, failed);
   }
 
   public async unregister(
@@ -680,8 +759,13 @@ class Auth {
     ).authenticate(username, password, keyType, digest);
   }
 
-  public async logout(): Promise<void> {
-    await (await this.getWorker()).logout();
+  public async logout(username: string): Promise<void> {
+    await (await this.getWorker()).logout(username);
+    Auth.#worker = undefined;
+  }
+
+  public async logoutAll(): Promise<void> {
+    await (await this.getWorker()).logoutAll();
     Auth.#worker = undefined;
   }
 
@@ -720,15 +804,22 @@ class Auth {
 
   public async getUserSettings(
     username: string,
-  ): Promise<UserSettings | undefined> {
-    return await (await this.getWorker()).getUserSettings(username);
+    keyType?: KeyAuthorityType,
+  ): Promise<UserSettings | null> {
+    return await (await this.getWorker()).getUserSettings(username, keyType);
   }
 
   public async setUserSettings(
     username: string,
-    settings: Partial<UserSettings>,
+    settings: {
+      strict: boolean;
+      authorizedAccounts?: {
+        [K in KeyAuthorityType]?: string;
+      };
+    },
+    keyType: KeyAuthorityType,
   ): Promise<void> {
-    await (await this.getWorker()).setUserSettings(username, settings);
+    await (await this.getWorker()).setUserSettings(username, settings, keyType);
   }
 }
 

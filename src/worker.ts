@@ -427,7 +427,7 @@ export class AuthWorker {
 
     // In strict mode, verify the user is authorized with the correct key type
     const userSession = this.#loggedInUsers[username];
-    if (isStrictMode && (!userSession?.authorized || userSession?.loggedInKeyType !== keyType)) {
+    if (isStrictMode && !userSession?.authorized) {
       throw new AuthorizationError("Not authorized");
     }
 

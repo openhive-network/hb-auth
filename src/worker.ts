@@ -23,6 +23,9 @@ export interface UserSettings {
     [K in KeyAuthorityType]?: boolean;
   };
   alias: string;
+  authorizedAccounts?: {
+    [K in KeyAuthorityType]?: string;
+  };
 }
 
 export interface AuthUser {
@@ -641,7 +644,12 @@ export class AuthWorker {
 
   public async setUserSettings(
     username: string,
-    settings: { strict: boolean },
+    settings: {
+      strict: boolean;
+      authorizedAccounts?: {
+        [K in KeyAuthorityType]?: string;
+      };
+    },
     keyType: KeyAuthorityType,
   ): Promise<void> {
     try {
@@ -657,6 +665,7 @@ export class AuthWorker {
       )) as UserSettings) || {
         strict: {},
         alias: username,
+        authorizedAccounts: {},
       };
 
       const updatedSettings = {
@@ -664,6 +673,10 @@ export class AuthWorker {
         strict: {
           ...existingSettings.strict,
           [keyType]: settings.strict,
+        },
+        authorizedAccounts: {
+          ...existingSettings.authorizedAccounts,
+          ...settings.authorizedAccounts,
         },
       };
 
@@ -798,7 +811,12 @@ class Auth {
 
   public async setUserSettings(
     username: string,
-    settings: { strict: boolean },
+    settings: {
+      strict: boolean;
+      authorizedAccounts?: {
+        [K in KeyAuthorityType]?: string;
+      };
+    },
     keyType: KeyAuthorityType,
   ): Promise<void> {
     await (await this.getWorker()).setUserSettings(username, settings, keyType);

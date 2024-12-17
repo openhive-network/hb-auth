@@ -247,7 +247,7 @@ Client.constructor
 
 #### Defined in
 
-dist/hb-auth.d.ts:222
+dist/hb-auth.d.ts:234
 
 ## Properties
 
@@ -261,7 +261,7 @@ Client.#private
 
 #### Defined in
 
-dist/hb-auth.d.ts:95
+dist/hb-auth.d.ts:101
 
 ___
 
@@ -275,7 +275,7 @@ Client.clientOptions
 
 #### Defined in
 
-dist/hb-auth.d.ts:221
+dist/hb-auth.d.ts:233
 
 ## Methods
 
@@ -301,7 +301,7 @@ Client.authenticate
 
 #### Defined in
 
-dist/hb-auth.d.ts:225
+dist/hb-auth.d.ts:237
 
 ___
 
@@ -319,7 +319,7 @@ Client.authorize
 
 #### Defined in
 
-dist/hb-auth.d.ts:223
+dist/hb-auth.d.ts:235
 
 ___
 
@@ -348,7 +348,7 @@ Client.getAuthByUser
 
 #### Defined in
 
-dist/hb-auth.d.ts:144
+dist/hb-auth.d.ts:150
 
 ___
 
@@ -371,7 +371,7 @@ Client.getAuths
 
 #### Defined in
 
-dist/hb-auth.d.ts:137
+dist/hb-auth.d.ts:143
 
 ___
 
@@ -395,7 +395,7 @@ Client.getUserSettings
 
 #### Defined in
 
-dist/hb-auth.d.ts:145
+dist/hb-auth.d.ts:151
 
 ___
 
@@ -428,7 +428,7 @@ Client.importKey
 
 #### Defined in
 
-dist/hb-auth.d.ts:187
+dist/hb-auth.d.ts:199
 
 ___
 
@@ -451,7 +451,7 @@ Client.initialize
 
 #### Defined in
 
-dist/hb-auth.d.ts:125
+dist/hb-auth.d.ts:131
 
 ___
 
@@ -474,7 +474,7 @@ Client.lock
 
 #### Defined in
 
-dist/hb-auth.d.ts:170
+dist/hb-auth.d.ts:182
 
 ___
 
@@ -507,7 +507,7 @@ Client.logout
 
 #### Defined in
 
-dist/hb-auth.d.ts:192
+dist/hb-auth.d.ts:204
 
 ___
 
@@ -529,7 +529,7 @@ Client.logoutAll
 
 #### Defined in
 
-dist/hb-auth.d.ts:196
+dist/hb-auth.d.ts:208
 
 ___
 
@@ -557,7 +557,7 @@ Client.register
 
 #### Defined in
 
-dist/hb-auth.d.ts:224
+dist/hb-auth.d.ts:236
 
 ___
 
@@ -585,7 +585,38 @@ Client.setSessionEndCallback
 
 #### Defined in
 
-dist/hb-auth.d.ts:131
+dist/hb-auth.d.ts:137
+
+___
+
+### setUserSettings
+
+▸ **setUserSettings**(`username`, `settings`, `keyType`): `Promise`\<`void`\>
+
+#### Parameters
+
+| Name | Type |
+| :------ | :------ |
+| `username` | `string` |
+| `settings` | `Object` |
+| `settings.authorizedAccounts?` | `Object` |
+| `settings.authorizedAccounts.active` | `undefined` \| `string` |
+| `settings.authorizedAccounts.owner` | `undefined` \| `string` |
+| `settings.authorizedAccounts.posting` | `undefined` \| `string` |
+| `settings.strict` | `boolean` |
+| `keyType` | ``"active"`` \| ``"posting"`` \| ``"owner"`` |
+
+#### Returns
+
+`Promise`\<`void`\>
+
+#### Inherited from
+
+Client.setUserSettings
+
+#### Defined in
+
+dist/hb-auth.d.ts:152
 
 ___
 
@@ -617,7 +648,7 @@ Client.sign
 
 #### Defined in
 
-dist/hb-auth.d.ts:204
+dist/hb-auth.d.ts:216
 
 ___
 
@@ -650,7 +681,7 @@ Client.singleSign
 
 #### Defined in
 
-dist/hb-auth.d.ts:213
+dist/hb-auth.d.ts:225
 
 ___
 
@@ -681,7 +712,7 @@ Client.unlock
 
 #### Defined in
 
-dist/hb-auth.d.ts:178
+dist/hb-auth.d.ts:190
 
 
 <a name="classesonlineclientmd"></a>
@@ -721,7 +752,7 @@ Client.constructor
 
 #### Defined in
 
-dist/hb-auth.d.ts:233
+dist/hb-auth.d.ts:245
 
 ## Properties
 
@@ -735,7 +766,7 @@ Client.#private
 
 #### Defined in
 
-dist/hb-auth.d.ts:95
+dist/hb-auth.d.ts:101
 
 ___
 
@@ -749,7 +780,7 @@ Client.clientOptions
 
 #### Defined in
 
-dist/hb-auth.d.ts:232
+dist/hb-auth.d.ts:244
 
 ___
 
@@ -759,7 +790,7 @@ ___
 
 #### Defined in
 
-dist/hb-auth.d.ts:235
+dist/hb-auth.d.ts:247
 
 ## Methods
 
@@ -785,7 +816,7 @@ Client.authenticate
 
 #### Defined in
 
-dist/hb-auth.d.ts:236
+dist/hb-auth.d.ts:248
 
 ___
 
@@ -812,7 +843,7 @@ Client.authorize
 
 #### Defined in
 
-dist/hb-auth.d.ts:234
+dist/hb-auth.d.ts:246
 
 ___
 
@@ -841,7 +872,7 @@ Client.getAuthByUser
 
 #### Defined in
 
-dist/hb-auth.d.ts:144
+dist/hb-auth.d.ts:150
 
 ___
 
@@ -864,7 +895,7 @@ Client.getAuths
 
 #### Defined in
 
-dist/hb-auth.d.ts:137
+dist/hb-auth.d.ts:143
 
 ___
 
@@ -888,7 +919,7 @@ Client.getUserSettings
 
 #### Defined in
 
-dist/hb-auth.d.ts:145
+dist/hb-auth.d.ts:151
 
 ___
 
@@ -921,7 +952,7 @@ Client.importKey
 
 #### Defined in
 
-dist/hb-auth.d.ts:187
+dist/hb-auth.d.ts:199
 
 ___
 
@@ -944,7 +975,7 @@ Client.initialize
 
 #### Defined in
 
-dist/hb-auth.d.ts:125
+dist/hb-auth.d.ts:131
 
 ___
 
@@ -967,7 +998,7 @@ Client.lock
 
 #### Defined in
 
-dist/hb-auth.d.ts:170
+dist/hb-auth.d.ts:182
 
 ___
 
@@ -1000,7 +1031,7 @@ Client.logout
 
 #### Defined in
 
-dist/hb-auth.d.ts:192
+dist/hb-auth.d.ts:204
 
 ___
 
@@ -1022,7 +1053,7 @@ Client.logoutAll
 
 #### Defined in
 
-dist/hb-auth.d.ts:196
+dist/hb-auth.d.ts:208
 
 ___
 
@@ -1050,7 +1081,7 @@ Client.register
 
 #### Defined in
 
-dist/hb-auth.d.ts:237
+dist/hb-auth.d.ts:249
 
 ___
 
@@ -1078,7 +1109,38 @@ Client.setSessionEndCallback
 
 #### Defined in
 
-dist/hb-auth.d.ts:131
+dist/hb-auth.d.ts:137
+
+___
+
+### setUserSettings
+
+▸ **setUserSettings**(`username`, `settings`, `keyType`): `Promise`\<`void`\>
+
+#### Parameters
+
+| Name | Type |
+| :------ | :------ |
+| `username` | `string` |
+| `settings` | `Object` |
+| `settings.authorizedAccounts?` | `Object` |
+| `settings.authorizedAccounts.active` | `undefined` \| `string` |
+| `settings.authorizedAccounts.owner` | `undefined` \| `string` |
+| `settings.authorizedAccounts.posting` | `undefined` \| `string` |
+| `settings.strict` | `boolean` |
+| `keyType` | ``"active"`` \| ``"posting"`` \| ``"owner"`` |
+
+#### Returns
+
+`Promise`\<`void`\>
+
+#### Inherited from
+
+Client.setUserSettings
+
+#### Defined in
+
+dist/hb-auth.d.ts:152
 
 ___
 
@@ -1110,7 +1172,7 @@ Client.sign
 
 #### Defined in
 
-dist/hb-auth.d.ts:204
+dist/hb-auth.d.ts:216
 
 ___
 
@@ -1143,7 +1205,7 @@ Client.singleSign
 
 #### Defined in
 
-dist/hb-auth.d.ts:213
+dist/hb-auth.d.ts:225
 
 ___
 
@@ -1174,7 +1236,7 @@ Client.unlock
 
 #### Defined in
 
-dist/hb-auth.d.ts:178
+dist/hb-auth.d.ts:190
 
 
 <a name="interfacesauthstatusmd"></a>
@@ -1195,7 +1257,7 @@ An error in case of unsuccessful authorization
 
 #### Defined in
 
-dist/hb-auth.d.ts:63
+dist/hb-auth.d.ts:69
 
 ___
 
@@ -1209,7 +1271,7 @@ Value that describes auth status
 
 #### Defined in
 
-dist/hb-auth.d.ts:58
+dist/hb-auth.d.ts:64
 
 
 <a name="interfacesauthusermd"></a>
@@ -1224,7 +1286,7 @@ dist/hb-auth.d.ts:58
 
 #### Defined in
 
-dist/hb-auth.d.ts:24
+dist/hb-auth.d.ts:27
 
 ___
 
@@ -1234,7 +1296,7 @@ ___
 
 #### Defined in
 
-dist/hb-auth.d.ts:25
+dist/hb-auth.d.ts:28
 
 ___
 
@@ -1244,7 +1306,7 @@ ___
 
 #### Defined in
 
-dist/hb-auth.d.ts:26
+dist/hb-auth.d.ts:29
 
 ___
 
@@ -1254,7 +1316,7 @@ ___
 
 #### Defined in
 
-dist/hb-auth.d.ts:23
+dist/hb-auth.d.ts:26
 
 ___
 
@@ -1264,7 +1326,7 @@ ___
 
 #### Defined in
 
-dist/hb-auth.d.ts:22
+dist/hb-auth.d.ts:25
 
 
 <a name="interfacesclientoptionsmd"></a>
@@ -1287,7 +1349,7 @@ Blockchain ID used for calculating digest
 
 #### Defined in
 
-dist/hb-auth.d.ts:71
+dist/hb-auth.d.ts:77
 
 ___
 
@@ -1305,7 +1367,7 @@ Blockchain Node address for online account verification
 
 #### Defined in
 
-dist/hb-auth.d.ts:77
+dist/hb-auth.d.ts:83
 
 ___
 
@@ -1323,7 +1385,7 @@ Session timeout (in seconds) for Wallet, after that session will be destroyed an
 
 #### Defined in
 
-dist/hb-auth.d.ts:89
+dist/hb-auth.d.ts:95
 
 ___
 
@@ -1341,4 +1403,4 @@ Url for worker script path provided by hb-auth library
 
 #### Defined in
 
-dist/hb-auth.d.ts:83
+dist/hb-auth.d.ts:89

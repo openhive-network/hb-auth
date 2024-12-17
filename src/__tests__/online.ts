@@ -599,7 +599,7 @@ test.describe("HB Auth Online Client base tests", () => {
     const newPage = await newContext.newPage();
     await navigate(newPage);
 
-    const signed = await newPage.evaluate(
+    const authorityUsername = await newPage.evaluate(
       async ({ username, password, keys, txs }) => {
         try {
           const instance = new AuthOnlineClient({
@@ -613,12 +613,14 @@ test.describe("HB Auth Online Client base tests", () => {
             keys[2].type as KeyAuthorityType,
             false, // strict mode off
           );
-          const signed = await instance.sign(
+          await instance.sign(
             username,
             txs[2].digest,
             keys[2].type as KeyAuthorityType,
           );
-          return signed;
+          return (
+            await instance.getUserSettings(username)
+          )?.authorizedAccounts?.[keys[2].type as KeyAuthorityType];
         } catch (error) {
           return error.message;
         }
@@ -626,7 +628,7 @@ test.describe("HB Auth Online Client base tests", () => {
       user,
     );
 
-    expect(signed).toBe(user.txs[2].signed);
+    expect(authorityUsername).toBe(user.authorityUsername);
   });
 
   test("Should allow singleSign without any prior registration", async ({

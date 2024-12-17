@@ -197,6 +197,17 @@ abstract class Client {
     return await this.#auth.getUserSettings(username);
   }
 
+  public async setUserSettings(
+    username: string,
+    settings: {
+      strict: boolean;
+      authorizedAccounts?: { [K in KeyAuthorityType]?: string };
+    },
+    keyType: KeyAuthorityType,
+  ): Promise<void> {
+    return await this.#auth.setUserSettings(username, settings, keyType);
+  }
+
   /** @hidden */
   private async getVerificationTx(
     username: string,
@@ -518,12 +529,39 @@ class OnlineClient extends Client {
           });
 
         const key_owner = key_references.accounts[0]?.[0];
-        return (
+
+        const result =
           !!key_owner &&
           account[keyType].account_auths.some(
             (accountAuths) => accountAuths[0] === key_owner,
-          )
-        );
+          );
+
+        if (result && key_owner) {
+          // Save the authorized account to user settings
+          const currentSettings = (await this.getUserSettings(username)) ?? {
+            strict: {},
+            alias: username,
+            authorizedAccounts: {},
+          };
+
+          const authorizedAccounts = currentSettings.authorizedAccounts ?? {};
+
+          if (authorizedAccounts[keyType] !== key_owner) {
+            await this.setUserSettings(
+              username,
+              {
+                strict: currentSettings.strict[keyType] ?? true,
+                authorizedAccounts: {
+                  ...authorizedAccounts,
+                  [keyType]: key_owner,
+                },
+              },
+              keyType,
+            );
+          }
+        }
+
+        return result;
       }
 
       return true;

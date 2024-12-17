@@ -126,16 +126,15 @@ abstract class Client {
   }
 
   private async getWorkerEndpoint(): Promise<Endpoint> {
-    // TODO: detect missing worker file and throw
-
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
       let worker: SharedWorker | Worker;
+
       if (isSupportSharedWorker) {
-        worker = new SharedWorker(this.options.workerUrl);
-        return resolve(worker.port);
+        worker = new SharedWorker(this.options.workerUrl, { type: "module" });
+        resolve(worker.port);
       } else {
-        worker = new Worker(this.options.workerUrl);
-        return resolve(worker);
+        worker = new Worker(this.options.workerUrl, { type: "module" });
+        resolve(worker);
       }
     });
   }
@@ -194,10 +193,19 @@ abstract class Client {
     return await this.#auth.getAuthByUser(username);
   }
 
-  public async getUserSettings(
-    username: string,
-  ): Promise<UserSettings | undefined> {
+  public async getUserSettings(username: string): Promise<UserSettings | null> {
     return await this.#auth.getUserSettings(username);
+  }
+
+  public async setUserSettings(
+    username: string,
+    settings: {
+      strict: boolean;
+      authorizedAccounts?: { [K in KeyAuthorityType]?: string };
+    },
+    keyType: KeyAuthorityType,
+  ): Promise<void> {
+    return await this.#auth.setUserSettings(username, settings, keyType);
   }
 
   /** @hidden */
@@ -282,10 +290,10 @@ abstract class Client {
     );
 
     if (authenticated) {
-      await this.#auth.onAuthComplete(false);
+      await this.#auth.onAuthComplete(username, false);
       return Promise.resolve({ ok: true });
     } else {
-      await this.#auth.onAuthComplete(true);
+      await this.#auth.onAuthComplete(username, true);
       return Promise.reject(new AuthorizationError("Invalid credentials"));
     }
   }
@@ -305,70 +313,9 @@ abstract class Client {
   ): Promise<AuthStatus> {
     try {
       const userSettings = await this.getUserSettings(username);
-      const isStrict = userSettings?.strict ?? true;
+      const isStrict = userSettings?.strict[keyType] ?? true;
 
-      if (!offline) {
-        // Get the account's authorities from the blockchain
-        const accounts = await this.hiveChain.api.database_api.find_accounts({
-          accounts: [username],
-        });
-
-        // Create a verification transaction to get the public key
-        const txBuilder = await this.getVerificationTx(
-          username,
-          keyType,
-          offline,
-        );
-        const signature = await this.#auth.authenticate(
-          username,
-          password,
-          keyType,
-          txBuilder.sigDigest,
-        );
-
-        txBuilder.sign(signature);
-        const publicKey = txBuilder.signatureKeys[0];
-
-        if (isStrict) {
-          // In strict mode, only check against key_auths
-          const account_key = accounts.accounts[0][keyType].key_auths[0][0];
-          if (publicKey && !publicKey.endsWith(account_key)) {
-            await this.#auth.logout();
-            return Promise.reject(
-              new AuthorizationError("Invalid credentials"),
-            );
-          }
-        } else {
-          // When not in strict mode, check both key_auths and account_auths
-          const account = accounts.accounts[0];
-          const key_auth_match = account[keyType].key_auths.some((keyAuths) =>
-            publicKey.endsWith(keyAuths[0]),
-          );
-
-          if (!key_auth_match) {
-            // If no direct key match, check if the key belongs to an authorized account
-            const key_references =
-              await this.hiveChain.api.account_by_key_api.get_key_references({
-                keys: [publicKey],
-              });
-
-            const key_owner = key_references.accounts[0]?.[0];
-            if (
-              !key_owner ||
-              !account[keyType].account_auths.some(
-                (accountAuths) => accountAuths[0] === key_owner,
-              )
-            ) {
-              await this.#auth.logout();
-              return Promise.reject(
-                new AuthorizationError("Invalid credentials"),
-              );
-            }
-          }
-        }
-      }
-
-      // Continue with normal authentication
+      // Create a verification transaction
       const txBuilder = await this.getVerificationTx(
         username,
         keyType,
@@ -390,10 +337,10 @@ abstract class Client {
       );
 
       if (authenticated) {
-        await this.#auth.onAuthComplete(false);
+        await this.#auth.onAuthComplete(username, false);
         return Promise.resolve({ ok: true });
       } else {
-        await this.#auth.logout();
+        await this.#auth.logout(username);
         return Promise.reject(new AuthorizationError("Invalid credentials"));
       }
     } catch (err) {
@@ -440,8 +387,15 @@ abstract class Client {
    * @description Method that ends existing user session. This is different than locking user.
    * When this is called any callback set via @see {Client.setSessionCallback} will fire.
    */
-  public async logout(): Promise<void> {
-    await this.#auth.logout();
+  public async logout(username: string): Promise<void> {
+    await this.#auth.logout(username);
+  }
+
+  /**
+   * @description Method that ends all user sessions.
+   */
+  public async logoutAll(): Promise<void> {
+    await this.#auth.logoutAll();
   }
 
   /**
@@ -546,16 +500,72 @@ class OnlineClient extends Client {
   ): Promise<boolean> {
     const verificationResult = await this.verify(txBuilder.toApiJson());
 
-    if (isStrict && verificationResult) {
-      const accounts = await this.hiveChain.api.database_api.find_accounts({
-        accounts: [username],
-      });
-      const account_key = accounts.accounts[0][keyType].key_auths[0][0];
-
-      return account_key.endsWith(txBuilder.signatureKeys[0]);
+    if (!verificationResult) {
+      return false;
     }
 
-    return verificationResult;
+    const accounts = await this.hiveChain.api.database_api.find_accounts({
+      accounts: [username],
+    });
+
+    const account = accounts.accounts[0];
+    const publicKey = txBuilder.signatureKeys[0];
+
+    if (isStrict) {
+      // In strict mode, only check against key_auths
+      const account_key = account[keyType].key_auths[0][0];
+      return publicKey.endsWith(account_key);
+    } else {
+      // When not in strict mode, check both key_auths and account_auths
+      const key_auth_match = account[keyType].key_auths.some((keyAuths) =>
+        publicKey.endsWith(keyAuths[0]),
+      );
+
+      if (!key_auth_match) {
+        // If no direct key match, check if the key belongs to an authorized account
+        const key_references =
+          await this.hiveChain.api.account_by_key_api.get_key_references({
+            keys: [publicKey],
+          });
+
+        const key_owner = key_references.accounts[0]?.[0];
+
+        const result =
+          !!key_owner &&
+          account[keyType].account_auths.some(
+            (accountAuths) => accountAuths[0] === key_owner,
+          );
+
+        if (result && key_owner) {
+          // Save the authorized account to user settings
+          const currentSettings = (await this.getUserSettings(username)) ?? {
+            strict: {},
+            alias: username,
+            authorizedAccounts: {},
+          };
+
+          const authorizedAccounts = currentSettings.authorizedAccounts ?? {};
+
+          if (authorizedAccounts[keyType] !== key_owner) {
+            await this.setUserSettings(
+              username,
+              {
+                strict: currentSettings.strict[keyType] ?? true,
+                authorizedAccounts: {
+                  ...authorizedAccounts,
+                  [keyType]: key_owner,
+                },
+              },
+              keyType,
+            );
+          }
+        }
+
+        return result;
+      }
+
+      return true;
+    }
   }
 
   private async verify(trx: ApiTransaction): Promise<boolean> {

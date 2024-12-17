@@ -64,7 +64,7 @@ export class AuthWorker {
       unlockTimeout: this.sessionTimeout,
     });
     this.session = this.api.createSession(self.crypto.randomUUID());
-    
+
     // Initialize intervals for any existing logged in users
     const wallets = await this.getWallets();
     for (const wallet of wallets) {
@@ -225,6 +225,7 @@ export class AuthWorker {
       await this.importKey(wallet, wifKey, keyType);
     }
 
+    // Initialize or update loggedInUsers state
     if (!this.#loggedInUsers[username]) {
       this.#loggedInUsers[username] = {
         username,
@@ -245,15 +246,15 @@ export class AuthWorker {
     keyType: KeyAuthorityType,
     digest: string,
   ): Promise<string> {
-    // Check if user is already logged in
-    const existingUser = this.#loggedInUsers[username];
-    if (existingUser?.authorized && existingUser?.unlocked) {
-      throw new AuthorizationError("User is already logged in");
-    }
-
     const wallet = await this.getWallet(username);
     if (!wallet) {
       throw new AuthorizationError("Invalid credentials");
+    }
+
+    const currentUserState = await this.getAuthByUser(username);
+    if (currentUserState?.authorized) {
+      // First ensure any existing session is cleaned up
+      await this.logout(username);
     }
 
     try {
@@ -261,7 +262,6 @@ export class AuthWorker {
       const keys = unlocked.getPublicKeys();
       const alias = await this.getAlias(`${username}@${keyType}`);
 
-      // If we have the user but not the specific authority type
       if (!alias) {
         unlocked.lock();
         throw new AuthorizationError("Not authorized, missing authority");
@@ -350,20 +350,8 @@ export class AuthWorker {
 
   public async getAuthByUser(username: string): Promise<AuthUser | null> {
     const user = this.#loggedInUsers[username];
+
     if (!user) {
-      // If user not in logged in users, check if they exist in wallet
-      const wallet = await this.getWallet(username);
-      if (wallet) {
-        // User exists but not logged in, get their registered key types
-        const registeredKeyTypes = await this.getRegisteredKeyTypes(username);
-        return {
-          username,
-          authorized: false,
-          unlocked: false,
-          registeredKeyTypes,
-          loggedInKeyType: undefined,
-        };
-      }
       return null;
     }
 
@@ -481,7 +469,9 @@ export class AuthWorker {
   public async lock(): Promise<void> {
     try {
       // Get all unlocked users
-      const unlockedUsers = Object.values(this.#loggedInUsers).filter(user => user.unlocked);
+      const unlockedUsers = Object.values(this.#loggedInUsers).filter(
+        (user) => user.unlocked,
+      );
       if (unlockedUsers.length === 0) {
         throw new AuthorizationError(
           "There is no existing user session or session already expired",

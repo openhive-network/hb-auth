@@ -15,6 +15,7 @@ let browser!: ChromiumBrowser;
 
 const user = {
   username: process.env.CI_TEST_USER as string,
+  authorityUsername: process.env.CI_TEST_AUTHORITY_USER as string,
   password: "banana",
   keys: [
     {
@@ -199,11 +200,8 @@ test.describe("HB Auth Online Client base tests", () => {
   test("Should user login with username and password", async () => {
     const authorized = await page.evaluate(
       async ({ username, password, keys }) => {
-        const authUser = await authInstance.getAuthByUser(username);
+        await authInstance.logout(username);
 
-        if (authUser?.authorized) {
-          await authInstance.logout(username);
-        }
         await authInstance.authenticate(
           username,
           password,
@@ -215,22 +213,6 @@ test.describe("HB Auth Online Client base tests", () => {
     );
 
     expect(authorized).toBeTruthy();
-  });
-
-  test("Should return error if user tries to login while already logged in", async () => {
-    const error = await page.evaluate(async ({ username, password, keys }) => {
-      try {
-        await authInstance.authenticate(
-          username,
-          password,
-          keys[0].type as KeyAuthorityType,
-        );
-      } catch (error) {
-        return error.message;
-      }
-    }, user);
-
-    expect(error).toBe("User is already logged in");
   });
 
   test("Should return error if user tries to login with bad authority type", async () => {
@@ -705,7 +687,7 @@ test.describe("HB Auth Online Client base tests", () => {
     expect(signed).toBe(user.txs[1].signed);
   });
 
-  test.skip("Should maintain separate strict mode settings for different key types", async () => {
+  test("Should maintain separate strict mode settings for different key types", async () => {
     const newContext = await browser.newContext();
     const newPage = await newContext.newPage();
     await navigate(newPage);
@@ -842,17 +824,17 @@ test.describe("HB Auth Online Client base tests", () => {
 
     // Second user authentication
     const secondUserAuth = await newPage.evaluate(
-      async ({ username, password, keys }) => {
+      async ({ authorityUsername, password, keys }) => {
         const instance = new AuthOnlineClient({
           workerUrl: "/dist/worker.js",
         });
         await instance.initialize();
         try {
           await instance.register(
-            "another.user",
+            authorityUsername,
             password,
-            keys[0].private,
-            keys[0].type as KeyAuthorityType,
+            keys[2].private,
+            keys[2].type as KeyAuthorityType,
           );
           return true;
         } catch (error) {
@@ -870,12 +852,18 @@ test.describe("HB Auth Online Client base tests", () => {
     const newPage = await newContext.newPage();
     await navigate(newPage);
 
-    // First authenticate with posting key
+    // First register and authenticate with posting key
     await newPage.evaluate(async ({ username, password, keys }) => {
       const instance = new AuthOnlineClient({
         workerUrl: "/dist/worker.js",
       });
       await instance.initialize();
+      await instance.register(
+        username,
+        password,
+        keys[0].private,
+        keys[0].type as KeyAuthorityType,
+      );
       await instance.authenticate(
         username,
         password,
@@ -883,7 +871,7 @@ test.describe("HB Auth Online Client base tests", () => {
       );
     }, user);
 
-    // Then authenticate with active key
+    // Then register and authenticate with active key
     const activeAuth = await newPage.evaluate(
       async ({ username, password, keys }) => {
         const instance = new AuthOnlineClient({
@@ -891,6 +879,14 @@ test.describe("HB Auth Online Client base tests", () => {
         });
         await instance.initialize();
         try {
+          // First register the active key
+          await instance.register(
+            username,
+            password,
+            keys[1].private,
+            keys[1].type as KeyAuthorityType,
+          );
+          // Then authenticate with it
           await instance.authenticate(
             username,
             password,
@@ -913,41 +909,46 @@ test.describe("HB Auth Online Client base tests", () => {
     const newPage = await newContext.newPage();
     await navigate(newPage);
 
-    // Setup two authenticated users
-    await newPage.evaluate(async ({ username, password, keys }) => {
-      const instance = new AuthOnlineClient({
-        workerUrl: "/dist/worker.js",
-      });
-      await instance.initialize();
-      await instance.register(username, password, keys[0].private, "posting");
-      await instance.register(
-        "another.user",
-        password,
-        keys[1].private,
-        "active",
-      );
-    }, user);
+    // Setup two authenticated users with state verification
+    const userStates = await newPage.evaluate(
+      async ({ authorityUsername, username, password, keys }) => {
+        const instance = new AuthOnlineClient({
+          workerUrl: "/dist/worker.js",
+        });
+        await instance.initialize();
 
-    // Logout first user
-    await newPage.evaluate(async ({ username }) => {
-      const instance = new AuthOnlineClient({
-        workerUrl: "/dist/worker.js",
-      });
-      await instance.initialize();
-      await instance.logout(username);
-    }, user);
+        // Register and authenticate first user
+        await instance.register(username, password, keys[0].private, "posting");
+        await instance.authenticate(username, password, "posting");
 
-    // Verify second user is still authenticated
-    const secondUserStillAuth = await newPage.evaluate(async () => {
-      const instance = new AuthOnlineClient({
-        workerUrl: "/dist/worker.js",
-      });
-      await instance.initialize();
-      const authUser = await instance.getAuthByUser("another.user");
-      return authUser?.authorized;
-    });
+        // Register and authenticate second user
+        await instance.register(
+          authorityUsername,
+          password,
+          keys[2].private,
+          keys[2].type as KeyAuthorityType,
+        );
+        await instance.authenticate(
+          authorityUsername,
+          password,
+          keys[2].type as KeyAuthorityType,
+        );
+        const user2State = await instance.getAuthByUser(authorityUsername);
 
-    expect(secondUserStillAuth).toBe(true);
+        await instance.logout(username);
+
+        const user1State = await instance.getAuthByUser(username);
+
+        return {
+          user1: user1State,
+          user2: user2State,
+        };
+      },
+      user,
+    );
+
+    expect(userStates.user1).toBeNull();
+    expect(userStates.user2?.authorized).toBe(true);
   });
 
   test.afterAll(async () => {

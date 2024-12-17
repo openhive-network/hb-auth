@@ -128,12 +128,12 @@ abstract class Client {
   private async getWorkerEndpoint(): Promise<Endpoint> {
     return new Promise((resolve) => {
       let worker: SharedWorker | Worker;
-      
+
       if (isSupportSharedWorker) {
-        worker = new SharedWorker(this.options.workerUrl, { type: 'module' });
+        worker = new SharedWorker(this.options.workerUrl, { type: "module" });
         resolve(worker.port);
       } else {
-        worker = new Worker(this.options.workerUrl, { type: 'module' });
+        worker = new Worker(this.options.workerUrl, { type: "module" });
         resolve(worker);
       }
     });
@@ -304,68 +304,7 @@ abstract class Client {
       const userSettings = await this.getUserSettings(username);
       const isStrict = userSettings?.strict[keyType] ?? true;
 
-      if (!offline) {
-        // Get the account's authorities from the blockchain
-        const accounts = await this.hiveChain.api.database_api.find_accounts({
-          accounts: [username],
-        });
-
-        // Create a verification transaction to get the public key
-        const txBuilder = await this.getVerificationTx(
-          username,
-          keyType,
-          offline,
-        );
-        const signature = await this.#auth.authenticate(
-          username,
-          password,
-          keyType,
-          txBuilder.sigDigest,
-        );
-
-        txBuilder.sign(signature);
-        const publicKey = txBuilder.signatureKeys[0];
-
-        if (isStrict) {
-          // In strict mode, only check against key_auths
-          const account_key = accounts.accounts[0][keyType].key_auths[0][0];
-          if (publicKey && !publicKey.endsWith(account_key)) {
-            await this.#auth.logout(username);
-            return Promise.reject(
-              new AuthorizationError("Invalid credentials"),
-            );
-          }
-        } else {
-          // When not in strict mode, check both key_auths and account_auths
-          const account = accounts.accounts[0];
-          const key_auth_match = account[keyType].key_auths.some((keyAuths) =>
-            publicKey.endsWith(keyAuths[0]),
-          );
-
-          if (!key_auth_match) {
-            // If no direct key match, check if the key belongs to an authorized account
-            const key_references =
-              await this.hiveChain.api.account_by_key_api.get_key_references({
-                keys: [publicKey],
-              });
-
-            const key_owner = key_references.accounts[0]?.[0];
-            if (
-              !key_owner ||
-              !account[keyType].account_auths.some(
-                (accountAuths) => accountAuths[0] === key_owner,
-              )
-            ) {
-              await this.#auth.logout(username);
-              return Promise.reject(
-                new AuthorizationError("Invalid credentials"),
-              );
-            }
-          }
-        }
-      }
-
-      // Continue with normal authentication
+      // Create a verification transaction
       const txBuilder = await this.getVerificationTx(
         username,
         keyType,
@@ -550,16 +489,45 @@ class OnlineClient extends Client {
   ): Promise<boolean> {
     const verificationResult = await this.verify(txBuilder.toApiJson());
 
-    if (isStrict && verificationResult) {
-      const accounts = await this.hiveChain.api.database_api.find_accounts({
-        accounts: [username],
-      });
-      const account_key = accounts.accounts[0][keyType].key_auths[0][0];
-
-      return account_key.endsWith(txBuilder.signatureKeys[0]);
+    if (!verificationResult) {
+      return false;
     }
 
-    return verificationResult;
+    const accounts = await this.hiveChain.api.database_api.find_accounts({
+      accounts: [username],
+    });
+
+    const account = accounts.accounts[0];
+    const publicKey = txBuilder.signatureKeys[0];
+
+    if (isStrict) {
+      // In strict mode, only check against key_auths
+      const account_key = account[keyType].key_auths[0][0];
+      return publicKey.endsWith(account_key);
+    } else {
+      // When not in strict mode, check both key_auths and account_auths
+      const key_auth_match = account[keyType].key_auths.some((keyAuths) =>
+        publicKey.endsWith(keyAuths[0]),
+      );
+
+      if (!key_auth_match) {
+        // If no direct key match, check if the key belongs to an authorized account
+        const key_references =
+          await this.hiveChain.api.account_by_key_api.get_key_references({
+            keys: [publicKey],
+          });
+
+        const key_owner = key_references.accounts[0]?.[0];
+        return (
+          !!key_owner &&
+          account[keyType].account_auths.some(
+            (accountAuths) => accountAuths[0] === key_owner,
+          )
+        );
+      }
+
+      return true;
+    }
   }
 
   private async verify(trx: ApiTransaction): Promise<boolean> {

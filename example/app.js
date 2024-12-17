@@ -78,8 +78,9 @@ client.initialize().then(async (authClient) => {
       data[key] = val;
     }
 
+    const isStrict = data.strict === 'on'
     authClient
-      .register(data.username, data.password, data.key, data.type)
+      .register(data.username, data.password, data.key, data.type, isStrict)
       .then((status) => {
         if (status.ok) {
           updateStatus();

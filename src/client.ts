@@ -126,16 +126,15 @@ abstract class Client {
   }
 
   private async getWorkerEndpoint(): Promise<Endpoint> {
-    // TODO: detect missing worker file and throw
-
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
       let worker: SharedWorker | Worker;
+      
       if (isSupportSharedWorker) {
-        worker = new SharedWorker(this.options.workerUrl);
-        return resolve(worker.port);
+        worker = new SharedWorker(this.options.workerUrl, { type: 'module' });
+        resolve(worker.port);
       } else {
-        worker = new Worker(this.options.workerUrl);
-        return resolve(worker);
+        worker = new Worker(this.options.workerUrl, { type: 'module' });
+        resolve(worker);
       }
     });
   }
@@ -194,9 +193,7 @@ abstract class Client {
     return await this.#auth.getAuthByUser(username);
   }
 
-  public async getUserSettings(
-    username: string,
-  ): Promise<UserSettings | undefined> {
+  public async getUserSettings(username: string): Promise<UserSettings | null> {
     return await this.#auth.getUserSettings(username);
   }
 
@@ -282,10 +279,10 @@ abstract class Client {
     );
 
     if (authenticated) {
-      await this.#auth.onAuthComplete(false);
+      await this.#auth.onAuthComplete(username, false);
       return Promise.resolve({ ok: true });
     } else {
-      await this.#auth.onAuthComplete(true);
+      await this.#auth.onAuthComplete(username, true);
       return Promise.reject(new AuthorizationError("Invalid credentials"));
     }
   }
@@ -305,7 +302,7 @@ abstract class Client {
   ): Promise<AuthStatus> {
     try {
       const userSettings = await this.getUserSettings(username);
-      const isStrict = userSettings?.strict ?? true;
+      const isStrict = userSettings?.strict[keyType] ?? true;
 
       if (!offline) {
         // Get the account's authorities from the blockchain
@@ -333,7 +330,7 @@ abstract class Client {
           // In strict mode, only check against key_auths
           const account_key = accounts.accounts[0][keyType].key_auths[0][0];
           if (publicKey && !publicKey.endsWith(account_key)) {
-            await this.#auth.logout();
+            await this.#auth.logout(username);
             return Promise.reject(
               new AuthorizationError("Invalid credentials"),
             );
@@ -359,7 +356,7 @@ abstract class Client {
                 (accountAuths) => accountAuths[0] === key_owner,
               )
             ) {
-              await this.#auth.logout();
+              await this.#auth.logout(username);
               return Promise.reject(
                 new AuthorizationError("Invalid credentials"),
               );
@@ -390,10 +387,10 @@ abstract class Client {
       );
 
       if (authenticated) {
-        await this.#auth.onAuthComplete(false);
+        await this.#auth.onAuthComplete(username, false);
         return Promise.resolve({ ok: true });
       } else {
-        await this.#auth.logout();
+        await this.#auth.logout(username);
         return Promise.reject(new AuthorizationError("Invalid credentials"));
       }
     } catch (err) {
@@ -440,8 +437,15 @@ abstract class Client {
    * @description Method that ends existing user session. This is different than locking user.
    * When this is called any callback set via @see {Client.setSessionCallback} will fire.
    */
-  public async logout(): Promise<void> {
-    await this.#auth.logout();
+  public async logout(username: string): Promise<void> {
+    await this.#auth.logout(username);
+  }
+
+  /**
+   * @description Method that ends all user sessions.
+   */
+  public async logoutAll(): Promise<void> {
+    await this.#auth.logoutAll();
   }
 
   /**

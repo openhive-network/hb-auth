@@ -535,10 +535,22 @@ class OnlineClient extends Client {
     const account = accounts.accounts[0];
     const publicKey = txBuilder.signatureKeys[0];
 
+    const key_references =
+      await this.hiveChain.api.account_by_key_api.get_key_references({
+        keys: [publicKey],
+      });
+
     if (isStrict) {
-      // In strict mode, only check against key_auths
-      const account_key = account[keyType].key_auths[0][0];
-      return publicKey.endsWith(account_key);
+      const key_auth_match = account[keyType].key_auths.some((keyAuths) =>
+        publicKey.endsWith(keyAuths[0]),
+      );
+
+      if (!key_auth_match) {
+        return false;
+      }
+
+      const key_owners = key_references.accounts[0] || [];
+      return key_owners.includes(username);
     } else {
       // When not in strict mode, check both key_auths and account_auths
       const key_auth_match = account[keyType].key_auths.some((keyAuths) =>
@@ -547,11 +559,6 @@ class OnlineClient extends Client {
 
       if (!key_auth_match) {
         // If no direct key match, check if the key belongs to an authorized account
-        const key_references =
-          await this.hiveChain.api.account_by_key_api.get_key_references({
-            keys: [publicKey],
-          });
-
         const key_owner = key_references.accounts[0]?.[0];
 
         const result =

@@ -391,11 +391,18 @@ export class AuthWorker {
         unlocked: !!wallet.unlocked,
         authorized: !!this.#loggedInUsers[wallet.name]?.authorized,
         loggedInKeyType: this.#loggedInUsers[wallet.name]?.loggedInKeyType,
-        registeredKeyTypes
+        registeredKeyTypes,
       });
     }
 
     return registeredUsers;
+  }
+
+  public async getRegisteredUserByUsername(
+    username: string,
+  ): Promise<AuthUser | null> {
+    const registeredUsers = await this.getRegisteredUsers();
+    return registeredUsers.find((user) => user.username === username) ?? null;
   }
 
   public async singleSign(
@@ -795,6 +802,12 @@ class Auth {
 
   public async getRegisteredUsers(): Promise<AuthUser[]> {
     return await (await this.getWorker()).getRegisteredUsers();
+  }
+
+  public async getRegisteredUserByUsername(
+    username: string,
+  ): Promise<AuthUser | null> {
+    return await (await this.getWorker()).getRegisteredUserByUsername(username);
   }
 
   public async sign(

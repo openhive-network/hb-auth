@@ -247,7 +247,7 @@ Client.constructor
 
 #### Defined in
 
-dist/hb-auth.d.ts:241
+dist/hb-auth.d.ts:249
 
 ## Properties
 
@@ -261,7 +261,7 @@ Client.#private
 
 #### Defined in
 
-dist/hb-auth.d.ts:102
+dist/hb-auth.d.ts:103
 
 ___
 
@@ -275,7 +275,7 @@ Client.clientOptions
 
 #### Defined in
 
-dist/hb-auth.d.ts:240
+dist/hb-auth.d.ts:248
 
 ## Methods
 
@@ -301,7 +301,7 @@ Client.authenticate
 
 #### Defined in
 
-dist/hb-auth.d.ts:244
+dist/hb-auth.d.ts:252
 
 ___
 
@@ -319,7 +319,7 @@ Client.authorize
 
 #### Defined in
 
-dist/hb-auth.d.ts:242
+dist/hb-auth.d.ts:250
 
 ___
 
@@ -342,13 +342,21 @@ ___
 Method to get auth status for a given user.
 If there is no user it will return null.
 
+**`Deprecated`**
+
+Use
+
+**`See`**
+
+instead.
+
 #### Inherited from
 
 Client.getAuthByUser
 
 #### Defined in
 
-dist/hb-auth.d.ts:152
+dist/hb-auth.d.ts:154
 
 ___
 
@@ -379,7 +387,35 @@ Client.getAuths
 
 #### Defined in
 
-dist/hb-auth.d.ts:145
+dist/hb-auth.d.ts:146
+
+___
+
+### getRegisteredUserByUsername
+
+▸ **getRegisteredUserByUsername**(`username`): `Promise`\<``null`` \| [`AuthUser`](#interfacesauthusermd)\>
+
+#### Parameters
+
+| Name | Type | Description |
+| :------ | :------ | :------ |
+| `username` | `string` | Username |
+
+#### Returns
+
+`Promise`\<``null`` \| [`AuthUser`](#interfacesauthusermd)\>
+
+**`Description`**
+
+Method that returns a registered user by username.
+
+#### Inherited from
+
+Client.getRegisteredUserByUsername
+
+#### Defined in
+
+dist/hb-auth.d.ts:240
 
 ___
 
@@ -401,7 +437,7 @@ Client.getRegisteredUsers
 
 #### Defined in
 
-dist/hb-auth.d.ts:232
+dist/hb-auth.d.ts:234
 
 ___
 
@@ -425,7 +461,7 @@ Client.getUserSettings
 
 #### Defined in
 
-dist/hb-auth.d.ts:153
+dist/hb-auth.d.ts:155
 
 ___
 
@@ -458,7 +494,7 @@ Client.importKey
 
 #### Defined in
 
-dist/hb-auth.d.ts:201
+dist/hb-auth.d.ts:203
 
 ___
 
@@ -481,7 +517,7 @@ Client.initialize
 
 #### Defined in
 
-dist/hb-auth.d.ts:132
+dist/hb-auth.d.ts:133
 
 ___
 
@@ -504,7 +540,7 @@ Client.lock
 
 #### Defined in
 
-dist/hb-auth.d.ts:184
+dist/hb-auth.d.ts:186
 
 ___
 
@@ -537,7 +573,7 @@ Client.logout
 
 #### Defined in
 
-dist/hb-auth.d.ts:206
+dist/hb-auth.d.ts:208
 
 ___
 
@@ -559,7 +595,7 @@ Client.logoutAll
 
 #### Defined in
 
-dist/hb-auth.d.ts:210
+dist/hb-auth.d.ts:212
 
 ___
 
@@ -587,7 +623,7 @@ Client.register
 
 #### Defined in
 
-dist/hb-auth.d.ts:243
+dist/hb-auth.d.ts:251
 
 ___
 
@@ -615,7 +651,7 @@ Client.setSessionEndCallback
 
 #### Defined in
 
-dist/hb-auth.d.ts:138
+dist/hb-auth.d.ts:139
 
 ___
 
@@ -646,7 +682,7 @@ Client.setUserSettings
 
 #### Defined in
 
-dist/hb-auth.d.ts:154
+dist/hb-auth.d.ts:156
 
 ___
 
@@ -678,7 +714,7 @@ Client.sign
 
 #### Defined in
 
-dist/hb-auth.d.ts:218
+dist/hb-auth.d.ts:220
 
 ___
 
@@ -711,7 +747,7 @@ Client.singleSign
 
 #### Defined in
 
-dist/hb-auth.d.ts:227
+dist/hb-auth.d.ts:229
 
 ___
 
@@ -742,7 +778,7 @@ Client.unlock
 
 #### Defined in
 
-dist/hb-auth.d.ts:192
+dist/hb-auth.d.ts:194
 
 
 <a name="classesonlineclientmd"></a>
@@ -782,7 +818,7 @@ Client.constructor
 
 #### Defined in
 
-dist/hb-auth.d.ts:252
+dist/hb-auth.d.ts:260
 
 ## Properties
 
@@ -796,7 +832,7 @@ Client.#private
 
 #### Defined in
 
-dist/hb-auth.d.ts:102
+dist/hb-auth.d.ts:103
 
 ___
 
@@ -810,7 +846,7 @@ Client.clientOptions
 
 #### Defined in
 
-dist/hb-auth.d.ts:251
+dist/hb-auth.d.ts:259
 
 ___
 
@@ -820,7 +856,7 @@ ___
 
 #### Defined in
 
-dist/hb-auth.d.ts:254
+dist/hb-auth.d.ts:262
 
 ## Methods
 
@@ -846,7 +882,7 @@ Client.authenticate
 
 #### Defined in
 
-dist/hb-auth.d.ts:255
+dist/hb-auth.d.ts:263
 
 ___
 
@@ -873,7 +909,7 @@ Client.authorize
 
 #### Defined in
 
-dist/hb-auth.d.ts:253
+dist/hb-auth.d.ts:261
 
 ___
 
@@ -896,13 +932,21 @@ ___
 Method to get auth status for a given user.
 If there is no user it will return null.
 
+**`Deprecated`**
+
+Use
+
+**`See`**
+
+instead.
+
 #### Inherited from
 
 Client.getAuthByUser
 
 #### Defined in
 
-dist/hb-auth.d.ts:152
+dist/hb-auth.d.ts:154
 
 ___
 
@@ -933,7 +977,35 @@ Client.getAuths
 
 #### Defined in
 
-dist/hb-auth.d.ts:145
+dist/hb-auth.d.ts:146
+
+___
+
+### getRegisteredUserByUsername
+
+▸ **getRegisteredUserByUsername**(`username`): `Promise`\<``null`` \| [`AuthUser`](#interfacesauthusermd)\>
+
+#### Parameters
+
+| Name | Type | Description |
+| :------ | :------ | :------ |
+| `username` | `string` | Username |
+
+#### Returns
+
+`Promise`\<``null`` \| [`AuthUser`](#interfacesauthusermd)\>
+
+**`Description`**
+
+Method that returns a registered user by username.
+
+#### Inherited from
+
+Client.getRegisteredUserByUsername
+
+#### Defined in
+
+dist/hb-auth.d.ts:240
 
 ___
 
@@ -955,7 +1027,7 @@ Client.getRegisteredUsers
 
 #### Defined in
 
-dist/hb-auth.d.ts:232
+dist/hb-auth.d.ts:234
 
 ___
 
@@ -979,7 +1051,7 @@ Client.getUserSettings
 
 #### Defined in
 
-dist/hb-auth.d.ts:153
+dist/hb-auth.d.ts:155
 
 ___
 
@@ -1012,7 +1084,7 @@ Client.importKey
 
 #### Defined in
 
-dist/hb-auth.d.ts:201
+dist/hb-auth.d.ts:203
 
 ___
 
@@ -1035,7 +1107,7 @@ Client.initialize
 
 #### Defined in
 
-dist/hb-auth.d.ts:132
+dist/hb-auth.d.ts:133
 
 ___
 
@@ -1058,7 +1130,7 @@ Client.lock
 
 #### Defined in
 
-dist/hb-auth.d.ts:184
+dist/hb-auth.d.ts:186
 
 ___
 
@@ -1091,7 +1163,7 @@ Client.logout
 
 #### Defined in
 
-dist/hb-auth.d.ts:206
+dist/hb-auth.d.ts:208
 
 ___
 
@@ -1113,7 +1185,7 @@ Client.logoutAll
 
 #### Defined in
 
-dist/hb-auth.d.ts:210
+dist/hb-auth.d.ts:212
 
 ___
 
@@ -1141,7 +1213,7 @@ Client.register
 
 #### Defined in
 
-dist/hb-auth.d.ts:256
+dist/hb-auth.d.ts:264
 
 ___
 
@@ -1169,7 +1241,7 @@ Client.setSessionEndCallback
 
 #### Defined in
 
-dist/hb-auth.d.ts:138
+dist/hb-auth.d.ts:139
 
 ___
 
@@ -1200,7 +1272,7 @@ Client.setUserSettings
 
 #### Defined in
 
-dist/hb-auth.d.ts:154
+dist/hb-auth.d.ts:156
 
 ___
 
@@ -1232,7 +1304,7 @@ Client.sign
 
 #### Defined in
 
-dist/hb-auth.d.ts:218
+dist/hb-auth.d.ts:220
 
 ___
 
@@ -1265,7 +1337,7 @@ Client.singleSign
 
 #### Defined in
 
-dist/hb-auth.d.ts:227
+dist/hb-auth.d.ts:229
 
 ___
 
@@ -1296,7 +1368,7 @@ Client.unlock
 
 #### Defined in
 
-dist/hb-auth.d.ts:192
+dist/hb-auth.d.ts:194
 
 
 <a name="interfacesauthstatusmd"></a>
@@ -1317,7 +1389,7 @@ An error in case of unsuccessful authorization
 
 #### Defined in
 
-dist/hb-auth.d.ts:70
+dist/hb-auth.d.ts:71
 
 ___
 
@@ -1331,7 +1403,7 @@ Value that describes auth status
 
 #### Defined in
 
-dist/hb-auth.d.ts:65
+dist/hb-auth.d.ts:66
 
 
 <a name="interfacesauthusermd"></a>
@@ -1409,7 +1481,7 @@ Blockchain ID used for calculating digest
 
 #### Defined in
 
-dist/hb-auth.d.ts:78
+dist/hb-auth.d.ts:79
 
 ___
 
@@ -1427,7 +1499,7 @@ Blockchain Node address for online account verification
 
 #### Defined in
 
-dist/hb-auth.d.ts:84
+dist/hb-auth.d.ts:85
 
 ___
 
@@ -1445,7 +1517,7 @@ Session timeout (in seconds) for Wallet, after that session will be destroyed an
 
 #### Defined in
 
-dist/hb-auth.d.ts:96
+dist/hb-auth.d.ts:97
 
 ___
 
@@ -1463,4 +1535,4 @@ Url for worker script path provided by hb-auth library
 
 #### Defined in
 
-dist/hb-auth.d.ts:90
+dist/hb-auth.d.ts:91

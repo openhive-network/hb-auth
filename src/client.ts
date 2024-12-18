@@ -188,6 +188,7 @@ abstract class Client {
    * @description Method to get auth status for a given user.
    * If there is no user it will return null.
    * @param username Username
+   * @deprecated Use @see {Client.getRegisteredUserByUsername} instead.
    * @returns {Promise<AuthUser> | null}
    */
   public async getAuthByUser(username: string): Promise<AuthUser | null> {
@@ -448,6 +449,17 @@ abstract class Client {
    */
   public async getRegisteredUsers(): Promise<AuthUser[]> {
     return await this.#auth.getRegisteredUsers();
+  }
+
+  /**
+   * @description Method that returns a registered user by username.
+   * @param username Username
+   * @returns {Promise<AuthUser | null>}
+   */
+  public async getRegisteredUserByUsername(
+    username: string,
+  ): Promise<AuthUser | null> {
+    return await this.#auth.getRegisteredUserByUsername(username);
   }
 }
 

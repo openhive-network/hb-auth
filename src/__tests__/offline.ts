@@ -571,6 +571,23 @@ test.describe("HB Auth Offline Client base tests", () => {
     expect(users[0].loggedInKeyType).toBe("posting");
   });
 
+  test("Should getRegisteredUserByUsername return registered user", async () => {
+    const regUser = await page.evaluate(async ({ username }) => {
+      const registeredUser = await authInstance.getRegisteredUserByUsername(
+        username,
+      );
+      return registeredUser;
+    }, user);
+
+    expect(regUser).not.toBeNull();
+    expect(regUser?.username).toBe(user.username);
+    expect(regUser?.registeredKeyTypes).toContain("posting");
+    expect(regUser?.registeredKeyTypes).toContain("active");
+    expect(regUser?.authorized).toBeTruthy();
+    expect(regUser?.unlocked).toBeTruthy();
+    expect(regUser?.loggedInKeyType).toBe("posting");
+  });
+
   test("Should getRegisteredUsers reflect locked/unlocked state", async () => {
     const states = await page.evaluate(async ({ username, password }) => {
       await authInstance.lock();

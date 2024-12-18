@@ -852,6 +852,23 @@ test.describe("HB Auth Online Client base tests", () => {
     expect(users[0].loggedInKeyType).toBe("posting");
   });
 
+  test("Should getRegisteredUserByUsername return registered user", async () => {
+    const regUser = await page.evaluate(async ({ username }) => {
+      const registeredUser = await authInstance.getRegisteredUserByUsername(
+        username,
+      );
+      return registeredUser;
+    }, user);
+
+    expect(regUser).not.toBeNull();
+    expect(regUser?.username).toBe(user.username);
+    expect(regUser?.registeredKeyTypes).toContain("posting");
+    expect(regUser?.registeredKeyTypes).toContain("active");
+    expect(regUser?.authorized).toBeTruthy();
+    expect(regUser?.unlocked).toBeTruthy();
+    expect(regUser?.loggedInKeyType).toBe("posting");
+  });
+
   test("Should getRegisteredUsers show multiple registered users", async () => {
     const userStates = await page.evaluate(
       async ({ username, authorityUsername, password, keys }) => {

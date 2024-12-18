@@ -247,7 +247,7 @@ Client.constructor
 
 #### Defined in
 
-dist/hb-auth.d.ts:234
+dist/hb-auth.d.ts:241
 
 ## Properties
 
@@ -261,7 +261,7 @@ Client.#private
 
 #### Defined in
 
-dist/hb-auth.d.ts:101
+dist/hb-auth.d.ts:102
 
 ___
 
@@ -275,7 +275,7 @@ Client.clientOptions
 
 #### Defined in
 
-dist/hb-auth.d.ts:233
+dist/hb-auth.d.ts:240
 
 ## Methods
 
@@ -301,7 +301,7 @@ Client.authenticate
 
 #### Defined in
 
-dist/hb-auth.d.ts:237
+dist/hb-auth.d.ts:244
 
 ___
 
@@ -319,7 +319,7 @@ Client.authorize
 
 #### Defined in
 
-dist/hb-auth.d.ts:235
+dist/hb-auth.d.ts:242
 
 ___
 
@@ -348,7 +348,7 @@ Client.getAuthByUser
 
 #### Defined in
 
-dist/hb-auth.d.ts:150
+dist/hb-auth.d.ts:152
 
 ___
 
@@ -365,13 +365,43 @@ ___
 Method to get all registered users with their active auth status.
 If there is no user registered, it will return an empty array.
 
+**`Deprecated`**
+
+Use
+
+**`See`**
+
+instead.
+
 #### Inherited from
 
 Client.getAuths
 
 #### Defined in
 
-dist/hb-auth.d.ts:143
+dist/hb-auth.d.ts:145
+
+___
+
+### getRegisteredUsers
+
+▸ **getRegisteredUsers**(): `Promise`\<[`AuthUser`](#interfacesauthusermd)[]\>
+
+#### Returns
+
+`Promise`\<[`AuthUser`](#interfacesauthusermd)[]\>
+
+**`Description`**
+
+Method that returns all registered users with their active auth status.
+
+#### Inherited from
+
+Client.getRegisteredUsers
+
+#### Defined in
+
+dist/hb-auth.d.ts:232
 
 ___
 
@@ -395,7 +425,7 @@ Client.getUserSettings
 
 #### Defined in
 
-dist/hb-auth.d.ts:151
+dist/hb-auth.d.ts:153
 
 ___
 
@@ -428,7 +458,7 @@ Client.importKey
 
 #### Defined in
 
-dist/hb-auth.d.ts:199
+dist/hb-auth.d.ts:201
 
 ___
 
@@ -451,7 +481,7 @@ Client.initialize
 
 #### Defined in
 
-dist/hb-auth.d.ts:131
+dist/hb-auth.d.ts:132
 
 ___
 
@@ -474,7 +504,7 @@ Client.lock
 
 #### Defined in
 
-dist/hb-auth.d.ts:182
+dist/hb-auth.d.ts:184
 
 ___
 
@@ -507,7 +537,7 @@ Client.logout
 
 #### Defined in
 
-dist/hb-auth.d.ts:204
+dist/hb-auth.d.ts:206
 
 ___
 
@@ -529,7 +559,7 @@ Client.logoutAll
 
 #### Defined in
 
-dist/hb-auth.d.ts:208
+dist/hb-auth.d.ts:210
 
 ___
 
@@ -557,7 +587,7 @@ Client.register
 
 #### Defined in
 
-dist/hb-auth.d.ts:236
+dist/hb-auth.d.ts:243
 
 ___
 
@@ -585,7 +615,7 @@ Client.setSessionEndCallback
 
 #### Defined in
 
-dist/hb-auth.d.ts:137
+dist/hb-auth.d.ts:138
 
 ___
 
@@ -616,7 +646,7 @@ Client.setUserSettings
 
 #### Defined in
 
-dist/hb-auth.d.ts:152
+dist/hb-auth.d.ts:154
 
 ___
 
@@ -648,7 +678,7 @@ Client.sign
 
 #### Defined in
 
-dist/hb-auth.d.ts:216
+dist/hb-auth.d.ts:218
 
 ___
 
@@ -681,7 +711,7 @@ Client.singleSign
 
 #### Defined in
 
-dist/hb-auth.d.ts:225
+dist/hb-auth.d.ts:227
 
 ___
 
@@ -712,7 +742,7 @@ Client.unlock
 
 #### Defined in
 
-dist/hb-auth.d.ts:190
+dist/hb-auth.d.ts:192
 
 
 <a name="classesonlineclientmd"></a>
@@ -752,7 +782,7 @@ Client.constructor
 
 #### Defined in
 
-dist/hb-auth.d.ts:245
+dist/hb-auth.d.ts:252
 
 ## Properties
 
@@ -766,7 +796,7 @@ Client.#private
 
 #### Defined in
 
-dist/hb-auth.d.ts:101
+dist/hb-auth.d.ts:102
 
 ___
 
@@ -780,7 +810,7 @@ Client.clientOptions
 
 #### Defined in
 
-dist/hb-auth.d.ts:244
+dist/hb-auth.d.ts:251
 
 ___
 
@@ -790,7 +820,7 @@ ___
 
 #### Defined in
 
-dist/hb-auth.d.ts:247
+dist/hb-auth.d.ts:254
 
 ## Methods
 
@@ -816,7 +846,7 @@ Client.authenticate
 
 #### Defined in
 
-dist/hb-auth.d.ts:248
+dist/hb-auth.d.ts:255
 
 ___
 
@@ -843,7 +873,7 @@ Client.authorize
 
 #### Defined in
 
-dist/hb-auth.d.ts:246
+dist/hb-auth.d.ts:253
 
 ___
 
@@ -872,7 +902,7 @@ Client.getAuthByUser
 
 #### Defined in
 
-dist/hb-auth.d.ts:150
+dist/hb-auth.d.ts:152
 
 ___
 
@@ -889,13 +919,43 @@ ___
 Method to get all registered users with their active auth status.
 If there is no user registered, it will return an empty array.
 
+**`Deprecated`**
+
+Use
+
+**`See`**
+
+instead.
+
 #### Inherited from
 
 Client.getAuths
 
 #### Defined in
 
-dist/hb-auth.d.ts:143
+dist/hb-auth.d.ts:145
+
+___
+
+### getRegisteredUsers
+
+▸ **getRegisteredUsers**(): `Promise`\<[`AuthUser`](#interfacesauthusermd)[]\>
+
+#### Returns
+
+`Promise`\<[`AuthUser`](#interfacesauthusermd)[]\>
+
+**`Description`**
+
+Method that returns all registered users with their active auth status.
+
+#### Inherited from
+
+Client.getRegisteredUsers
+
+#### Defined in
+
+dist/hb-auth.d.ts:232
 
 ___
 
@@ -919,7 +979,7 @@ Client.getUserSettings
 
 #### Defined in
 
-dist/hb-auth.d.ts:151
+dist/hb-auth.d.ts:153
 
 ___
 
@@ -952,7 +1012,7 @@ Client.importKey
 
 #### Defined in
 
-dist/hb-auth.d.ts:199
+dist/hb-auth.d.ts:201
 
 ___
 
@@ -975,7 +1035,7 @@ Client.initialize
 
 #### Defined in
 
-dist/hb-auth.d.ts:131
+dist/hb-auth.d.ts:132
 
 ___
 
@@ -998,7 +1058,7 @@ Client.lock
 
 #### Defined in
 
-dist/hb-auth.d.ts:182
+dist/hb-auth.d.ts:184
 
 ___
 
@@ -1031,7 +1091,7 @@ Client.logout
 
 #### Defined in
 
-dist/hb-auth.d.ts:204
+dist/hb-auth.d.ts:206
 
 ___
 
@@ -1053,7 +1113,7 @@ Client.logoutAll
 
 #### Defined in
 
-dist/hb-auth.d.ts:208
+dist/hb-auth.d.ts:210
 
 ___
 
@@ -1081,7 +1141,7 @@ Client.register
 
 #### Defined in
 
-dist/hb-auth.d.ts:249
+dist/hb-auth.d.ts:256
 
 ___
 
@@ -1109,7 +1169,7 @@ Client.setSessionEndCallback
 
 #### Defined in
 
-dist/hb-auth.d.ts:137
+dist/hb-auth.d.ts:138
 
 ___
 
@@ -1140,7 +1200,7 @@ Client.setUserSettings
 
 #### Defined in
 
-dist/hb-auth.d.ts:152
+dist/hb-auth.d.ts:154
 
 ___
 
@@ -1172,7 +1232,7 @@ Client.sign
 
 #### Defined in
 
-dist/hb-auth.d.ts:216
+dist/hb-auth.d.ts:218
 
 ___
 
@@ -1205,7 +1265,7 @@ Client.singleSign
 
 #### Defined in
 
-dist/hb-auth.d.ts:225
+dist/hb-auth.d.ts:227
 
 ___
 
@@ -1236,7 +1296,7 @@ Client.unlock
 
 #### Defined in
 
-dist/hb-auth.d.ts:190
+dist/hb-auth.d.ts:192
 
 
 <a name="interfacesauthstatusmd"></a>
@@ -1257,7 +1317,7 @@ An error in case of unsuccessful authorization
 
 #### Defined in
 
-dist/hb-auth.d.ts:69
+dist/hb-auth.d.ts:70
 
 ___
 
@@ -1271,7 +1331,7 @@ Value that describes auth status
 
 #### Defined in
 
-dist/hb-auth.d.ts:64
+dist/hb-auth.d.ts:65
 
 
 <a name="interfacesauthusermd"></a>
@@ -1349,7 +1409,7 @@ Blockchain ID used for calculating digest
 
 #### Defined in
 
-dist/hb-auth.d.ts:77
+dist/hb-auth.d.ts:78
 
 ___
 
@@ -1367,7 +1427,7 @@ Blockchain Node address for online account verification
 
 #### Defined in
 
-dist/hb-auth.d.ts:83
+dist/hb-auth.d.ts:84
 
 ___
 
@@ -1385,7 +1445,7 @@ Session timeout (in seconds) for Wallet, after that session will be destroyed an
 
 #### Defined in
 
-dist/hb-auth.d.ts:95
+dist/hb-auth.d.ts:96
 
 ___
 
@@ -1403,4 +1463,4 @@ Url for worker script path provided by hb-auth library
 
 #### Defined in
 
-dist/hb-auth.d.ts:89
+dist/hb-auth.d.ts:90

@@ -177,6 +177,7 @@ abstract class Client {
   /**
    * @description Method to get all registered users with their active auth status.
    * If there is no user registered, it will return an empty array.
+   * @deprecated Use @see {Client.getRegisteredUsers} instead.
    * @returns {Promise<AuthUser[]>}
    */
   public async getAuths(): Promise<AuthUser[]> {
@@ -440,6 +441,14 @@ abstract class Client {
       );
     }
   }
+
+  /**
+   * @description Method that returns all registered users with their active auth status.
+   * @returns {Promise<AuthUser[]>}
+   */
+  public async getRegisteredUsers(): Promise<AuthUser[]> {
+    return await this.#auth.getRegisteredUsers();
+  }
 }
 
 /**
@@ -492,6 +501,9 @@ class OnlineClient extends Client {
     super(clientOptions);
   }
 
+  // TODO: This will be refactored after extension of blockchain
+  // which is verify_authority will return authorized account also it will validate
+  // strict in this api
   protected async authorize(
     username: string,
     txBuilder: ITransaction,

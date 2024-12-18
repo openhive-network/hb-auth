@@ -555,6 +555,36 @@ test.describe("HB Auth Offline Client base tests", () => {
     expect(signed).toBe(user.txs[1].signed);
   });
 
+  test("Should getRegisteredUsers return all registered users with their states", async () => {
+    const users = await page.evaluate(async ({ username, password }) => {
+      await authInstance.authenticate(username, password, "posting");
+      const registeredUsers = await authInstance.getRegisteredUsers();
+      return registeredUsers;
+    }, user);
+
+    expect(users.length).toBe(1);
+    expect(users[0].username).toBe(user.username);
+    expect(users[0].registeredKeyTypes).toContain("posting");
+    expect(users[0].registeredKeyTypes).toContain("active");
+    expect(users[0].authorized).toBeTruthy();
+    expect(users[0].unlocked).toBeTruthy();
+    expect(users[0].loggedInKeyType).toBe("posting");
+  });
+
+  test("Should getRegisteredUsers reflect locked/unlocked state", async () => {
+    const states = await page.evaluate(async ({ username, password }) => {
+      await authInstance.lock();
+      const lockedState = (await authInstance.getRegisteredUsers())[0].unlocked;
+      await authInstance.unlock(username, password);
+      const unlockedState = (await authInstance.getRegisteredUsers())[0]
+        .unlocked;
+      return { lockedState, unlockedState };
+    }, user);
+
+    expect(states.lockedState).toBeFalsy();
+    expect(states.unlockedState).toBeTruthy();
+  });
+
   test.afterAll(async () => {
     await browser.close();
   });

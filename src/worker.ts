@@ -380,6 +380,24 @@ export class AuthWorker {
     }
   }
 
+  public async getRegisteredUsers(): Promise<AuthUser[]> {
+    const wallets = await this.getWallets();
+    const registeredUsers: AuthUser[] = [];
+
+    for (const wallet of wallets) {
+      const registeredKeyTypes = await this.getRegisteredKeyTypes(wallet.name);
+      registeredUsers.push({
+        username: wallet.name,
+        unlocked: !!wallet.unlocked,
+        authorized: !!this.#loggedInUsers[wallet.name]?.authorized,
+        loggedInKeyType: this.#loggedInUsers[wallet.name]?.loggedInKeyType,
+        registeredKeyTypes
+      });
+    }
+
+    return registeredUsers;
+  }
+
   public async singleSign(
     username: string,
     digest: string,
@@ -773,6 +791,10 @@ class Auth {
     callback: () => Promise<void> = noop,
   ): Promise<void> {
     (await this.getWorker()).setSessionEndCallback(callback);
+  }
+
+  public async getRegisteredUsers(): Promise<AuthUser[]> {
+    return await (await this.getWorker()).getRegisteredUsers();
   }
 
   public async sign(

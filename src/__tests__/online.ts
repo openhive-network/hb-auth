@@ -618,9 +618,8 @@ test.describe("HB Auth Online Client base tests", () => {
             txs[2].digest,
             keys[2].type as KeyAuthorityType,
           );
-          return (
-            await instance.getUserSettings(username)
-          )?.authorizedAccounts?.[keys[2].type as KeyAuthorityType];
+          return (await instance.getUserSettings(username))
+            ?.authorizedAccounts?.[keys[2].type as KeyAuthorityType];
         } catch (error) {
           return error.message;
         }
@@ -835,6 +834,47 @@ test.describe("HB Auth Online Client base tests", () => {
 
     expect(userStates.user1).toBeNull();
     expect(userStates.user2?.authorized).toBe(true);
+  });
+
+  test("Should getRegisteredUsers return all registered users with their states", async () => {
+    const users = await page.evaluate(async ({ username, password }) => {
+      await authInstance.authenticate(username, password, "posting");
+      const registeredUsers = await authInstance.getRegisteredUsers();
+      return registeredUsers;
+    }, user);
+
+    expect(users.length).toBe(1);
+    expect(users[0].username).toBe(user.username);
+    expect(users[0].registeredKeyTypes).toContain("posting");
+    expect(users[0].registeredKeyTypes).toContain("active");
+    expect(users[0].authorized).toBeTruthy();
+    expect(users[0].unlocked).toBeTruthy();
+    expect(users[0].loggedInKeyType).toBe("posting");
+  });
+
+  test("Should getRegisteredUsers show multiple registered users", async () => {
+    const userStates = await page.evaluate(
+      async ({ username, authorityUsername, password, keys }) => {
+        // Register second user
+        await authInstance.register(
+          authorityUsername,
+          password,
+          keys[2].private,
+          keys[2].type as KeyAuthorityType,
+        );
+
+        const registeredUsers = await authInstance.getRegisteredUsers();
+        return {
+          count: registeredUsers.length,
+          users: registeredUsers.map((u) => u.username),
+        };
+      },
+      user,
+    );
+
+    expect(userStates.count).toBe(2);
+    expect(userStates.users).toContain(user.username);
+    expect(userStates.users).toContain(user.authorityUsername);
   });
 
   test.afterAll(async () => {

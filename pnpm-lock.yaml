@@ -12,8 +12,8 @@ importers:
         specifier: 1.27.6-rc4
         version: 1.27.6-rc4
       '@hiveio/wax':
-        specifier: 1.27.6-rc6-stable.241217155323
-        version: 1.27.6-rc6-stable.241217155323
+        specifier: 1.27.6-rc6-241220084915
+        version: 1.27.6-rc6-241220084915
       comlink:
         specifier: ^4.4.1
         version: 4.4.1
@@ -874,8 +874,8 @@ packages:
     resolution: {integrity: sha1-mj3k3qAgTdIrc6IxzC5VOprhWZs=, tarball: https://gitlab.syncad.com/api/v4/projects/198/packages/npm/@hiveio/beekeeper/-/@hiveio/beekeeper-1.27.6-rc4.tgz}
     engines: {node: '>= 18'}
 
-  '@hiveio/wax@1.27.6-rc6-stable.241217155323':
-    resolution: {integrity: sha1-z/qDiiz20fYCzIroqSd2A4p7OuY=, tarball: https://gitlab.syncad.com/api/v4/projects/419/packages/npm/@hiveio/wax/-/@hiveio/wax-1.27.6-rc6-stable.241217155323.tgz}
+  '@hiveio/wax@1.27.6-rc6-241220084915':
+    resolution: {integrity: sha1-+k17yp3C+Zo+StyEYDFYtCg5jy4=, tarball: https://gitlab.syncad.com/api/v4/projects/419/packages/npm/@hiveio/wax/-/@hiveio/wax-1.27.6-rc6-241220084915.tgz}
     engines: {node: '>= 18'}
 
   '@humanwhocodes/config-array@0.11.14':
@@ -3667,7 +3667,7 @@ snapshots:
 
   '@hiveio/beekeeper@1.27.6-rc4': {}
 
-  '@hiveio/wax@1.27.6-rc6-stable.241217155323':
+  '@hiveio/wax@1.27.6-rc6-241220084915':
     dependencies:
       '@hiveio/beekeeper': 1.27.6-rc4
       class-transformer: 0.5.1

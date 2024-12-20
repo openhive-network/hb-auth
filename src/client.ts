@@ -516,6 +516,7 @@ class OnlineClient extends Client {
   // TODO: This will be refactored after extension of blockchain
   // which is verify_authority will return authorized account also it will validate
   // strict in this api
+  // !! THIS ALSO SHOULD USE AccountAuthority Interface to check if account has the given key easily
   protected async authorize(
     username: string,
     txBuilder: ITransaction,

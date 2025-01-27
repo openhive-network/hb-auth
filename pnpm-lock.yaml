@@ -8,18 +8,12 @@ importers:
 
   .:
     dependencies:
-      '@hiveio/beekeeper':
-        specifier: 1.27.8-250126214253
-        version: 1.27.8-250126214253
       '@hiveio/wax':
-        specifier: 1.27.6-rc7-250124154611
-        version: 1.27.6-rc7-250124154611
+        specifier: 1.27.6-rc7-250127141902
+        version: 1.27.6-rc7-250127141902
       comlink:
         specifier: ^4.4.1
         version: 4.4.1
-      idb:
-        specifier: ^7.1.1
-        version: 7.1.1
     devDependencies:
       '@babel/core':
         specifier: ^7.22.9
@@ -30,6 +24,9 @@ importers:
       '@babel/preset-typescript':
         specifier: ^7.22.5
         version: 7.24.7(@babel/core@7.25.2)
+      '@hiveio/beekeeper':
+        specifier: 1.27.8-250127140318
+        version: 1.27.8-250127140318
       '@playwright/test':
         specifier: ^1.39.0
         version: 1.46.0
@@ -51,6 +48,9 @@ importers:
       '@typescript-eslint/eslint-plugin':
         specifier: ^5.62.0
         version: 5.62.0(@typescript-eslint/parser@5.62.0(eslint@8.57.0)(typescript@5.4.5))(eslint@8.57.0)(typescript@5.4.5)
+      '@web/rollup-plugin-import-meta-assets':
+        specifier: ^2.2.1
+        version: 2.2.1(rollup@4.20.0)
       buffer:
         specifier: ^6.0.3
         version: 6.0.3
@@ -81,6 +81,9 @@ importers:
       husky:
         specifier: ^8.0.3
         version: 8.0.3
+      idb:
+        specifier: ^7.1.1
+        version: 7.1.1
       playwright:
         specifier: ^1.39.0
         version: 1.46.0
@@ -870,16 +873,12 @@ packages:
     resolution: {integrity: sha512-Ys+3g2TaW7gADOJzPt83SJtCDhMjndcDMFVQ/Tj9iA1BfJzFKD9mAUXT3OenpuPHbI6P/myECxRJrofUsDx/5g==}
     engines: {node: ^12.22.0 || ^14.17.0 || >=16.0.0}
 
-  '@hiveio/beekeeper@1.27.7-250114120041':
-    resolution: {integrity: sha1-VB8RFNdocfXm0aT31aG7UoayO2Q=, tarball: https://gitlab.syncad.com/api/v4/projects/198/packages/npm/@hiveio/beekeeper/-/@hiveio/beekeeper-1.27.7-250114120041.tgz}
-    engines: {node: '>= 18'}
+  '@hiveio/beekeeper@1.27.8-250127140318':
+    resolution: {integrity: sha1-28h547KZ2qx6DwEq8g+sB0zp1xc=, tarball: https://gitlab.syncad.com/api/v4/projects/198/packages/npm/@hiveio/beekeeper/-/@hiveio/beekeeper-1.27.8-250127140318.tgz}
+    engines: {node: ^20.11 || >= 21.2}
 
-  '@hiveio/beekeeper@1.27.8-250126214253':
-    resolution: {integrity: sha1-IEnw/BEr0egsFYmeol65kUHn+tY=, tarball: https://gitlab.syncad.com/api/v4/projects/198/packages/npm/@hiveio/beekeeper/-/@hiveio/beekeeper-1.27.8-250126214253.tgz}
-    engines: {node: '>= 18'}
-
-  '@hiveio/wax@1.27.6-rc7-250124154611':
-    resolution: {integrity: sha1-7awlIRmQwPxQyhu8oRIN91apj1s=, tarball: https://gitlab.syncad.com/api/v4/projects/419/packages/npm/@hiveio/wax/-/@hiveio/wax-1.27.6-rc7-250124154611.tgz}
+  '@hiveio/wax@1.27.6-rc7-250127141902':
+    resolution: {integrity: sha1-wZvWbld1puV7XXxnX66xwyGEwok=, tarball: https://gitlab.syncad.com/api/v4/projects/419/packages/npm/@hiveio/wax/-/@hiveio/wax-1.27.6-rc7-250127141902.tgz}
     engines: {node: ^20.11 || >= 21.2}
 
   '@humanwhocodes/config-array@0.11.14':
@@ -938,6 +937,15 @@ packages:
     engines: {node: '>=14.0.0'}
     peerDependencies:
       rollup: ^2.68.0||^3.0.0||^4.0.0
+    peerDependenciesMeta:
+      rollup:
+        optional: true
+
+  '@rollup/plugin-dynamic-import-vars@2.1.5':
+    resolution: {integrity: sha512-Mymi24fd9hlRifdZV/jYIFj1dn99F34imiYu3KzlAcgBcRi3i9SucgW/VRo5SQ9K4NuQ7dCep6pFWgNyhRdFHQ==}
+    engines: {node: '>=14.0.0'}
+    peerDependencies:
+      rollup: ^1.20.0||^2.0.0||^3.0.0||^4.0.0
     peerDependenciesMeta:
       rollup:
         optional: true
@@ -1155,6 +1163,10 @@ packages:
   '@ungap/structured-clone@1.2.0':
     resolution: {integrity: sha512-zuVdFrMJiuCDQUMCzQaD6KL28MjnqqN8XnAqiEq9PNm/hCPTSGfrXCOfwj1ow4LFb/tNymJPwsNbVePc1xFqrQ==}
 
+  '@web/rollup-plugin-import-meta-assets@2.2.1':
+    resolution: {integrity: sha512-nG7nUQqSJWdl63pBTmnIElJuFi2V1x9eVje19BJuFvfz266jSmZtX3m30ncb7fOJxQt3/ge+FVL8tuNI9+63dQ==}
+    engines: {node: '>=18.0.0'}
+
   acorn-jsx@5.3.2:
     resolution: {integrity: sha512-rq9s+JNhf0IChjtDXxllJ7g41oZk5SlXtp0LHwyA5cejwn7vKmKp4pPri6YEePv2PU65sAsegbXtIinmDFDXgQ==}
     peerDependencies:
@@ -1223,6 +1235,10 @@ packages:
   arrify@1.0.1:
     resolution: {integrity: sha512-3CYzex9M9FGQjCGMGyi6/31c8GJbgb0qGyrx5HWxPd0aCwh4cB2YjMb2Xf9UuoogrMrlO9cTqnB5rI5GHZTcUA==}
     engines: {node: '>=0.10.0'}
+
+  astring@1.9.0:
+    resolution: {integrity: sha512-LElXdjswlqjWrPpJFg1Fx4wpkOCxj1TDHlSV4PlaRxHGWko024xICaa97ZkMfs6DRKlCguiAI+rbXv5GWwXIkg==}
+    hasBin: true
 
   available-typed-arrays@1.0.7:
     resolution: {integrity: sha512-wvUjBtSGN7+7SjNpq/9M2Tg350UZD3q62IFZLbRAR1bSMlCo1ZaeW+BJ+D090e4hIIZLBcTDWe4Mh4jvUDajzQ==}
@@ -1769,6 +1785,10 @@ packages:
   globby@11.1.0:
     resolution: {integrity: sha512-jhIXaOzy1sb8IyocaruWSn1TjmnBVs8Ayhcy83rmxNJ8q2uWKCAj3CnJY+KpGSXCueAPc0i05kVvVKtP1t9S3g==}
     engines: {node: '>=10'}
+
+  globby@13.2.2:
+    resolution: {integrity: sha512-Y1zNGV+pzQdh7H39l9zgB4PJqjRNqydvdYCDG4HFXM4XuvSaQQlEc91IU1yALL8gUTDomgBAfz3XJdmUS+oo0w==}
+    engines: {node: ^12.20.0 || ^14.13.1 || >=16.0.0}
 
   gopd@1.0.1:
     resolution: {integrity: sha512-d65bNlIadxvpb/A2abVdlqKqV563juRnZ1Wtk6s1sIR8uNsXR70xqIzVqxVf1eTqDunwT2MkczEeaezCKTZhwA==}
@@ -2482,6 +2502,10 @@ packages:
   slash@3.0.0:
     resolution: {integrity: sha512-g9Q1haeby36OSStwb4ntCGGGaKsaVSjQ68fBxoQcutl5fS1vuY18H3wSt3jFyFtrkx+Kz0V1G85A4MyAdDMi2Q==}
     engines: {node: '>=8'}
+
+  slash@4.0.0:
+    resolution: {integrity: sha512-3dOsAHXXUkQTpOYcoAxLIorMTp4gIQr5IW3iVb7A7lFIp0VHhnynm9izx6TssdrIcVIESAlVjtnO2K8bg+Coew==}
+    engines: {node: '>=12'}
 
   smob@1.5.0:
     resolution: {integrity: sha512-g6T+p7QO8npa+/hNx9ohv1E5pVCmWrVCUzUXJyLdMmftX6ER0oiWY/w9knEonLpnOp6b6FenKnMfR8gqwWdwig==}
@@ -3650,13 +3674,11 @@ snapshots:
 
   '@eslint/js@8.57.0': {}
 
-  '@hiveio/beekeeper@1.27.7-250114120041': {}
+  '@hiveio/beekeeper@1.27.8-250127140318': {}
 
-  '@hiveio/beekeeper@1.27.8-250126214253': {}
-
-  '@hiveio/wax@1.27.6-rc7-250124154611':
+  '@hiveio/wax@1.27.6-rc7-250127141902':
     dependencies:
-      '@hiveio/beekeeper': 1.27.7-250114120041
+      '@hiveio/beekeeper': 1.27.8-250127140318
       events: 3.3.0
       long: 5.2.3
 
@@ -3717,6 +3739,16 @@ snapshots:
       estree-walker: 2.0.2
       glob: 8.1.0
       is-reference: 1.2.1
+      magic-string: 0.30.11
+    optionalDependencies:
+      rollup: 4.20.0
+
+  '@rollup/plugin-dynamic-import-vars@2.1.5(rollup@4.20.0)':
+    dependencies:
+      '@rollup/pluginutils': 5.1.0(rollup@4.20.0)
+      astring: 1.9.0
+      estree-walker: 2.0.2
+      fast-glob: 3.3.2
       magic-string: 0.30.11
     optionalDependencies:
       rollup: 4.20.0
@@ -3929,6 +3961,16 @@ snapshots:
 
   '@ungap/structured-clone@1.2.0': {}
 
+  '@web/rollup-plugin-import-meta-assets@2.2.1(rollup@4.20.0)':
+    dependencies:
+      '@rollup/plugin-dynamic-import-vars': 2.1.5(rollup@4.20.0)
+      '@rollup/pluginutils': 5.1.0(rollup@4.20.0)
+      estree-walker: 2.0.2
+      globby: 13.2.2
+      magic-string: 0.30.11
+    transitivePeerDependencies:
+      - rollup
+
   acorn-jsx@5.3.2(acorn@8.12.1):
     dependencies:
       acorn: 8.12.1
@@ -4015,6 +4057,8 @@ snapshots:
       is-shared-array-buffer: 1.0.3
 
   arrify@1.0.1: {}
+
+  astring@1.9.0: {}
 
   available-typed-arrays@1.0.7:
     dependencies:
@@ -4703,6 +4747,14 @@ snapshots:
       ignore: 5.3.1
       merge2: 1.4.1
       slash: 3.0.0
+
+  globby@13.2.2:
+    dependencies:
+      dir-glob: 3.0.1
+      fast-glob: 3.3.2
+      ignore: 5.3.1
+      merge2: 1.4.1
+      slash: 4.0.0
 
   gopd@1.0.1:
     dependencies:
@@ -5486,6 +5538,8 @@ snapshots:
       object-inspect: 1.13.2
 
   slash@3.0.0: {}
+
+  slash@4.0.0: {}
 
   smob@1.5.0: {}
 

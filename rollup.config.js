@@ -7,7 +7,7 @@ import replace from "@rollup/plugin-replace";
 import { importMetaAssets } from '@web/rollup-plugin-import-meta-assets';
 
 
-import data from "./package.json" assert { type: "json" };
+import data from "./package.json" with { type: "json" };
 
 const name = data.main.replace(/\.js$/, "").replace(".mjs", "");
 

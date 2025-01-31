@@ -43,7 +43,7 @@
     "@babel/core": "^7.22.9",
     "@babel/preset-env": "^7.22.9",
     "@babel/preset-typescript": "^7.22.5",
-    "@hiveio/beekeeper": "1.27.8-250127140318",
+    "@hiveio/beekeeper": "1.27.8-stable.250131103618",
     "@playwright/test": "^1.39.0",
     "@rollup/plugin-commonjs": "^25.0.7",
     "@rollup/plugin-node-resolve": "^15.2.1",
@@ -73,7 +73,7 @@
     "typescript": "^5.4.5"
   },
   "dependencies": {
-    "@hiveio/wax": "1.27.6-rc7-250127141902",
+    "@hiveio/wax": "1.27.6-rc7-stable.250131113706",
     "comlink": "^4.4.1"
   }
 }

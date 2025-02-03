@@ -33,11 +33,6 @@ export default [
           'comlink', 'idb'
         ]
       }),
-      replace({
-        "from 'worker'": "from './worker.js'",
-        delimiters: ["", ""],
-        preventAssignment: true,
-      }),
       commonjs(),
     ],
   }),
@@ -63,7 +58,6 @@ export default [
         moduleDirectories: ["node_modules"],
       }),
       replace({
-        delimiters: ["", ""],
         values: {
           'import.meta.url': 'self.location.href'
         },

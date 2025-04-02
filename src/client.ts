@@ -533,13 +533,13 @@ class OnlineClient extends Client {
       accounts: [username],
     });
 
-    const account = accounts.accounts[0];
+    const account = accounts.accounts[0]; // hive-1234
     const publicKey = txBuilder.signatureKeys[0];
 
     const key_references =
       await this.hiveChain.api.account_by_key_api.get_key_references({
         keys: [publicKey],
-      });
+      }); // account[0][......authorityAccounts]
 
     if (isStrict) {
       const key_auth_match = account[keyType].key_auths.some((keyAuths) =>
@@ -560,15 +560,17 @@ class OnlineClient extends Client {
 
       if (!key_auth_match) {
         // If no direct key match, check if the key belongs to an authorized account
-        const key_owner = key_references.accounts[0]?.[0];
 
-        const result =
-          !!key_owner &&
-          account[keyType].account_auths.some(
-            (accountAuths) => accountAuths[0] === key_owner,
-          );
+        let key_owner;
 
-        if (result && key_owner) {
+        for (const accountAuth of account[keyType].account_auths) { 
+          if (key_references.accounts[0]?.includes(accountAuth[0])) {
+            key_owner = accountAuth[0];
+            break;
+          }
+        }
+
+        if (key_owner) {
           // Save the authorized account to user settings
           const currentSettings = (await this.getUserSettings(username)) ?? {
             strict: {},
@@ -578,9 +580,9 @@ class OnlineClient extends Client {
 
           const authorizedAccounts = currentSettings.authorizedAccounts ?? {};
 
-          if (authorizedAccounts[keyType] !== key_owner) {
+          if (!authorizedAccounts[keyType]) {
             await this.setUserSettings(
-              username,
+              username, // hive-12345
               {
                 strict: currentSettings.strict[keyType] ?? true,
                 authorizedAccounts: {
@@ -593,7 +595,7 @@ class OnlineClient extends Client {
           }
         }
 
-        return result;
+        return !!key_owner;
       }
 
       return true;

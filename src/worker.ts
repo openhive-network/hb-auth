@@ -300,6 +300,36 @@ export class AuthWorker {
     }
   }
 
+  public async invalidateExistingKey(
+    username: string,
+    keyType: KeyAuthorityType,
+  ): Promise<void> {
+    try {
+      const existingKeys = await this.getRegisteredKeyTypes(username);
+
+      if (!existingKeys?.includes(keyType)) {
+        // no need to invalidate
+        return Promise.resolve();
+      }
+
+      const existingAlias = await this.getAlias(`${username}@${keyType}`);
+
+      if (existingAlias?.alias) {
+        const invalidatedAlias = `${username}@${keyType}-${Date.now()}`;
+        await this.addAlias(invalidatedAlias, existingAlias.pubKey, keyType);
+        await this.removeAlias(existingAlias.alias);
+      }
+
+      return Promise.resolve();
+    } catch (error) {
+      if (error instanceof AuthorizationError) {
+        throw error;
+      } else {
+        throw new InternalError(error);
+      }
+    }
+  }
+
   private async importKey(
     wallet: IBeekeeperUnlockedWallet,
     wifKey: string,
@@ -761,6 +791,13 @@ class Auth {
 
   public async unlock(username: string, password: string): Promise<void> {
     await (await this.getWorker()).unlock(username, password);
+  }
+
+  public async invalidateExistingKey(
+    username: string,
+    keyType: KeyAuthorityType,
+  ): Promise<void> {
+    await (await this.getWorker()).invalidateExistingKey(username, keyType);
   }
 
   public async importKey(

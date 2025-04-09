@@ -386,6 +386,20 @@ abstract class Client {
   }
 
   /**
+   * @description Method that invalidates existing key for given user by creating a new alias with a timestamp
+   * and removing the old alias. This is useful when user
+   * wants to change their key but still wants to have old key mapped to their account.
+   * @param username Username
+   * @param keyType Key authority type
+   */
+  public async invalidateExistingKey(
+    username: string,
+    keyType: KeyAuthorityType,
+  ): Promise<void> {
+    await this.#auth.invalidateExistingKey(username, keyType);
+  }
+
+  /**
    * @description Method that ends existing user session. This is different than locking user.
    * When this is called any callback set via @see {Client.setSessionCallback} will fire.
    */
@@ -563,7 +577,7 @@ class OnlineClient extends Client {
 
         let key_owner;
 
-        for (const accountAuth of account[keyType].account_auths) { 
+        for (const accountAuth of account[keyType].account_auths) {
           if (key_references.accounts[0]?.includes(accountAuth[0])) {
             key_owner = accountAuth[0];
             break;

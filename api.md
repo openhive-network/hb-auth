@@ -247,7 +247,7 @@ Client.constructor
 
 #### Defined in
 
-dist/hb-auth.d.ts:249
+dist/hb-auth.d.ts:258
 
 ## Properties
 
@@ -261,7 +261,7 @@ Client.#private
 
 #### Defined in
 
-dist/hb-auth.d.ts:103
+dist/hb-auth.d.ts:104
 
 ___
 
@@ -275,7 +275,7 @@ Client.clientOptions
 
 #### Defined in
 
-dist/hb-auth.d.ts:248
+dist/hb-auth.d.ts:257
 
 ## Methods
 
@@ -301,7 +301,7 @@ Client.authenticate
 
 #### Defined in
 
-dist/hb-auth.d.ts:252
+dist/hb-auth.d.ts:261
 
 ___
 
@@ -319,7 +319,7 @@ Client.authorize
 
 #### Defined in
 
-dist/hb-auth.d.ts:250
+dist/hb-auth.d.ts:259
 
 ___
 
@@ -356,7 +356,7 @@ Client.getAuthByUser
 
 #### Defined in
 
-dist/hb-auth.d.ts:154
+dist/hb-auth.d.ts:155
 
 ___
 
@@ -387,7 +387,7 @@ Client.getAuths
 
 #### Defined in
 
-dist/hb-auth.d.ts:146
+dist/hb-auth.d.ts:147
 
 ___
 
@@ -415,7 +415,7 @@ Client.getRegisteredUserByUsername
 
 #### Defined in
 
-dist/hb-auth.d.ts:240
+dist/hb-auth.d.ts:249
 
 ___
 
@@ -437,7 +437,7 @@ Client.getRegisteredUsers
 
 #### Defined in
 
-dist/hb-auth.d.ts:234
+dist/hb-auth.d.ts:243
 
 ___
 
@@ -461,7 +461,7 @@ Client.getUserSettings
 
 #### Defined in
 
-dist/hb-auth.d.ts:155
+dist/hb-auth.d.ts:156
 
 ___
 
@@ -494,7 +494,7 @@ Client.importKey
 
 #### Defined in
 
-dist/hb-auth.d.ts:203
+dist/hb-auth.d.ts:204
 
 ___
 
@@ -517,7 +517,38 @@ Client.initialize
 
 #### Defined in
 
-dist/hb-auth.d.ts:133
+dist/hb-auth.d.ts:134
+
+___
+
+### invalidateExistingKey
+
+▸ **invalidateExistingKey**(`username`, `keyType`): `Promise`\<`void`\>
+
+#### Parameters
+
+| Name | Type | Description |
+| :------ | :------ | :------ |
+| `username` | `string` | Username |
+| `keyType` | ``"active"`` \| ``"posting"`` \| ``"owner"`` | Key authority type |
+
+#### Returns
+
+`Promise`\<`void`\>
+
+**`Description`**
+
+Method that invalidates existing key for given user by creating a new alias with a timestamp
+and removing the old alias. This is useful when user
+wants to change their key but still wants to have old key mapped to their account.
+
+#### Inherited from
+
+Client.invalidateExistingKey
+
+#### Defined in
+
+dist/hb-auth.d.ts:212
 
 ___
 
@@ -540,7 +571,7 @@ Client.lock
 
 #### Defined in
 
-dist/hb-auth.d.ts:186
+dist/hb-auth.d.ts:187
 
 ___
 
@@ -573,7 +604,7 @@ Client.logout
 
 #### Defined in
 
-dist/hb-auth.d.ts:208
+dist/hb-auth.d.ts:217
 
 ___
 
@@ -595,7 +626,7 @@ Client.logoutAll
 
 #### Defined in
 
-dist/hb-auth.d.ts:212
+dist/hb-auth.d.ts:221
 
 ___
 
@@ -623,7 +654,7 @@ Client.register
 
 #### Defined in
 
-dist/hb-auth.d.ts:251
+dist/hb-auth.d.ts:260
 
 ___
 
@@ -651,7 +682,7 @@ Client.setSessionEndCallback
 
 #### Defined in
 
-dist/hb-auth.d.ts:139
+dist/hb-auth.d.ts:140
 
 ___
 
@@ -682,7 +713,7 @@ Client.setUserSettings
 
 #### Defined in
 
-dist/hb-auth.d.ts:156
+dist/hb-auth.d.ts:157
 
 ___
 
@@ -714,7 +745,7 @@ Client.sign
 
 #### Defined in
 
-dist/hb-auth.d.ts:220
+dist/hb-auth.d.ts:229
 
 ___
 
@@ -747,7 +778,7 @@ Client.singleSign
 
 #### Defined in
 
-dist/hb-auth.d.ts:229
+dist/hb-auth.d.ts:238
 
 ___
 
@@ -778,7 +809,7 @@ Client.unlock
 
 #### Defined in
 
-dist/hb-auth.d.ts:194
+dist/hb-auth.d.ts:195
 
 
 <a name="classesonlineclientmd"></a>
@@ -818,7 +849,7 @@ Client.constructor
 
 #### Defined in
 
-dist/hb-auth.d.ts:260
+dist/hb-auth.d.ts:269
 
 ## Properties
 
@@ -832,7 +863,7 @@ Client.#private
 
 #### Defined in
 
-dist/hb-auth.d.ts:103
+dist/hb-auth.d.ts:104
 
 ___
 
@@ -846,7 +877,7 @@ Client.clientOptions
 
 #### Defined in
 
-dist/hb-auth.d.ts:259
+dist/hb-auth.d.ts:268
 
 ___
 
@@ -856,7 +887,7 @@ ___
 
 #### Defined in
 
-dist/hb-auth.d.ts:262
+dist/hb-auth.d.ts:271
 
 ## Methods
 
@@ -882,7 +913,7 @@ Client.authenticate
 
 #### Defined in
 
-dist/hb-auth.d.ts:263
+dist/hb-auth.d.ts:272
 
 ___
 
@@ -909,7 +940,7 @@ Client.authorize
 
 #### Defined in
 
-dist/hb-auth.d.ts:261
+dist/hb-auth.d.ts:270
 
 ___
 
@@ -946,7 +977,7 @@ Client.getAuthByUser
 
 #### Defined in
 
-dist/hb-auth.d.ts:154
+dist/hb-auth.d.ts:155
 
 ___
 
@@ -977,7 +1008,7 @@ Client.getAuths
 
 #### Defined in
 
-dist/hb-auth.d.ts:146
+dist/hb-auth.d.ts:147
 
 ___
 
@@ -1005,7 +1036,7 @@ Client.getRegisteredUserByUsername
 
 #### Defined in
 
-dist/hb-auth.d.ts:240
+dist/hb-auth.d.ts:249
 
 ___
 
@@ -1027,7 +1058,7 @@ Client.getRegisteredUsers
 
 #### Defined in
 
-dist/hb-auth.d.ts:234
+dist/hb-auth.d.ts:243
 
 ___
 
@@ -1051,7 +1082,7 @@ Client.getUserSettings
 
 #### Defined in
 
-dist/hb-auth.d.ts:155
+dist/hb-auth.d.ts:156
 
 ___
 
@@ -1084,7 +1115,7 @@ Client.importKey
 
 #### Defined in
 
-dist/hb-auth.d.ts:203
+dist/hb-auth.d.ts:204
 
 ___
 
@@ -1107,7 +1138,38 @@ Client.initialize
 
 #### Defined in
 
-dist/hb-auth.d.ts:133
+dist/hb-auth.d.ts:134
+
+___
+
+### invalidateExistingKey
+
+▸ **invalidateExistingKey**(`username`, `keyType`): `Promise`\<`void`\>
+
+#### Parameters
+
+| Name | Type | Description |
+| :------ | :------ | :------ |
+| `username` | `string` | Username |
+| `keyType` | ``"active"`` \| ``"posting"`` \| ``"owner"`` | Key authority type |
+
+#### Returns
+
+`Promise`\<`void`\>
+
+**`Description`**
+
+Method that invalidates existing key for given user by creating a new alias with a timestamp
+and removing the old alias. This is useful when user
+wants to change their key but still wants to have old key mapped to their account.
+
+#### Inherited from
+
+Client.invalidateExistingKey
+
+#### Defined in
+
+dist/hb-auth.d.ts:212
 
 ___
 
@@ -1130,7 +1192,7 @@ Client.lock
 
 #### Defined in
 
-dist/hb-auth.d.ts:186
+dist/hb-auth.d.ts:187
 
 ___
 
@@ -1163,7 +1225,7 @@ Client.logout
 
 #### Defined in
 
-dist/hb-auth.d.ts:208
+dist/hb-auth.d.ts:217
 
 ___
 
@@ -1185,7 +1247,7 @@ Client.logoutAll
 
 #### Defined in
 
-dist/hb-auth.d.ts:212
+dist/hb-auth.d.ts:221
 
 ___
 
@@ -1213,7 +1275,7 @@ Client.register
 
 #### Defined in
 
-dist/hb-auth.d.ts:264
+dist/hb-auth.d.ts:273
 
 ___
 
@@ -1241,7 +1303,7 @@ Client.setSessionEndCallback
 
 #### Defined in
 
-dist/hb-auth.d.ts:139
+dist/hb-auth.d.ts:140
 
 ___
 
@@ -1272,7 +1334,7 @@ Client.setUserSettings
 
 #### Defined in
 
-dist/hb-auth.d.ts:156
+dist/hb-auth.d.ts:157
 
 ___
 
@@ -1304,7 +1366,7 @@ Client.sign
 
 #### Defined in
 
-dist/hb-auth.d.ts:220
+dist/hb-auth.d.ts:229
 
 ___
 
@@ -1337,7 +1399,7 @@ Client.singleSign
 
 #### Defined in
 
-dist/hb-auth.d.ts:229
+dist/hb-auth.d.ts:238
 
 ___
 
@@ -1368,7 +1430,7 @@ Client.unlock
 
 #### Defined in
 
-dist/hb-auth.d.ts:194
+dist/hb-auth.d.ts:195
 
 
 <a name="interfacesauthstatusmd"></a>
@@ -1389,7 +1451,7 @@ An error in case of unsuccessful authorization
 
 #### Defined in
 
-dist/hb-auth.d.ts:71
+dist/hb-auth.d.ts:72
 
 ___
 
@@ -1403,7 +1465,7 @@ Value that describes auth status
 
 #### Defined in
 
-dist/hb-auth.d.ts:66
+dist/hb-auth.d.ts:67
 
 
 <a name="interfacesauthusermd"></a>
@@ -1481,7 +1543,7 @@ Blockchain ID used for calculating digest
 
 #### Defined in
 
-dist/hb-auth.d.ts:79
+dist/hb-auth.d.ts:80
 
 ___
 
@@ -1499,7 +1561,7 @@ Blockchain Node address for online account verification
 
 #### Defined in
 
-dist/hb-auth.d.ts:85
+dist/hb-auth.d.ts:86
 
 ___
 
@@ -1517,7 +1579,7 @@ Session timeout (in seconds) for Wallet, after that session will be destroyed an
 
 #### Defined in
 
-dist/hb-auth.d.ts:97
+dist/hb-auth.d.ts:98
 
 ___
 
@@ -1535,4 +1597,4 @@ Url for worker script path provided by hb-auth library
 
 #### Defined in
 
-dist/hb-auth.d.ts:91
+dist/hb-auth.d.ts:92

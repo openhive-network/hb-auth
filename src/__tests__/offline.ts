@@ -602,6 +602,169 @@ test.describe("HB Auth Offline Client base tests", () => {
     expect(states.unlockedState).toBeTruthy();
   });
 
+  test("Should invalidate existing key and prevent its use, then allow registering a new key", async () => {
+    // First, register a new user with a posting key
+    const newUser = {
+      username: "test.invalid",
+      password: "testpassword",
+      keys: [
+        {
+          type: "posting",
+          private: "5JkFnXrLM2ap9t3AmAxBJvQHF7xSKtnTrCTginQCkhzU5S7ecPT",
+          public: "5RqVBAVNp5ufMCetQtvLGLJo7unX9nyCBMMrTXRWQ9i1Zzzizh",
+        },
+        {
+          type: "posting",
+          private: "5KGKYWMXReJewfj5M29APNMqGEu173DzvHv5TeJAg9SkjUeQV78",
+          public: "6oR6ckA4TejTWTjatUdbcS98AKETc3rcnQ9dWxmeNiKDzfhBZa",
+        },
+      ],
+    };
+
+    // Register the user with the first key
+    await page.evaluate(async ({ username, password, keys }) => {
+      const instance = new AuthOfflineClient({ workerUrl: "/dist/worker.js" });
+      await instance.initialize();
+      await instance.register(
+        username,
+        password,
+        keys[0].private,
+        keys[0].type as KeyAuthorityType,
+      );
+    }, newUser);
+
+    // Authenticate with the key to verify it works initially
+    const authResult = await page.evaluate(
+      async ({ username, password, keys }) => {
+        const instance = new AuthOfflineClient({
+          workerUrl: "/dist/worker.js",
+        });
+        await instance.initialize();
+        try {
+          await instance.authenticate(
+            username,
+            password,
+            keys[0].type as KeyAuthorityType,
+          );
+          return true;
+        } catch (error) {
+          return false;
+        }
+      },
+      newUser,
+    );
+
+    expect(authResult).toBeTruthy();
+
+    // Invalidate the key
+    await page.evaluate(async ({ username, keys }) => {
+      const instance = new AuthOfflineClient({ workerUrl: "/dist/worker.js" });
+      await instance.initialize();
+      await instance.invalidateExistingKey(
+        username,
+        keys[0].type as KeyAuthorityType,
+      );
+    }, newUser);
+
+    // The key should no longer work for signing after invalidation
+    const canStillSign = await page.evaluate(
+      async ({ username, keys }) => {
+        const instance = new AuthOfflineClient({
+          workerUrl: "/dist/worker.js",
+        });
+        await instance.initialize();
+        try {
+          // Try to sign something with the key
+          const digest = "test digest";
+          const signature = await instance.singleSign(
+            username,
+            digest,
+            keys[0].private,
+            keys[0].type as KeyAuthorityType,
+          );
+          return !!signature;
+        } catch (error) {
+          return false;
+        }
+      },
+      newUser,
+    );
+
+    expect(canStillSign).toBeFalsy();
+
+    // Now register a new key with the same type
+    const registerNewKey = await page.evaluate(
+      async ({ username, password, keys }) => {
+        const instance = new AuthOfflineClient({
+          workerUrl: "/dist/worker.js",
+        });
+        await instance.initialize();
+        try {
+          await instance.register(
+            username,
+            password,
+            keys[1].private,
+            keys[1].type as KeyAuthorityType,
+          );
+          return true;
+        } catch (error) {
+          return error.message;
+        }
+      },
+      newUser,
+    );
+
+    expect(registerNewKey).toBeTruthy();
+
+    // Authenticate with the new key first
+    const authWithNewKey = await page.evaluate(
+      async ({ username, password, keys }) => {
+        const instance = new AuthOfflineClient({
+          workerUrl: "/dist/worker.js",
+        });
+        await instance.initialize();
+        try {
+          await instance.authenticate(
+            username,
+            password,
+            keys[1].type as KeyAuthorityType,
+          );
+          return true;
+        } catch (error) {
+          return error.message;
+        }
+      },
+      newUser,
+    );
+
+    expect(authWithNewKey).toBeTruthy();
+
+    // Verify the new key works for signing
+    const newKeyWorks = await page.evaluate(
+      async ({ username, keys }) => {
+        const instance = new AuthOfflineClient({
+          workerUrl: "/dist/worker.js",
+        });
+        await instance.initialize();
+        try {
+          // Try to sign something with the new key
+          const digest = "test digest";
+          const signature = await instance.sign(
+            username,
+            digest,
+            keys[1].type as KeyAuthorityType,
+          );
+          return !!signature;
+        } catch (error) {
+          return error.message;
+        }
+      },
+      newUser,
+    );
+
+    expect(newKeyWorks).toBeTruthy();
+  });
+
   test.afterAll(async () => {
     await browser.close();
   });

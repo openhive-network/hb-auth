@@ -895,20 +895,25 @@ class Auth {
   }
 }
 
+declare let SharedWorkerGlobalScope: any;
+declare let onconnect: any;
+
 const exports = {
   Auth,
 };
 
-declare let onconnect: any;
-
-// eslint-disable-next-line @typescript-eslint/no-unused-vars, prefer-const
-onconnect = (event: any) => {
-  const port = event.ports[0];
-
-  Comlink.expose(exports, port);
-};
-
-Comlink.expose(exports);
+// Check if we're in a SharedWorker context
+if (typeof SharedWorkerGlobalScope !== 'undefined' && self instanceof SharedWorkerGlobalScope) {
+  // Handle SharedWorker connections
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars, prefer-const
+  onconnect = (event: any) => {
+    const port = event.ports[0];
+    Comlink.expose(exports, port);
+  };
+} else {
+  // Handle regular Worker
+  Comlink.expose(exports);
+}
 
 export type WorkerExpose = typeof exports;
 export type { Auth };

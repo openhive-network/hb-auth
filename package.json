@@ -75,5 +75,8 @@
   "dependencies": {
     "@hiveio/wax": "1.27.6-rc7-stable.250513162056",
     "comlink": "^4.4.1"
+  },
+  "engines": {
+    "node": "^20.11 || >= 21.2"
   }
 }

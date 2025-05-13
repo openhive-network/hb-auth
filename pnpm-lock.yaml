@@ -9,8 +9,8 @@ importers:
   .:
     dependencies:
       '@hiveio/wax':
-        specifier: 1.27.6-rc7-stable.250131113706
-        version: 1.27.6-rc7-stable.250131113706
+        specifier: 1.27.6-rc7-250509110811
+        version: 1.27.6-rc7-250509110811
       comlink:
         specifier: ^4.4.1
         version: 4.4.1
@@ -25,8 +25,8 @@ importers:
         specifier: ^7.22.5
         version: 7.24.7(@babel/core@7.25.2)
       '@hiveio/beekeeper':
-        specifier: 1.27.8-stable.250131103618
-        version: 1.27.8-stable.250131103618
+        specifier: 1.27.11-250509105319
+        version: 1.27.11-250509105319
       '@playwright/test':
         specifier: ^1.39.0
         version: 1.46.0
@@ -873,12 +873,12 @@ packages:
     resolution: {integrity: sha512-Ys+3g2TaW7gADOJzPt83SJtCDhMjndcDMFVQ/Tj9iA1BfJzFKD9mAUXT3OenpuPHbI6P/myECxRJrofUsDx/5g==}
     engines: {node: ^12.22.0 || ^14.17.0 || >=16.0.0}
 
-  '@hiveio/beekeeper@1.27.8-stable.250131103618':
-    resolution: {integrity: sha1-0IYuFBbxIIKfRTrI6ZZc7Jf+qLA=, tarball: https://gitlab.syncad.com/api/v4/projects/198/packages/npm/@hiveio/beekeeper/-/@hiveio/beekeeper-1.27.8-stable.250131103618.tgz}
+  '@hiveio/beekeeper@1.27.11-250509105319':
+    resolution: {integrity: sha1-Sr/7ZpD01x9Xjhtkvb758AEyjDo=, tarball: https://gitlab.syncad.com/api/v4/projects/198/packages/npm/@hiveio/beekeeper/-/@hiveio/beekeeper-1.27.11-250509105319.tgz}
     engines: {node: ^20.11 || >= 21.2}
 
-  '@hiveio/wax@1.27.6-rc7-stable.250131113706':
-    resolution: {integrity: sha1-Xi2VV8y9T6MdBHOBSzxZNpmGnF8=, tarball: https://gitlab.syncad.com/api/v4/projects/419/packages/npm/@hiveio/wax/-/@hiveio/wax-1.27.6-rc7-stable.250131113706.tgz}
+  '@hiveio/wax@1.27.6-rc7-250509110811':
+    resolution: {integrity: sha1-ziRP3tnUXT51WFp6yq4Kpy6ipLY=, tarball: https://gitlab.syncad.com/api/v4/projects/419/packages/npm/@hiveio/wax/-/@hiveio/wax-1.27.6-rc7-250509110811.tgz}
     engines: {node: ^20.11 || >= 21.2}
 
   '@humanwhocodes/config-array@0.11.14':
@@ -3674,11 +3674,11 @@ snapshots:
 
   '@eslint/js@8.57.0': {}
 
-  '@hiveio/beekeeper@1.27.8-stable.250131103618': {}
+  '@hiveio/beekeeper@1.27.11-250509105319': {}
 
-  '@hiveio/wax@1.27.6-rc7-stable.250131113706':
+  '@hiveio/wax@1.27.6-rc7-250509110811':
     dependencies:
-      '@hiveio/beekeeper': 1.27.8-stable.250131103618
+      '@hiveio/beekeeper': 1.27.11-250509105319
       events: 3.3.0
       long: 5.2.3
 

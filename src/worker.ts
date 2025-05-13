@@ -100,6 +100,7 @@ export class AuthWorker {
         // Update user state
         if (this.#loggedInUsers[username]) {
           this.#loggedInUsers[username].unlocked = false;
+          this.#loggedInUsers[username].authorized = false;
         }
 
         // Clear interval after locking

@@ -229,7 +229,7 @@ abstract class Client {
 
     if (keyType === "posting") {
       txBuilder.pushOperation({
-        vote: {
+        vote_operation: {
           voter: username,
           author: "author",
           permlink: "permlink",
@@ -238,11 +238,11 @@ abstract class Client {
       });
     } else if (keyType === "active") {
       txBuilder.pushOperation({
-        limit_order_cancel: { owner: username, orderid: 0 },
+        limit_order_cancel_operation: { owner: username, orderid: 0 },
       });
     } else if (keyType === "owner") {
       txBuilder.pushOperation({
-        decline_voting_rights: { account: username, decline: false },
+        decline_voting_rights_operation: { account: username, decline: false },
       });
     } else {
       throw new AuthorizationError(

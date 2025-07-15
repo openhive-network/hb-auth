@@ -9,8 +9,8 @@ importers:
   .:
     dependencies:
       '@hiveio/wax':
-        specifier: 1.27.6-rc7-stable.250708094236
-        version: 1.27.6-rc7-stable.250708094236
+        specifier: 1.27.6-rc10
+        version: 1.27.6-rc10
       comlink:
         specifier: ^4.4.1
         version: 4.4.1
@@ -25,8 +25,8 @@ importers:
         specifier: ^7.22.5
         version: 7.24.7(@babel/core@7.25.2)
       '@hiveio/beekeeper':
-        specifier: 1.27.11-stable.250513143655
-        version: 1.27.11-stable.250513143655
+        specifier: 1.27.11
+        version: 1.27.11
       '@playwright/test':
         specifier: ^1.39.0
         version: 1.46.0
@@ -873,12 +873,12 @@ packages:
     resolution: {integrity: sha512-Ys+3g2TaW7gADOJzPt83SJtCDhMjndcDMFVQ/Tj9iA1BfJzFKD9mAUXT3OenpuPHbI6P/myECxRJrofUsDx/5g==}
     engines: {node: ^12.22.0 || ^14.17.0 || >=16.0.0}
 
-  '@hiveio/beekeeper@1.27.11-stable.250513143655':
-    resolution: {integrity: sha1-WM73mERJWR06dqP67ZznUjbya6I=, tarball: https://gitlab.syncad.com/api/v4/projects/198/packages/npm/@hiveio/beekeeper/-/@hiveio/beekeeper-1.27.11-stable.250513143655.tgz}
+  '@hiveio/beekeeper@1.27.11':
+    resolution: {integrity: sha1-0v2gSYFhN5MLQzBHIYikUyksu/k=, tarball: https://gitlab.syncad.com/api/v4/projects/198/packages/npm/@hiveio/beekeeper/-/@hiveio/beekeeper-1.27.11.tgz}
     engines: {node: ^20.11 || >= 21.2}
 
-  '@hiveio/wax@1.27.6-rc7-stable.250708094236':
-    resolution: {integrity: sha1-wl2jSSYUwmpnYzmDJbSow2JHhjY=, tarball: https://gitlab.syncad.com/api/v4/projects/419/packages/npm/@hiveio/wax/-/@hiveio/wax-1.27.6-rc7-stable.250708094236.tgz}
+  '@hiveio/wax@1.27.6-rc10':
+    resolution: {integrity: sha1-Ie5tXlNXxkOMl9ijIa7oX4hFAu0=, tarball: https://gitlab.syncad.com/api/v4/projects/419/packages/npm/@hiveio/wax/-/@hiveio/wax-1.27.6-rc10.tgz}
     engines: {node: ^20.11 || >= 21.2}
 
   '@humanwhocodes/config-array@0.11.14':
@@ -3674,11 +3674,10 @@ snapshots:
 
   '@eslint/js@8.57.0': {}
 
-  '@hiveio/beekeeper@1.27.11-stable.250513143655': {}
+  '@hiveio/beekeeper@1.27.11': {}
 
-  '@hiveio/wax@1.27.6-rc7-stable.250708094236':
+  '@hiveio/wax@1.27.6-rc10':
     dependencies:
-      '@hiveio/beekeeper': 1.27.11-stable.250513143655
       events: 3.3.0
       long: 5.2.3
 

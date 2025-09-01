@@ -9,8 +9,8 @@ importers:
   .:
     dependencies:
       '@hiveio/wax':
-        specifier: 1.27.6-rc10-stable.250718075612
-        version: 1.27.6-rc10-stable.250718075612
+        specifier: 1.27.6-rc10-stable.250901172848
+        version: 1.27.6-rc10-stable.250901172848
       comlink:
         specifier: ^4.4.1
         version: 4.4.1
@@ -877,8 +877,8 @@ packages:
     resolution: {integrity: sha1-0v2gSYFhN5MLQzBHIYikUyksu/k=, tarball: https://gitlab.syncad.com/api/v4/projects/198/packages/npm/@hiveio/beekeeper/-/@hiveio/beekeeper-1.27.11.tgz}
     engines: {node: ^20.11 || >= 21.2}
 
-  '@hiveio/wax@1.27.6-rc10-stable.250718075612':
-    resolution: {integrity: sha1-TYKUMQ158pF6HL+KoE1ze7dYQ/M=, tarball: https://gitlab.syncad.com/api/v4/projects/419/packages/npm/@hiveio/wax/-/@hiveio/wax-1.27.6-rc10-stable.250718075612.tgz}
+  '@hiveio/wax@1.27.6-rc10-stable.250901172848':
+    resolution: {integrity: sha1-WjDM3uVlzdeemHvc4ofnlPrQW3g=, tarball: https://gitlab.syncad.com/api/v4/projects/419/packages/npm/@hiveio/wax/-/@hiveio/wax-1.27.6-rc10-stable.250901172848.tgz}
     engines: {node: ^20.11 || >= 21.2}
 
   '@humanwhocodes/config-array@0.11.14':
@@ -2074,9 +2074,6 @@ packages:
 
   lodash.startcase@4.4.0:
     resolution: {integrity: sha512-+WKqsK294HMSc2jEbNgpHpd0JfIBhp7rEV4aqXWqFr6AlXov+SlcgB1Fv01y2kGe3Gc8nMW7VA0SrGuSkRfIEg==}
-
-  long@5.2.3:
-    resolution: {integrity: sha512-lcHwpNoggQTObv5apGNCTdJrO69eHOZMi4BNC+rTLER8iHAqGrUVeLh/irVIM7zTw2bOXA8T6uNPeujwOLg/2Q==}
 
   longest-streak@2.0.4:
     resolution: {integrity: sha512-vM6rUVCVUJJt33bnmHiZEvr7wPT78ztX7rojL+LW51bHtLh6HTjx84LA5W4+oa6aKEJA7jJu5LR6vQRBpA5DVg==}
@@ -3676,10 +3673,9 @@ snapshots:
 
   '@hiveio/beekeeper@1.27.11': {}
 
-  '@hiveio/wax@1.27.6-rc10-stable.250718075612':
+  '@hiveio/wax@1.27.6-rc10-stable.250901172848':
     dependencies:
       events: 3.3.0
-      long: 5.2.3
 
   '@humanwhocodes/config-array@0.11.14':
     dependencies:
@@ -4996,8 +4992,6 @@ snapshots:
   lodash.merge@4.6.2: {}
 
   lodash.startcase@4.4.0: {}
-
-  long@5.2.3: {}
 
   longest-streak@2.0.4: {}
 

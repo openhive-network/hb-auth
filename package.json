@@ -73,7 +73,7 @@
     "typescript": "^5.4.5"
   },
   "dependencies": {
-    "@hiveio/wax": "1.27.6-rc10-stable.250718075612",
+    "@hiveio/wax": "1.27.6-rc10-stable.250901172848",
     "comlink": "^4.4.1"
   },
   "engines": {

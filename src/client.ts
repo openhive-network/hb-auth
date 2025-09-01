@@ -282,7 +282,7 @@ abstract class Client {
       strict,
     );
 
-    txBuilder.sign(signature);
+    txBuilder.addSignature(signature);
 
     const authenticated = await this.authorize(
       username,
@@ -330,7 +330,7 @@ abstract class Client {
         txBuilder.sigDigest,
       );
 
-      txBuilder.sign(signature);
+      txBuilder.addSignature(signature);
       const authenticated = await this.authorize(
         username,
         txBuilder,

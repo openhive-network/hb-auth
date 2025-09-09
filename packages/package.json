@@ -1,0 +1,4 @@
+{
+  "name": "wax-placeholder-package",
+  "description": "Placeholder dummy package to allow versioning of @hiveio/wax package using the root package.json"
+}

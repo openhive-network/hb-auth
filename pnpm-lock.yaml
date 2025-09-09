@@ -128,6 +128,19 @@ importers:
         specifier: catalog:typescript-toolset
         version: 5.7.3
 
+  packages/signers-hb-auth:
+    dependencies:
+      '@hiveio/hb-auth':
+        specifier: workspace:../..
+        version: link:../..
+      '@hiveio/wax':
+        specifier: workspace:../
+        version: link:..
+    devDependencies:
+      typescript:
+        specifier: catalog:typescript-toolset
+        version: 5.7.3
+
 packages:
 
   '@ampproject/remapping@2.3.0':

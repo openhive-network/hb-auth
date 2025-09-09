@@ -19,38 +19,37 @@ export type { AuthUser, KeyAuthorityType, AuthorizationError };
 
 export interface AuthStatus {
   /**
-   * @description Value that describes auth status
+   * Value that describes auth status
    * @type {boolean}
    */
   ok: boolean;
   /**
-   * @description An error in case of unsuccessful authorization
-   * @optional
+   * An error in case of unsuccessful authorization
    */
   error?: AuthorizationError | null;
 }
 
 export interface ClientOptions {
   /**
-   * @description Blockchain ID used for calculating digest
+   * Blockchain ID used for calculating digest
    * @type {string}
    * @defaultValue `"beeab0de00000000000000000000000000000000000000000000000000000000"`
    */
   chainId: string;
   /**
-   * @description Blockchain Node address for online account verification
+   * Blockchain Node address for online account verification
    * @type {string}
    * @defaultValue `"https://api.hive.blog"`
    */
   node: string;
   /**
-   * @description Url for worker script path provided by hb-auth library
+   * Url for worker script path provided by hb-auth library
    * @type {string}
    * @defaultValue `"/auth/worker.js"`
    */
   workerUrl: string;
   /**
-   * @description Session timeout (in seconds) for Wallet, after that session will be destroyed and user must authenticate again
+   * Session timeout (in seconds) for Wallet, after that session will be destroyed and user must authenticate again
    * @type {number}
    * @defaultValue `900`
    */
@@ -105,7 +104,7 @@ abstract class Client {
   ): Promise<boolean>;
 
   /**
-   * @description Additional options for auth client
+   * Additional options for auth client
    * @param strict @type {boolean} - Strict authorization by checking if public key in signature matches user's public key, so other authorities will be ignored. Note that this doesn't affect OfflineClient's behaviour.
    * @param clientOptions @type {ClientOptions} - Options
    */
@@ -145,7 +144,7 @@ abstract class Client {
   }
 
   /**
-   * @description Async method that prepares client to run.
+   * Async method that prepares client to run.
    * That method should be called first before calling other methods.
    * @returns {InstanceType<Client>}
    */
@@ -165,7 +164,7 @@ abstract class Client {
   }
 
   /**
-   * @description Method to set callback for being notified on session and or logout action.
+   * Method to set callback for being notified on session and or logout action.
    * @param cb Async callback function that fires on session end
    * @returns {Promise<void>}
    */
@@ -175,7 +174,7 @@ abstract class Client {
   }
 
   /**
-   * @description Method to get all registered users with their active auth status.
+   * Method to get all registered users with their active auth status.
    * If there is no user registered, it will return an empty array.
    * @deprecated Use @see {Client.getRegisteredUsers} instead.
    * @returns {Promise<AuthUser[]>}
@@ -185,7 +184,7 @@ abstract class Client {
   }
 
   /**
-   * @description Method to get auth status for a given user.
+   * Method to get auth status for a given user.
    * If there is no user it will return null.
    * @param username Username
    * @deprecated Use @see {Client.getRegisteredUserByUsername} instead.
@@ -256,7 +255,7 @@ abstract class Client {
   }
 
   /**
-   * @description Method that registers a new user or adding
+   * Method that registers a new user or adding
    * another key with different authority to existing user.
    * @param username Username
    * @param password Password
@@ -301,7 +300,7 @@ abstract class Client {
   }
 
   /**
-   * @description Method that authenticates an already registered user.
+   * Method that authenticates an already registered user.
    * @param username Username
    * @param password Password
    * @param keyType Key authority type
@@ -351,7 +350,7 @@ abstract class Client {
   }
 
   /**
-   * @description Method that locks user session and keeps user session during session time.
+   * Method that locks user session and keeps user session during session time.
    * Note that when user session time ends, user should authenticate again.
    */
   public async lock(): Promise<void> {
@@ -359,7 +358,7 @@ abstract class Client {
   }
 
   /**
-   * @description Method that unlocks existing user's session.
+   * Method that unlocks existing user's session.
    * This method will extend user's session time after unlocking.
    * This is different than authenticate method.
    * @param username Username
@@ -370,7 +369,7 @@ abstract class Client {
   }
 
   /**
-   * @description Method that imports a new key for given user
+   * Method that imports a new key for given user
    * This method requires user to be authenticated or unlocked first
    * @param username Username
    * @param wifKey WIF key
@@ -386,7 +385,7 @@ abstract class Client {
   }
 
   /**
-   * @description Method that invalidates existing key for given user by creating a new alias with a timestamp
+   * Method that invalidates existing key for given user by creating a new alias with a timestamp
    * and removing the old alias. This is useful when user
    * wants to change their key but still wants to have old key mapped to their account.
    * @param username Username
@@ -400,7 +399,7 @@ abstract class Client {
   }
 
   /**
-   * @description Method that ends existing user session. This is different than locking user.
+   * Method that ends existing user session. This is different than locking user.
    * When this is called any callback set via @see {Client.setSessionCallback} will fire.
    */
   public async logout(username: string): Promise<void> {
@@ -408,14 +407,14 @@ abstract class Client {
   }
 
   /**
-   * @description Method that ends all user sessions.
+   * Method that ends all user sessions.
    */
   public async logoutAll(): Promise<void> {
     await this.#auth.logoutAll();
   }
 
   /**
-   * @description Method that signs given transaction as an authorized user based on selected authority type.
+   * Method that signs given transaction as an authorized user based on selected authority type.
    * @param username Username
    * @param transactionDigest Transaction digest string
    * @param keyType Key authority type
@@ -430,7 +429,7 @@ abstract class Client {
   }
 
   /**
-   * @description Method that signs given transaction as an authorized user based on selected authority type.
+   * Method that signs given transaction as an authorized user based on selected authority type.
    * @param username Username
    * @param transactionDigest Transaction digest string
    * @param wifKey WIF key
@@ -458,7 +457,7 @@ abstract class Client {
   }
 
   /**
-   * @description Method that returns all registered users with their active auth status.
+   * Method that returns all registered users with their active auth status.
    * @returns {Promise<AuthUser[]>}
    */
   public async getRegisteredUsers(): Promise<AuthUser[]> {
@@ -466,7 +465,7 @@ abstract class Client {
   }
 
   /**
-   * @description Method that returns a registered user by username.
+   * Method that returns a registered user by username.
    * @param username Username
    * @returns {Promise<AuthUser | null>}
    */
@@ -478,7 +477,7 @@ abstract class Client {
 }
 
 /**
- * @description Auth client that doesn't
+ * Auth client that doesn't
  * verify user's authority through the network. So, user has resposibility
  * for imported keys' validity.
  */
@@ -519,7 +518,7 @@ class OfflineClient extends Client {
 }
 
 /**
- * @description Auth client that additionally authorizes
+ * Auth client that additionally authorizes
  * user by verifying user's signature through the network.
  */
 class OnlineClient extends Client {

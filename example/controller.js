@@ -2,7 +2,7 @@
 function onTabSelect(event, id) {
     const allTabs = document.querySelectorAll(".tabs ul li");
     allTabs.forEach((tab) => tab.classList.remove('is-active'));
-    
+
     event.parentElement.classList.add('is-active');
 
     const tabs = document.querySelectorAll('.tab');
@@ -14,4 +14,3 @@ function onTabSelect(event, id) {
       }
     });
   }
-  

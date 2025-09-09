@@ -5,7 +5,7 @@ const CHAIN_ID =
 const MY_USER = ""; // add your user name here for following it's status
 
 // create new client instance
-const client = new OfflineClient(true, {sessionTimeout: 20});
+const client = new OfflineClient({sessionTimeout: 20});
 
 // Initialize auth client first!
 client.initialize().then(async (authClient) => {

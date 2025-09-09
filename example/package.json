@@ -4,8 +4,9 @@
   "description": "",
   "source": "index.html",
   "scripts": {
-    "start": "rm -rf dist && mkdir dist && mkdir dist/auth && cp ../dist/worker.js ./dist/auth/ && parcel",
-    "build": "parcel build --dist-dir dist"
+    "prepareauth": "mkdir -p dist/auth && cp ../dist/worker.js ./dist/auth/ && cp -r ../dist/assets ./dist/auth",
+    "start": "rm -rf dist && mkdir dist && npm run prepareauth && parcel",
+    "build": "rm -rf dist && parcel build --dist-dir dist && npm run prepareauth"
   },
   "keywords": [],
   "author": "",

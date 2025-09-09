@@ -29,6 +29,7 @@ build:
   stage: build
   extends: .npm_build_template
   variables:
+    SOURCE_DIR: "${CI_PROJECT_DIR}"
     DIST_DIR: "$CI_PROJECT_DIR/dist"
     NPM_PACKAGE_SCOPE: "@hiveio"
     NPM_PACKAGE_NAME: "hb-auth"
@@ -36,6 +37,17 @@ build:
     REPLACE_FILE_PATH: "${CI_PROJECT_DIR}/README.md"
   needs:
     - job: lint
+  artifacts:
+    when: always
+    paths:
+      - "${DIST_DIR}/*.tgz"  # Built package
+      - "${SOURCE_DIR}/packages/*/dist"
+      - "${REPLACE_FILE_PATH}"  # Modified README
+    reports:
+      dotenv:
+        - "${SOURCE_DIR}/gen_doc.env"  # contains URL to generated documentation pointed by `GEN_DOC_URL` variable
+        - "${SOURCE_DIR}/built_package_info.env"  # contains path to produced tgz
+        - "${SOURCE_DIR}/built_package_version_info.env"  # contains information related to generated package version and git revision
 
 # Generates documentation
 generate_docs:

@@ -68,9 +68,10 @@
     "rollup": "^4.3.1",
     "rollup-plugin-dts": "^6.1.0",
     "rollup-plugin-esbuild": "^6.1.0",
-    "typedoc": "^0.25.4",
-    "typedoc-plugin-markdown": "^3.17.1",
-    "typescript": "^5.4.5"
+    "typedoc": "catalog:typedoc-toolset",
+    "typedoc-gitlab-wiki-theme": "catalog:typedoc-toolset",
+    "typedoc-plugin-markdown": "catalog:typedoc-toolset",
+    "typescript": "catalog:typescript-toolset"
   },
   "dependencies": {
     "@hiveio/wax": "1.27.6-rc10-stable.250901172848",

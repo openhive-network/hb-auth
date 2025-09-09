@@ -134,8 +134,8 @@ importers:
         specifier: workspace:../..
         version: link:../..
       '@hiveio/wax':
-        specifier: workspace:../
-        version: link:..
+        specifier: workspace:../../node_modules/@hiveio/wax
+        version: link:../../node_modules/@hiveio/wax
     devDependencies:
       typescript:
         specifier: catalog:typescript-toolset

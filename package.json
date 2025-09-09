@@ -1,7 +1,7 @@
 {
   "name": "@hiveio/hb-auth",
   "version": "0.0.1-LastGitTagPlaceholder.GitHashPlaceholder",
-  "description": "Auth library for browser applications that uses Beekeeper",
+  "description": "Auth library for browser applications that use Beekeeper",
   "license": "SEE LICENSE IN LICENSE.md",
   "main": "dist/hb-auth.js",
   "module": "dist/hb-auth.js",
@@ -11,11 +11,23 @@
   "scripts": {
     "build": "pnpm run clean && rollup -c",
     "clean": "rm -rf ./dist",
-    "lint": "eslint . --ext .ts",
+    "lint": "eslint src --ext .ts",
     "pretest": "playwright install chromium",
     "test": "unset CI && playwright test --workers 1 --max-failures 1 --project=hbauth_testsuite",
     "prebuild": "pnpm run husky && pnpm run lint",
     "husky": "husky install ./.husky"
+  },
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/hb-auth.d.ts",
+        "default": "./dist/hb-auth.js"
+      }
+    },
+    "./worker.js": {
+      "require": "./dist/worker.js"
+    },
+    "./package.json": "./package.json"
   },
   "repository": {
     "type": "git",

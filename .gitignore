@@ -10,3 +10,4 @@ results.xml
 test-results
 .env
 src/__tests__/assets/auth/
+api.md

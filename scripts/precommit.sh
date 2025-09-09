@@ -11,8 +11,6 @@ DISTTAG_PLACEHOLDER=$(jq -r ".publishConfig.tag" "${PROJECT_DIR}/package.json")
 
 STAGED_FILES=($(git diff --name-only --cached))
 
-. "${SCRIPTPATH}/generate_docs.sh"
-
 if [[ ! " ${STAGED_FILES[*]} " =~ " package.json " ]];
 then
   echo "package.json file is not staged for commit - skipping further checks..."

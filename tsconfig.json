@@ -7,10 +7,12 @@
     ],
     "target": "ES2022",
     "moduleResolution": "Bundler",
+    "skipLibCheck": true,
+    "types": []
   },
   "include": [
     "./src/index.ts",
     "./src/worker.ts",
     "./index.d.ts"
-  ],
+  ]
 }

@@ -82,8 +82,8 @@ export class AuthWorker {
   }
 
   private isValidSession(): boolean {
-    const { now, timeout_time } = this.session.getInfo();
-    return new Date(now).getTime() < new Date(timeout_time).getTime();
+    const { now, timeoutTime } = this.session.getInfo();
+    return new Date(now).getTime() < new Date(timeoutTime).getTime();
   }
 
   private startSessionInterval(username: string): void {

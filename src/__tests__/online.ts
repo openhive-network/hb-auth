@@ -7,7 +7,7 @@ import {
 } from "playwright";
 import { test, expect } from "@playwright/test";
 
-import { type KeyAuthorityType, OnlineClient } from "../../dist/hb-auth";
+import type { KeyAuthorityType, OnlineClient } from "../../dist/hb-auth";
 
 declare const AuthOnlineClient: typeof OnlineClient;
 
@@ -100,7 +100,7 @@ test.describe("HB Auth Online Client base tests", () => {
       return typeof AuthOnlineClient;
     });
 
-    expect(onlineClient).toBe(typeof OnlineClient);
+    expect(onlineClient).toBe("function");
   });
 
   test.skip("Should throw error if there is no worker file found", async () => {
@@ -145,7 +145,7 @@ test.describe("HB Auth Online Client base tests", () => {
           keys[0].type as KeyAuthorityType,
         );
       } catch (error) {
-        return error.message;
+        return (error as Error).message;
       }
     }, user);
 
@@ -179,7 +179,7 @@ test.describe("HB Auth Online Client base tests", () => {
           keys[0].type as KeyAuthorityType,
         );
       } catch (error) {
-        return error.message;
+        return (error as Error).message;
       }
     }, user);
 
@@ -222,7 +222,7 @@ test.describe("HB Auth Online Client base tests", () => {
       try {
         await authInstance.authenticate(username, password, "active");
       } catch (error) {
-        return error.message;
+        return (error as Error).message;
       }
     }, user);
 
@@ -239,7 +239,7 @@ test.describe("HB Auth Online Client base tests", () => {
           keys[0].type as KeyAuthorityType,
         );
       } catch (error) {
-        return error.message;
+        return (error as Error).message;
       }
     }, user);
 
@@ -255,7 +255,7 @@ test.describe("HB Auth Online Client base tests", () => {
         await authInstance.lock();
         await authInstance.unlock(username, "abc");
       } catch (error) {
-        return error.message;
+        return (error as Error).message;
       }
     }, user);
 
@@ -271,7 +271,7 @@ test.describe("HB Auth Online Client base tests", () => {
           "anything" as KeyAuthorityType,
         );
       } catch (error) {
-        return error.message;
+        return (error as Error).message;
       }
     }, user);
 
@@ -419,7 +419,7 @@ test.describe("HB Auth Online Client base tests", () => {
             keys[0].type as KeyAuthorityType,
           );
         } catch (error) {
-          return error.message;
+          return (error as Error).message;
         } finally {
           await instance.logout(username);
         }
@@ -451,7 +451,7 @@ test.describe("HB Auth Online Client base tests", () => {
             true, // strict mode
           );
         } catch (error) {
-          return error.message;
+          return (error as Error).message;
         }
       },
       user,
@@ -508,7 +508,7 @@ test.describe("HB Auth Online Client base tests", () => {
           );
           return signed;
         } catch (error) {
-          return error.message;
+          return (error as Error).message;
         }
       },
       user,
@@ -585,7 +585,7 @@ test.describe("HB Auth Online Client base tests", () => {
       try {
         await authInstance.lock();
       } catch (error) {
-        return error.message;
+        return (error as Error).message;
       }
     });
 
@@ -621,7 +621,7 @@ test.describe("HB Auth Online Client base tests", () => {
           return (await instance.getUserSettings(username))
             ?.authorizedAccounts?.[keys[2].type as KeyAuthorityType];
         } catch (error) {
-          return error.message;
+          return (error as Error).message;
         }
       },
       user,
@@ -723,7 +723,7 @@ test.describe("HB Auth Online Client base tests", () => {
           );
           return true;
         } catch (error) {
-          return error.message;
+          return (error as Error).message;
         }
       },
       user,
@@ -780,7 +780,7 @@ test.describe("HB Auth Online Client base tests", () => {
           const authUser = await instance.getAuthByUser(username);
           return authUser?.loggedInKeyType;
         } catch (error) {
-          return error.message;
+          return (error as Error).message;
         }
       },
       user,

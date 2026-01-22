@@ -17,10 +17,16 @@ variables:
   GIT_SUBMODULE_STRATEGY: recursive
 
 include:
+  - template: Workflows/Branch-Pipelines.gitlab-ci.yml
   - project: 'hive/common-ci-configuration'
     ref: 02841a7e  # Updated to fix missing Docker image (emsdk:4.0.1-3 -> 4.0.22-5)
     file:
       - '/templates/npm_projects.gitlab-ci.yml'
+      - '/templates/wasm_build.gitlab-ci.yml'
+  - project: 'hive/hive'
+    ref: b4de17f4a22b9e6e299b01b7378b8e67e51af45b
+    file:
+      - '/scripts/ci-helpers/hiveio_api_package.gitlab-ci.yml'
 
 default:
   tags:

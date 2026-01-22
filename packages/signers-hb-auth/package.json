@@ -11,10 +11,11 @@
     "prepack": "jq --argfile source ../../package.json '.version = $source.version' package.json > package.json.tmp && mv package.json.tmp package.json"
   },
   "devDependencies": {
+    "@hiveio/wax": "workspace:../../node_modules/@hiveio/wax",
     "typescript": "catalog:typescript-toolset"
   },
-  "dependencies": {
-    "@hiveio/wax": "workspace:../../node_modules/@hiveio/wax",
+  "peerDependencies": {
+    "@hiveio/wax": ">= 1.28.4-rc0 < 1.28.7",
     "@hiveio/hb-auth": "workspace:../.."
   },
   "files": [

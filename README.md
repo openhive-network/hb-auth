@@ -72,10 +72,16 @@ This is an application that demonstrates user flow (register, login and logout).
 
 ```typescript
 import { OnlineClient } from "@hiveio/hb-auth";
+import { createHiveChain } from "@hiveio/wax";
 
 const authInstance = new OnlineClient();
 
-await authInstance.initialize();
+const chain = await createHiveChain({
+  apiEndpoint: "api.hive.blog", // Hive node endpoint
+  chainId: "beeab0de00000000000000000000000000000000000000000000000000000000" // Default Hive chain ID
+});
+
+await authInstance.initialize(chain);
 
 try {
   await authInstance.register(
@@ -102,10 +108,11 @@ This example shows how to login to existing registered user account without prov
 
 ```typescript
 import { OnlineClient } from "@hiveio/hb-auth";
+import { createHiveChain } from "@hiveio/wax";
 
 const authInstance = new OnlineClient();
 
-await authInstance.initialize();
+await authInstance.initialize(await createHiveChain());
 
 try {
   await authInstance.authenticate(
@@ -126,10 +133,11 @@ try {
 
 ```typescript
 import { OnlineClient } from "@hiveio/hb-auth";
+import { createHiveChain } from "@hiveio/wax";
 
 const authInstance = new OnlineClient();
 
-await authInstance.initialize();
+await authInstance.initialize(await createHiveChain());
 
 try {
   await authInstance.authenticate(
@@ -154,10 +162,11 @@ try {
 
 ```typescript
 import { OnlineClient } from "@hiveio/hb-auth";
+import { createHiveChain } from "@hiveio/wax";
 
 const authInstance = new OnlineClient();
 
-await authInstance.initialize();
+await authInstance.initialize(await createHiveChain());
 
 try {
   await authInstance.authenticate(
@@ -180,10 +189,11 @@ try {
 
 ```typescript
 import { OnlineClient } from "@hiveio/hb-auth";
+import { createHiveChain } from "@hiveio/wax";
 
 const authInstance = new OnlineClient();
 
-await authInstance.initialize();
+await authInstance.initialize(await createHiveChain());
 
 try {
   // First we have to authenticate to a registered account in order to modify it's keys
@@ -212,10 +222,11 @@ try {
 
 ```typescript
 import { OnlineClient } from "@hiveio/hb-auth";
+import { createHiveChain } from "@hiveio/wax";
 
 const authInstance = new OnlineClient();
 
-await authInstance.initialize();
+await authInstance.initialize(await createHiveChain());
 
 try {
   const specificUser = await authInstance.getRegisteredUserByUsername("guest4test");
@@ -233,10 +244,11 @@ try {
 
 ```typescript
 import { OnlineClient } from "@hiveio/hb-auth";
+import { createHiveChain } from "@hiveio/wax";
 
 const authInstance = new OnlineClient();
 
-await authInstance.initialize();
+await authInstance.initialize(await createHiveChain());
 
 const sigDigest = "ab03729fec712369237321"; // This value should be retrieved from @hiveio/wax transaction
 
@@ -259,10 +271,11 @@ try {
 
 ```typescript
 import { OnlineClient } from "@hiveio/hb-auth";
+import { createHiveChain } from "@hiveio/wax";
 
 const authInstance = new OnlineClient();
 
-await authInstance.initialize();
+await authInstance.initialize(await createHiveChain());
 
 const sigDigest = "ab03729fec712369237321"; // This value should be retrieved from @hiveio/wax transaction
 

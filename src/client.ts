@@ -1,10 +1,4 @@
-import {
-  type ApiTransaction,
-  type IHiveChainInterface,
-  type ITransaction,
-  TTransactionPackType,
-  createHiveChain,
-} from "@hiveio/wax";
+import type { ApiTransaction, IHiveChainInterface, ITransaction, TTransactionPackType } from "@hiveio/wax";
 import { proxy, wrap, type Endpoint, type Remote, type Local } from "comlink";
 import { AuthorizationError, GenericError } from "./errors";
 import { isSupportSharedWorker, isSupportWebWorker } from "./environment";
@@ -32,18 +26,6 @@ export interface AuthStatus {
 
 export interface ClientOptions {
   /**
-   * Blockchain ID used for calculating digest
-   * @type {string}
-   * @defaultValue `"beeab0de00000000000000000000000000000000000000000000000000000000"`
-   */
-  chainId: string;
-  /**
-   * Blockchain Node address for online account verification
-   * @type {string}
-   * @defaultValue `"https://api.hive.blog"`
-   */
-  node: string;
-  /**
    * Url for worker script path provided by hb-auth library
    * @type {string}
    * @defaultValue `"/auth/worker.js"`
@@ -66,8 +48,6 @@ export interface ClientOptions {
 
 /* @hidden */
 const defaultOptions: ClientOptions = {
-  chainId: "beeab0de00000000000000000000000000000000000000000000000000000000",
-  node: "https://api.hive.blog",
   workerUrl: "/auth/worker.js",
   sessionTimeout: 900,
   initTimeout: DEFAULT_INIT_TIMEOUT,
@@ -81,8 +61,6 @@ abstract class Client {
   #worker!: Remote<WorkerExpose>;
   /** @hidden */
   #options!: ClientOptions;
-  /** @hidden */
-  #strict!: boolean;
   /** @hidden */
   #auth!: Local<Auth>;
   /** @hidden */
@@ -177,9 +155,10 @@ abstract class Client {
   /**
    * Async method that prepares client to run.
    * That method should be called first before calling other methods.
+   * @param hiveChain - The Hive chain interface instance (created via createHiveChain from @hiveio/wax)
    * @returns {InstanceType<Client>}
    */
-  public async initialize(): Promise<this> {
+  public async initialize(hiveChain: IHiveChainInterface): Promise<this> {
     const timeout = this.options.initTimeout;
 
     try {
@@ -197,15 +176,7 @@ abstract class Client {
           `The WASM module may have failed to load.`,
       );
 
-      this.hiveChain = await withTimeout(
-        createHiveChain({
-          apiEndpoint: this.options.node,
-          chainId: this.options.chainId,
-        }),
-        timeout,
-        `Failed to connect to Hive network at ${this.options.node} within ${timeout}ms. ` +
-          `Check network connectivity.`,
-      );
+      this.hiveChain = hiveChain;
 
       return this;
     } catch (err) {
@@ -674,7 +645,7 @@ class OnlineClient extends Client {
     try {
       const response = await this.hiveChain.api.database_api.verify_authority({
         trx,
-        pack: TTransactionPackType.HF_26,
+        pack: "hf26" as TTransactionPackType,
       });
 
       return response.valid;

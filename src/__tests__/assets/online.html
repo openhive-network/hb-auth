@@ -16,6 +16,7 @@
   </script>
   <script type="module">
     import { OnlineClient } from '@hiveio/hb-auth';
+    import { createHiveChain } from '@hiveio/wax';
 
     Object.defineProperties(window, {
       AuthOnlineClient: {
@@ -23,6 +24,11 @@
           return OnlineClient;
         }
       },
+      chain: {
+        get() {
+          return this.chainInstance || (this.chainInstance = createHiveChain());
+        }
+      }
     });
   </script>
 </body>

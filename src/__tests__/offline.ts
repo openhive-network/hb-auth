@@ -8,8 +8,10 @@ import {
 import { test, expect } from "@playwright/test";
 
 import type { KeyAuthorityType, OfflineClient } from "../../src";
+import type { IHiveChainInterface } from "@hiveio/wax";
 
 declare const AuthOfflineClient: typeof OfflineClient;
+declare const chain: Promise<IHiveChainInterface>;
 
 let browser!: ChromiumBrowser;
 
@@ -98,7 +100,7 @@ test.describe("HB Auth Offline Client base tests", () => {
     const err = await page.evaluate(async () => {
       try {
         const instance = new AuthOfflineClient();
-        await instance.initialize();
+        await instance.initialize(await chain);
       } catch (error) {
         return true;
       }
@@ -110,7 +112,7 @@ test.describe("HB Auth Offline Client base tests", () => {
   test("Should be able to create new OfflineClient instance", async () => {
     await page.evaluate(async () => {
       authInstance = new AuthOfflineClient({ workerUrl: "/dist/worker.js" });
-      await authInstance.initialize();
+      await authInstance.initialize(await chain);
     });
   });
 
@@ -319,7 +321,7 @@ test.describe("HB Auth Offline Client base tests", () => {
       const newAuthInstance = new AuthOfflineClient({
         workerUrl: "/dist/worker.js",
       });
-      await newAuthInstance.initialize();
+      await newAuthInstance.initialize(await chain);
       return (await newAuthInstance.getAuthByUser(username))?.authorized;
     }, user);
 
@@ -372,7 +374,7 @@ test.describe("HB Auth Offline Client base tests", () => {
         const instance = new AuthOfflineClient({
           workerUrl: "/dist/worker.js",
         });
-        await instance.initialize();
+        await instance.initialize(await chain);
         await instance.register(
           username,
           password,
@@ -407,7 +409,7 @@ test.describe("HB Auth Offline Client base tests", () => {
         const instance = new AuthOfflineClient({
           workerUrl: "/dist/worker.js",
         });
-        await instance.initialize();
+        await instance.initialize(await chain);
         await instance.register(
           username,
           password,
@@ -485,7 +487,7 @@ test.describe("HB Auth Offline Client base tests", () => {
         const instance = new AuthOfflineClient({
           sessionTimeout: SESSION_TIME,
         });
-        await instance.initialize();
+        await instance.initialize(await chain);
         await instance.register(
           username,
           password,
@@ -509,7 +511,7 @@ test.describe("HB Auth Offline Client base tests", () => {
 
     const signed = await _page.evaluate(async ({ username, keys, txs }) => {
       const instance = new AuthOfflineClient({ workerUrl: "/dist/worker.js" });
-      await instance.initialize();
+      await instance.initialize(await chain);
       const signed = await instance.singleSign(
         username,
         txs[0].digest,
@@ -530,7 +532,7 @@ test.describe("HB Auth Offline Client base tests", () => {
     // First register with posting key
     await _page.evaluate(async ({ username, password, keys }) => {
       const instance = new AuthOfflineClient({ workerUrl: "/dist/worker.js" });
-      await instance.initialize();
+      await instance.initialize(await chain);
       await instance.register(
         username,
         password,
@@ -542,7 +544,7 @@ test.describe("HB Auth Offline Client base tests", () => {
     // Try singleSign with active key (not registered)
     const signed = await _page.evaluate(async ({ username, keys, txs }) => {
       const instance = new AuthOfflineClient({ workerUrl: "/dist/worker.js" });
-      await instance.initialize();
+      await instance.initialize(await chain);
       const signed = await instance.singleSign(
         username,
         txs[1].digest,
@@ -624,7 +626,7 @@ test.describe("HB Auth Offline Client base tests", () => {
     // Register the user with the first key
     await page.evaluate(async ({ username, password, keys }) => {
       const instance = new AuthOfflineClient({ workerUrl: "/dist/worker.js" });
-      await instance.initialize();
+      await instance.initialize(await chain);
       await instance.register(
         username,
         password,
@@ -639,7 +641,7 @@ test.describe("HB Auth Offline Client base tests", () => {
         const instance = new AuthOfflineClient({
           workerUrl: "/dist/worker.js",
         });
-        await instance.initialize();
+        await instance.initialize(await chain);
         try {
           await instance.authenticate(
             username,
@@ -659,7 +661,7 @@ test.describe("HB Auth Offline Client base tests", () => {
     // Invalidate the key
     await page.evaluate(async ({ username, keys }) => {
       const instance = new AuthOfflineClient({ workerUrl: "/dist/worker.js" });
-      await instance.initialize();
+      await instance.initialize(await chain);
       await instance.invalidateExistingKey(
         username,
         keys[0].type as KeyAuthorityType,
@@ -672,7 +674,7 @@ test.describe("HB Auth Offline Client base tests", () => {
         const instance = new AuthOfflineClient({
           workerUrl: "/dist/worker.js",
         });
-        await instance.initialize();
+        await instance.initialize(await chain);
         try {
           // Try to sign something with the key
           const digest = "test digest";
@@ -698,7 +700,7 @@ test.describe("HB Auth Offline Client base tests", () => {
         const instance = new AuthOfflineClient({
           workerUrl: "/dist/worker.js",
         });
-        await instance.initialize();
+        await instance.initialize(await chain);
         try {
           await instance.register(
             username,
@@ -722,7 +724,7 @@ test.describe("HB Auth Offline Client base tests", () => {
         const instance = new AuthOfflineClient({
           workerUrl: "/dist/worker.js",
         });
-        await instance.initialize();
+        await instance.initialize(await chain);
         try {
           await instance.authenticate(
             username,
@@ -745,7 +747,7 @@ test.describe("HB Auth Offline Client base tests", () => {
         const instance = new AuthOfflineClient({
           workerUrl: "/dist/worker.js",
         });
-        await instance.initialize();
+        await instance.initialize(await chain);
         try {
           // Try to sign something with the new key
           const digest = "test digest";

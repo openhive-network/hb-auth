@@ -129,9 +129,10 @@ pnpm clean
 ## API Overview
 
 ```typescript
+import { createHiveChain } from '@hiveio/wax';
 // Online client (verifies keys against blockchain)
 const client = new OnlineClient({ nodeUrl: 'https://api.hive.blog' });
-await client.initialize();
+await client.initialize(await createHiveChain());
 await client.register('username', 'password', 'wif_key', 'posting');
 await client.authenticate('username', 'password', 'posting');
 const signature = await client.sign('username', 'digest', 'posting');

@@ -1,18 +1,61 @@
 import { OfflineClient } from "@hiveio/hb-auth";
+import { createHiveChain } from "@hiveio/wax";
 
-const CHAIN_ID =
-  "beeab0de00000000000000000000000000000000000000000000000000000000";
 const MY_USER = ""; // add your user name here for following it's status
 
 // create new client instance
 const client = new OfflineClient({sessionTimeout: 20});
 
+let authClient = undefined;
+
+// handle login form submit
+const loginForm = document.getElementById("login-form");
+const errorEl = document.getElementById("error");
+errorEl.style.color = "red";
+
+loginForm.onsubmit = (event) => {
+  event.preventDefault();
+  const formData = new FormData(event.target);
+  const data = {};
+  for (const [key, val] of formData.entries()) {
+    data[key] = val;
+  }
+  console.log("form data ", data);
+
+  if (!authClient) {
+    return alert("Auth client is not initialized yet. Please wait a moment and try again.");
+  }
+
+  authClient
+    .authenticate(data.username, data.password, data.type)
+    .then((status) => {
+      if (status.ok) {
+        updateStatus(data.username);
+      } else {
+        updateStatus(data.username);
+        errorEl.innerText = "Not authorized: Invalid credentials";
+      }
+    })
+    .catch((err) => {
+      console.log(err);
+      errorEl.innerText = err.message;
+    });
+};
+
 // Initialize auth client first!
-client.initialize().then(async (authClient) => {
+(async () => {
+  const chain = await createHiveChain();
+  authClient = await client.initialize(chain);
+
+  // handle logout
+  document.getElementById("logout").onclick = () => {
+    authClient.logout().then(() => {
+      updateStatus();
+    });
+  };
+
   // display auth status
   const statusEl = document.getElementById("auth-status");
-  const errorEl = document.getElementById("error");
-  errorEl.style.color = "red";
 
   const updateStatus = async (user) => {
     errorEl.innerText = "";
@@ -39,33 +82,6 @@ client.initialize().then(async (authClient) => {
   await authClient.setSessionEndCallback(async () => {
     await updateStatus();
   });
-
-  // handle login form submit
-  const loginForm = document.getElementById("login-form");
-
-  loginForm.onsubmit = (event) => {
-    event.preventDefault();
-    const formData = new FormData(event.target);
-    const data = {};
-    for (const [key, val] of formData.entries()) {
-      data[key] = val;
-    }
-    console.log("form data ", data);
-    authClient
-      .authenticate(data.username, data.password, data.type)
-      .then((status) => {
-        if (status.ok) {
-          updateStatus(data.username);
-        } else {
-          updateStatus(data.username);
-          errorEl.innerText = "Not authorized: Invalid credentials";
-        }
-      })
-      .catch((err) => {
-        console.log(err);
-        errorEl.innerText = err.message;
-      });
-  };
 
   // handle registration form submit
   const registrationForm = document.getElementById("reg-form");
@@ -94,11 +110,4 @@ client.initialize().then(async (authClient) => {
         errorEl.innerText = err.message;
       });
   };
-
-  // handle logout
-  document.getElementById("logout").onclick = async (event) => {
-    await authClient.logout().then(() => {
-      updateStatus();
-    });
-  };
-});
+})();

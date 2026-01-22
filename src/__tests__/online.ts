@@ -8,8 +8,10 @@ import {
 import { test, expect } from "@playwright/test";
 
 import type { KeyAuthorityType, OnlineClient } from "../../dist/hb-auth";
+import type { IHiveChainInterface } from "@hiveio/wax";
 
 declare const AuthOnlineClient: typeof OnlineClient;
+declare const chain: Promise<IHiveChainInterface>;
 
 let browser!: ChromiumBrowser;
 
@@ -107,7 +109,7 @@ test.describe("HB Auth Online Client base tests", () => {
     const err = await page.evaluate(async () => {
       try {
         const instance = new AuthOnlineClient();
-        await instance.initialize();
+        await instance.initialize(await chain);
       } catch (error) {
         return true;
       }
@@ -120,9 +122,8 @@ test.describe("HB Auth Online Client base tests", () => {
     await page.evaluate(async () => {
       authInstance = new AuthOnlineClient({
         workerUrl: "/dist/worker.js",
-        node: "https://api.hive.blog",
       });
-      await authInstance.initialize();
+      await authInstance.initialize(await chain);
     });
   });
 
@@ -352,7 +353,7 @@ test.describe("HB Auth Online Client base tests", () => {
       const newAuthInstance = new AuthOnlineClient({
         workerUrl: "/dist/worker.js",
       });
-      await newAuthInstance.initialize();
+      await newAuthInstance.initialize(await chain);
       return (await newAuthInstance.getAuthByUser(username))?.authorized;
     }, user);
 
@@ -404,7 +405,7 @@ test.describe("HB Auth Online Client base tests", () => {
         const instance = new AuthOnlineClient({
           workerUrl: "/dist/worker.js",
         });
-        await instance.initialize();
+        await instance.initialize(await chain);
         await instance.register(
           username,
           password,
@@ -442,7 +443,7 @@ test.describe("HB Auth Online Client base tests", () => {
           const instance = new AuthOnlineClient({
             workerUrl: "/dist/worker.js",
           });
-          await instance.initialize();
+          await instance.initialize(await chain);
           await instance.register(
             username,
             password,
@@ -465,7 +466,7 @@ test.describe("HB Auth Online Client base tests", () => {
         const instance = new AuthOnlineClient({
           workerUrl: "/dist/worker.js",
         });
-        await instance.initialize();
+        await instance.initialize(await chain);
         const response = await instance.register(
           username,
           password,
@@ -493,7 +494,7 @@ test.describe("HB Auth Online Client base tests", () => {
           const instance = new AuthOnlineClient({
             workerUrl: "/dist/worker.js",
           });
-          await instance.initialize();
+          await instance.initialize(await chain);
           await instance.register(
             username,
             password,
@@ -526,7 +527,7 @@ test.describe("HB Auth Online Client base tests", () => {
         const instance = new AuthOnlineClient({
           workerUrl: "/dist/worker.js",
         });
-        await instance.initialize();
+        await instance.initialize(await chain);
         await instance.register(
           username,
           password,
@@ -605,7 +606,7 @@ test.describe("HB Auth Online Client base tests", () => {
           const instance = new AuthOnlineClient({
             workerUrl: "/dist/worker.js",
           });
-          await instance.initialize();
+          await instance.initialize(await chain);
           await instance.register(
             username,
             password,
@@ -639,7 +640,7 @@ test.describe("HB Auth Online Client base tests", () => {
       const instance = new AuthOnlineClient({
         workerUrl: "/dist/worker.js",
       });
-      await instance.initialize();
+      await instance.initialize(await chain);
       const signed = await instance.singleSign(
         username,
         txs[0].digest,
@@ -661,7 +662,7 @@ test.describe("HB Auth Online Client base tests", () => {
       const instance = new AuthOnlineClient({
         workerUrl: "/dist/worker.js",
       });
-      await instance.initialize();
+      await instance.initialize(await chain);
       await instance.register(
         username,
         password,
@@ -675,7 +676,7 @@ test.describe("HB Auth Online Client base tests", () => {
       const instance = new AuthOnlineClient({
         workerUrl: "/dist/worker.js",
       });
-      await instance.initialize();
+      await instance.initialize(await chain);
       const signed = await instance.singleSign(
         username,
         txs[1].digest,
@@ -698,7 +699,7 @@ test.describe("HB Auth Online Client base tests", () => {
       const instance = new AuthOnlineClient({
         workerUrl: "/dist/worker.js",
       });
-      await instance.initialize();
+      await instance.initialize(await chain);
       await instance.register(
         username,
         password,
@@ -713,7 +714,7 @@ test.describe("HB Auth Online Client base tests", () => {
         const instance = new AuthOnlineClient({
           workerUrl: "/dist/worker.js",
         });
-        await instance.initialize();
+        await instance.initialize(await chain);
         try {
           await instance.register(
             authorityUsername,
@@ -742,7 +743,7 @@ test.describe("HB Auth Online Client base tests", () => {
       const instance = new AuthOnlineClient({
         workerUrl: "/dist/worker.js",
       });
-      await instance.initialize();
+      await instance.initialize(await chain);
       await instance.register(
         username,
         password,
@@ -762,7 +763,7 @@ test.describe("HB Auth Online Client base tests", () => {
         const instance = new AuthOnlineClient({
           workerUrl: "/dist/worker.js",
         });
-        await instance.initialize();
+        await instance.initialize(await chain);
         try {
           // First register the active key
           await instance.register(
@@ -800,7 +801,7 @@ test.describe("HB Auth Online Client base tests", () => {
         const instance = new AuthOnlineClient({
           workerUrl: "/dist/worker.js",
         });
-        await instance.initialize();
+        await instance.initialize(await chain);
 
         // Register and authenticate first user
         await instance.register(username, password, keys[0].private, "posting");

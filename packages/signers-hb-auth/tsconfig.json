@@ -2,7 +2,6 @@
   "extends": "../../common-ci-configuration/ts-common/tsconfig.base.json",
   "compilerOptions": {
     "rootDir": "./src",
-    "baseUrl": ".",
     "outDir": "./dist",
     "incremental": true,
     "tsBuildInfoFile": "./dist/.tsbuildinfo",

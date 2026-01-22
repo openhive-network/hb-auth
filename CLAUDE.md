@@ -79,7 +79,7 @@ pnpm clean
 |------|---------|
 | `src/client.ts` | Main API - OnlineClient, OfflineClient classes |
 | `src/worker.ts` | AuthWorker implementation (WebWorker context) |
-| `src/errors.ts` | GenericError, AuthorizationError, InternalError, EscapedError |
+| `src/errors.ts` | GenericError, AuthorizationError, InternalError |
 | `rollup.config.js` | Build configuration (main + worker bundles) |
 | `playwright.config.ts` | E2E test configuration |
 | `tsconfig.json` | TypeScript configuration |

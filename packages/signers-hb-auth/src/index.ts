@@ -4,7 +4,12 @@ import { ASignatureProvider } from "@hiveio/wax";
 import { type OfflineClient, type OnlineClient } from "@hiveio/hb-auth";
 
 // We do not extend from WaxError to avoid runtime dependencies, such as: /vite or /web - without it we can import only types
-export class WaxHBAuthProviderError extends Error {}
+export class WaxHBAuthProviderError extends Error {
+  constructor(message: string, options?: ErrorOptions) {
+    super(message, options);
+    this.name = "WaxHBAuthProviderError";
+  }
+}
 
 /**
  * Wax transaction signature provider using the hb-auth.
@@ -28,12 +33,20 @@ export class WaxHBAuthProviderError extends Error {}
  * ```
  */
 class HBAuthProvider extends ASignatureProvider {
+  readonly #client: OnlineClient | OfflineClient;
+  public readonly username: string;
+  public readonly role: TRole;
+
   private constructor(
-    public readonly client: OnlineClient | OfflineClient,
-    public readonly username: string,
-    public readonly role: TRole
+    client: OnlineClient | OfflineClient,
+    username: string,
+    role: TRole
   ) {
     super();
+
+    this.#client = client;
+    this.username = username;
+    this.role = role;
   }
 
   public static for(client: OnlineClient | OfflineClient, username: string, role: TRole): HBAuthProvider {
@@ -52,8 +65,13 @@ class HBAuthProvider extends ASignatureProvider {
    * @throws on any error from the hb-auth invocation.
    */
   protected async generateSignatures(transaction: ITransaction): Promise<TSignature[]> {
-    const signature = await this.client.sign(this.username, transaction.sigDigest, this.role as 'active' | 'owner' | 'posting');
-    return [signature];
+    try {
+      const signature = await this.#client.sign(this.username, transaction.sigDigest, this.role as 'active' | 'owner' | 'posting');
+
+      return [signature];
+    } catch (error) {
+      throw new WaxHBAuthProviderError(`Failed to sign transaction using hb-auth: ${error instanceof Error ? error.message : String(error)}`, { cause: error });
+    }
   }
 }
 

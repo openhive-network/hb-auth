@@ -40,8 +40,8 @@ export type LoggedInUsers = Record<string, AuthUser>;
 
 export class AuthWorker {
   public readonly Ready: Promise<AuthWorker>;
-  private api!: IBeekeeperInstance;
-  private session!: IBeekeeperSession;
+  #api!: IBeekeeperInstance;
+  #session!: IBeekeeperSession;
   private readonly storage = `/storage_root_${IDB_VERSION}`;
   private readonly aliasStorage = `/aliases_${IDB_VERSION}`;
   private sessionEndCallback = noop;
@@ -50,7 +50,11 @@ export class AuthWorker {
   private readonly settingsStorage = `/settings_${IDB_VERSION}`;
   #loggedInUsers: LoggedInUsers = {};
 
-  constructor(private readonly sessionTimeout: number) {
+  private readonly sessionTimeout: number;
+
+  constructor(sessionTimeout: number) {
+    this.sessionTimeout = sessionTimeout;
+
     this.Ready = new Promise((resolve, reject) => {
       this.initializeBeekeeperApp()
         .then(() => {
@@ -61,12 +65,12 @@ export class AuthWorker {
   }
 
   private async initializeBeekeeperApp(): Promise<void> {
-    this.api = await createBeekeeperApp({
+    this.#api = await createBeekeeperApp({
       enableLogs: BEEKEEPER_LOGS,
       storageRoot: this.storage,
       unlockTimeout: this.sessionTimeout,
     });
-    this.session = this.api.createSession(self.crypto.randomUUID());
+    this.#session = this.#api.createSession(self.crypto.randomUUID());
 
     // Initialize intervals for any existing logged in users
     const wallets = await this.getWallets();
@@ -82,7 +86,7 @@ export class AuthWorker {
   }
 
   private isValidSession(): boolean {
-    const { now, timeoutTime } = this.session.getInfo();
+    const { now, timeoutTime } = this.#session.getInfo();
     return new Date(now).getTime() < new Date(timeoutTime).getTime();
   }
 
@@ -154,7 +158,7 @@ export class AuthWorker {
     try {
       const timestamp = Date.now();
       const tempWalletName = `${username}_temp_${timestamp}`;
-      const registation = await this.session.createWallet(
+      const registation = await this.#session.createWallet(
         tempWalletName,
         password,
         true,
@@ -225,7 +229,7 @@ export class AuthWorker {
         await this.importKey(unlocked, wifKey, keyType);
       }
     } else {
-      const { wallet } = await this.session.createWallet(username, password);
+      const { wallet } = await this.#session.createWallet(username, password);
       await this.importKey(wallet, wifKey, keyType);
     }
 
@@ -379,7 +383,7 @@ export class AuthWorker {
   }
 
   private async getWallets(): Promise<IBeekeeperWallet[]> {
-    return this.session.listWallets();
+    return this.#session.listWallets();
   }
 
   public async getAuthByUser(username: string): Promise<AuthUser | null> {
@@ -447,7 +451,7 @@ export class AuthWorker {
       const timestamp = Date.now();
       const tempWalletName = `${username}_temp_${timestamp}`;
       const tempPassword = `${username}_${digest}_${timestamp}`;
-      const tempWallet = await this.session.createWallet(
+      const tempWallet = await this.#session.createWallet(
         tempWalletName,
         tempPassword,
         true,
@@ -590,7 +594,7 @@ export class AuthWorker {
     keyType: KeyAuthorityType,
   ): Promise<void> {
     try {
-      await this.api.delete();
+      await this.#api.delete();
       await this.removeAlias(`${username}@${keyType}`);
       this.#loggedInUsers = Object.fromEntries(
         Object.entries(this.#loggedInUsers).filter(([key]) => key !== username),
@@ -745,8 +749,11 @@ export class AuthWorker {
 
 class Auth {
   static #worker: AuthWorker | undefined;
+  private readonly sessionTimeout: number;
 
-  constructor(private readonly sessionTimeout: number) {}
+  constructor(sessionTimeout: number) {
+    this.sessionTimeout = sessionTimeout;
+  }
 
   private async getWorker(): Promise<AuthWorker> {
     try {
@@ -897,7 +904,7 @@ class Auth {
 }
 
 declare let SharedWorkerGlobalScope: any;
-declare let onconnect: any;
+declare let onconnect: (event: MessageEvent) => void;
 
 const exports = {
   Auth,
@@ -907,7 +914,7 @@ const exports = {
 if (typeof SharedWorkerGlobalScope !== 'undefined' && self instanceof SharedWorkerGlobalScope) {
   // Handle SharedWorker connections
   // eslint-disable-next-line @typescript-eslint/no-unused-vars, prefer-const
-  onconnect = (event: any) => {
+  onconnect = (event: MessageEvent) => {
     const port = event.ports[0];
     Comlink.expose(exports, port);
   };

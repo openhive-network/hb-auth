@@ -95,7 +95,7 @@ abstract class Client {
    * @param strict @type {boolean} - Strict authorization by checking if public key in signature matches user's public key, so other authorities will be ignored. Note that this doesn't affect OfflineClient's behaviour.
    * @param clientOptions @type {ClientOptions} - Options
    */
-  constructor(readonly clientOptions: Partial<ClientOptions> = {}) {
+  constructor(clientOptions: Partial<ClientOptions> = {}) {
     this.options = { ...defaultOptions, ...clientOptions };
     if (!isSupportWebWorker) {
       throw new GenericError(
@@ -508,10 +508,6 @@ abstract class Client {
  * for imported keys' validity.
  */
 class OfflineClient extends Client {
-  constructor(readonly clientOptions: Partial<ClientOptions> = {}) {
-    super(clientOptions);
-  }
-
   // simple auth based on wallet auth status
   protected async authorize(): Promise<boolean> {
     return true;
@@ -548,10 +544,6 @@ class OfflineClient extends Client {
  * user by verifying user's signature through the network.
  */
 class OnlineClient extends Client {
-  constructor(readonly clientOptions: Partial<ClientOptions> = {}) {
-    super(clientOptions);
-  }
-
   // TODO: This will be refactored after extension of blockchain
   // which is verify_authority will return authorized account also it will validate
   // strict in this api

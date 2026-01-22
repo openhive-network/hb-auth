@@ -92,6 +92,7 @@ test:
 push_to_wiki:
   extends: .npm_push_doc_template
   stage: publish
+  allow_failure: true  # Cleanup step fails due to proxy - see hive/common-ci-configuration issue
   variables:
     PACKAGE_TGZ_PATH: "${BUILT_PACKAGE_PATH}"
     WIKI_PUSH_TOKEN: "$WIKI_PUSH_TOKEN"

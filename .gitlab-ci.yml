@@ -10,7 +10,7 @@ variables:
 
 include:
   - project: 'hive/common-ci-configuration'
-    ref: ab4d4c78df8ebc5b5d7744fe2cfa64c51143fe01
+    ref: 02841a7e  # Updated to fix missing Docker image (emsdk:4.0.1-3 -> 4.0.22-5)
     file:
       - '/templates/npm_projects.gitlab-ci.yml'
 

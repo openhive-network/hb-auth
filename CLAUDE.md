@@ -20,7 +20,7 @@ HB-Auth is a browser-based authentication library for Hive blockchain applicatio
 - **Testing**: Playwright (browser E2E tests)
 - **Linting**: ESLint + Prettier
 - **Key Dependencies**:
-  - `@hiveio/wax` - Transaction creation/broadcasting
+  - `@hiveio/wax` - Peer dependency for blockchain operations (provided by consumer)
   - `@hiveio/beekeeper` - Wallet/key management (WASM)
   - `comlink` - WebWorker RPC
   - `idb` - IndexedDB wrapper
@@ -33,7 +33,7 @@ hb-auth/
 │   ├── index.ts           # Main exports
 │   ├── client.ts          # OnlineClient, OfflineClient classes
 │   ├── worker.ts          # AuthWorker (runs in WebWorker)
-│   ├── errors.ts          # Error classes with XSS prevention
+│   ├── errors.ts          # Error classes (GenericError, AuthorizationError, InternalError)
 │   ├── environment.ts     # Browser capability detection
 │   └── __tests__/         # Playwright test files
 │       ├── offline.ts     # OfflineClient tests
@@ -92,7 +92,7 @@ pnpm clean
 - Private fields use `#` prefix (`#worker`, `#auth`)
 - Async/await throughout
 - Class-based architecture
-- Error handling via custom error classes with `htmlSafe()` for XSS prevention
+- Error handling via custom error classes
 
 **ESLint configuration:**
 - Extends: standard-with-typescript + prettier
@@ -102,7 +102,6 @@ pnpm clean
 **Security patterns:**
 - Keys isolated in WebWorker
 - Session timeout (default 900s)
-- HTML-safe error escaping
 - Signature verification against blockchain authorities
 
 ## CI/CD Notes
@@ -130,20 +129,28 @@ pnpm clean
 
 ```typescript
 import { createHiveChain } from '@hiveio/wax';
+import { OnlineClient, OfflineClient } from '@hiveio/hb-auth';
+
+// Create chain instance (required for both online and offline clients)
+const chain = await createHiveChain({
+  apiEndpoint: 'https://api.hive.blog',
+  chainId: 'beeab0de00000000000000000000000000000000000000000000000000000000'
+});
+
 // Online client (verifies keys against blockchain)
-const client = new OnlineClient({ nodeUrl: 'https://api.hive.blog' });
-await client.initialize(await createHiveChain());
+const client = new OnlineClient({ workerUrl: '/auth/worker.js' });
+await client.initialize(chain);
 await client.register('username', 'password', 'wif_key', 'posting');
 await client.authenticate('username', 'password', 'posting');
 const signature = await client.sign('username', 'digest', 'posting');
 await client.logout('username');
 
 // Offline client (local-only, no blockchain verification)
-const offlineClient = new OfflineClient();
-await offlineClient.initialize();
+const offlineClient = new OfflineClient({ workerUrl: '/auth/worker.js' });
+await offlineClient.initialize(chain);
 // Same API as OnlineClient
 
 // Wax signer integration
-import { HBAuthProvider } from '@aspect-wallet/signers-hb-auth';
-const provider = await HBAuthProvider.for(client, 'username', 'posting');
+import { HBAuthProvider } from '@hiveio/signers-hb-auth';
+const provider = HBAuthProvider.for(client, 'username', 'posting');
 ```

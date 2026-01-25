@@ -3,6 +3,14 @@ stages:
   - test
   - publish
 
+# Run pipeline for branch pushes and merge requests, but not both for the same commit
+workflow:
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH && $CI_OPEN_MERGE_REQUESTS
+      when: never
+    - if: $CI_COMMIT_BRANCH
+
 variables:
   GIT_DEPTH: 0
   GIT_STRATEGY: clone

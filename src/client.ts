@@ -8,6 +8,7 @@ import {
 import { proxy, wrap, type Endpoint, type Remote, type Local } from "comlink";
 import { AuthorizationError, GenericError } from "./errors";
 import { isSupportSharedWorker, isSupportWebWorker } from "./environment";
+import { withTimeout, DEFAULT_INIT_TIMEOUT } from "./utils";
 import type {
   Auth,
   WorkerExpose,
@@ -54,6 +55,13 @@ export interface ClientOptions {
    * @defaultValue `900`
    */
   sessionTimeout: number;
+  /**
+   * Initialization timeout (in milliseconds) for worker and WASM loading.
+   * If initialization takes longer than this, it will fail with a timeout error.
+   * @type {number}
+   * @defaultValue `30000` (30 seconds)
+   */
+  initTimeout: number;
 }
 
 /* @hidden */
@@ -62,6 +70,7 @@ const defaultOptions: ClientOptions = {
   node: "https://api.hive.blog",
   workerUrl: "/auth/worker.js",
   sessionTimeout: 900,
+  initTimeout: DEFAULT_INIT_TIMEOUT,
 };
 
 /**
@@ -125,15 +134,37 @@ abstract class Client {
   }
 
   private async getWorkerEndpoint(): Promise<Endpoint> {
-    return new Promise((resolve) => {
-      let worker: SharedWorker | Worker;
+    return new Promise((resolve, reject) => {
+      try {
+        let worker: SharedWorker | Worker;
 
-      if (isSupportSharedWorker) {
-        worker = new SharedWorker(this.options.workerUrl, { type: "module" });
-        resolve(worker.port);
-      } else {
-        worker = new Worker(this.options.workerUrl, { type: "module" });
-        resolve(worker);
+        if (isSupportSharedWorker) {
+          worker = new SharedWorker(this.options.workerUrl, { type: "module" });
+          worker.onerror = (event) => {
+            reject(
+              new GenericError(
+                `Failed to load auth worker: ${event.message || "Unknown error"}`,
+              ),
+            );
+          };
+          resolve(worker.port);
+        } else {
+          worker = new Worker(this.options.workerUrl, { type: "module" });
+          worker.onerror = (event) => {
+            reject(
+              new GenericError(
+                `Failed to load auth worker: ${event.message || "Unknown error"}`,
+              ),
+            );
+          };
+          resolve(worker);
+        }
+      } catch (err) {
+        reject(
+          new GenericError(
+            `Failed to create auth worker: ${err instanceof Error ? err.message : String(err)}`,
+          ),
+        );
       }
     });
   }
@@ -149,17 +180,39 @@ abstract class Client {
    * @returns {InstanceType<Client>}
    */
   public async initialize(): Promise<this> {
-    try {
-      await this.loadWebWorker();
-      this.#auth = await new this.#worker.Auth(this.options.sessionTimeout);
-      this.hiveChain = await createHiveChain({
-        apiEndpoint: this.options.node,
-        chainId: this.options.chainId,
-      });
+    const timeout = this.options.initTimeout;
 
-      return Promise.resolve(this);
+    try {
+      await withTimeout(
+        this.loadWebWorker(),
+        timeout,
+        `Auth worker failed to load within ${timeout}ms. ` +
+          `Check if ${this.options.workerUrl} exists and is accessible.`,
+      );
+
+      this.#auth = await withTimeout(
+        new this.#worker.Auth(this.options.sessionTimeout),
+        timeout,
+        `Auth initialization timed out after ${timeout}ms. ` +
+          `The WASM module may have failed to load.`,
+      );
+
+      this.hiveChain = await withTimeout(
+        createHiveChain({
+          apiEndpoint: this.options.node,
+          chainId: this.options.chainId,
+        }),
+        timeout,
+        `Failed to connect to Hive network at ${this.options.node} within ${timeout}ms. ` +
+          `Check network connectivity.`,
+      );
+
+      return this;
     } catch (err) {
-      return Promise.reject(err);
+      // Cleanup on failure to allow re-initialization
+      this.#worker = undefined!;
+      this.#auth = undefined!;
+      throw err;
     }
   }
 
@@ -624,6 +677,11 @@ class OnlineClient extends Client {
 
       return response.valid;
     } catch (err) {
+      // Log the error for debugging instead of silently swallowing it
+      console.error(
+        "[hb-auth] verify_authority failed:",
+        err instanceof Error ? err.message : err,
+      );
       return false;
     }
   }

@@ -15,20 +15,20 @@ export const DEFAULT_INIT_TIMEOUT = 30000;
  * @returns The result of the promise if it resolves in time
  * @throws GenericError if timeout occurs
  */
-export function withTimeout<T>(
+export async function withTimeout<T>(
   promise: Promise<T>,
   timeoutMs: number,
   errorMessage: string,
 ): Promise<T> {
   let timeoutHandle: ReturnType<typeof setTimeout>;
 
-  const timeoutPromise = new Promise<never>((_, reject) => {
+  const timeoutPromise = new Promise<never>((_resolve, reject) => {
     timeoutHandle = setTimeout(() => {
       reject(new GenericError(errorMessage));
     }, timeoutMs);
   });
 
-  return Promise.race([promise, timeoutPromise]).finally(() => {
+  return await Promise.race([promise, timeoutPromise]).finally(() => {
     clearTimeout(timeoutHandle);
   });
 }

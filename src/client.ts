@@ -210,8 +210,10 @@ abstract class Client {
       return this;
     } catch (err) {
       // Cleanup on failure to allow re-initialization
-      this.#worker = undefined!;
-      this.#auth = undefined!;
+      // @ts-expect-error Intentionally resetting to undefined for re-initialization
+      this.#worker = undefined;
+      // @ts-expect-error Intentionally resetting to undefined for re-initialization
+      this.#auth = undefined;
       throw err;
     }
   }

@@ -15,7 +15,7 @@
     "typescript": "catalog:typescript-toolset"
   },
   "peerDependencies": {
-    "@hiveio/wax": ">= 1.28.4-rc0 < 1.28.7",
+    "@hiveio/wax": ">= 2.0.0 < 2.1.0",
     "@hiveio/hb-auth": "workspace:../.."
   },
   "files": [

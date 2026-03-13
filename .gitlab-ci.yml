@@ -19,7 +19,7 @@ variables:
 include:
   - template: Workflows/Branch-Pipelines.gitlab-ci.yml
   - project: 'hive/common-ci-configuration'
-    ref: de95661b1be71e968f623945609dc384aefecfe2
+    ref: c9cb02ea67f9f381f52280be4ca1f708243373a0
     file:
       - '/templates/npm_projects.gitlab-ci.yml'
       - '/templates/wasm_build.gitlab-ci.yml'

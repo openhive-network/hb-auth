@@ -11,7 +11,6 @@ import { AuthorizationError, GenericError, InternalError } from "./errors";
 // adjust this when breaking changes are made
 const IDB_VERSION = "v3";
 
-const BEEKEEPER_LOGS = true;
 const KEY_TYPES = ["active", "posting", "owner"] as const;
 const SESSION_HEALTH_CHECK = 2000;
 const noop = async (): Promise<void> => {};
@@ -66,7 +65,6 @@ export class AuthWorker {
 
   private async initializeBeekeeperApp(): Promise<void> {
     this.#api = await createBeekeeperApp({
-      enableLogs: BEEKEEPER_LOGS,
       storageRoot: this.storage,
       unlockTimeout: this.sessionTimeout,
     });
@@ -164,7 +162,7 @@ export class AuthWorker {
         true,
       );
       const pKey = await registation.wallet.importKey(wifKey);
-      const signed = registation.wallet.signDigest(pKey, digest);
+      const signed = await registation.wallet.signDigest(pKey, digest);
       await registation.wallet.removeKey(pKey);
       registation.wallet.close();
 
@@ -225,7 +223,7 @@ export class AuthWorker {
       if (exist?.unlocked) {
         await this.importKey(exist.unlocked, wifKey, keyType);
       } else {
-        const unlocked = exist.unlock(password);
+        const unlocked = await exist.unlock(password);
         await this.importKey(unlocked, wifKey, keyType);
       }
     } else {
@@ -266,7 +264,7 @@ export class AuthWorker {
     }
 
     try {
-      const unlocked = wallet.unlock(password);
+      const unlocked = await wallet.unlock(password);
       const keys = unlocked.getPublicKeys();
       const alias = await this.getAlias(`${username}@${keyType}`);
 
@@ -296,7 +294,7 @@ export class AuthWorker {
       // Start session interval for this user
       this.startSessionInterval(username);
 
-      return this.sign(username, digest, keyType);
+      return await this.sign(username, digest, keyType);
     } catch (error) {
       if (error instanceof AuthorizationError) {
         throw error;
@@ -379,7 +377,16 @@ export class AuthWorker {
 
   private async getWallet(name: string): Promise<IBeekeeperWallet | undefined> {
     const wallets = await this.getWallets();
-    return wallets.find((wallet) => wallet.name === name);
+    const found = wallets.find((wallet) => wallet.name === name);
+    if (found) return found;
+
+    // Wallet may exist in persistent storage but not in the current session
+    // (e.g. after worker re-initialization). Try to open it.
+    if (this.#session.hasWallet(name)) {
+      return this.#session.openWallet(name);
+    }
+
+    return undefined;
   }
 
   private async getWallets(): Promise<IBeekeeperWallet[]> {
@@ -457,7 +464,7 @@ export class AuthWorker {
         true,
       );
       const pKey = await tempWallet.wallet.importKey(wifKey);
-      const signed = tempWallet.wallet.signDigest(pKey, digest);
+      const signed = await tempWallet.wallet.signDigest(pKey, digest);
       await tempWallet.wallet.removeKey(pKey);
       tempWallet.wallet.close();
 
@@ -494,7 +501,7 @@ export class AuthWorker {
       throw new AuthorizationError("Not authorized");
     }
 
-    return wallet.unlocked.signDigest(foundKey, digest);
+    return await wallet.unlocked.signDigest(foundKey, digest);
   }
 
   public async logout(username: string): Promise<void> {
@@ -572,7 +579,7 @@ export class AuthWorker {
 
       // Add check for already unlocked wallet
       if (!wallet.unlocked) {
-        wallet.unlock(password);
+        await wallet.unlock(password);
         // Update user session state
         this.#loggedInUsers[username].unlocked = true;
       }
@@ -745,6 +752,7 @@ export class AuthWorker {
       throw new InternalError(error);
     }
   }
+
 }
 
 class Auth {

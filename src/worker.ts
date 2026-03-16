@@ -425,8 +425,10 @@ export class AuthWorker {
   public async getRegisteredUsers(): Promise<AuthUser[]> {
     const wallets = await this.getWallets();
     const registeredUsers: AuthUser[] = [];
+    const seen = new Set<string>();
 
     for (const wallet of wallets) {
+      seen.add(wallet.name);
       const registeredKeyTypes = await this.getRegisteredKeyTypes(wallet.name);
       registeredUsers.push({
         username: wallet.name,
@@ -435,6 +437,30 @@ export class AuthWorker {
         loggedInKeyType: this.#loggedInUsers[wallet.name]?.loggedInKeyType,
         registeredKeyTypes,
       });
+    }
+
+    // Discover wallets that exist in persistent storage but aren't opened in this session
+    const db = await this.getAliasDb();
+    const allKeys = (await db.getAllKeys("aliases")) as string[];
+    const persistedUsernames = new Set<string>();
+    for (const key of allKeys) {
+      const [walletName] = key.split("@");
+      if (!seen.has(walletName) && !walletName.includes("_temp_")) {
+        persistedUsernames.add(walletName);
+      }
+    }
+
+    for (const username of persistedUsernames) {
+      const registeredKeyTypes = await this.getRegisteredKeyTypes(username);
+      if (registeredKeyTypes.length > 0) {
+        registeredUsers.push({
+          username,
+          unlocked: false,
+          authorized: false,
+          loggedInKeyType: undefined,
+          registeredKeyTypes,
+        });
+      }
     }
 
     return registeredUsers;
@@ -839,12 +865,10 @@ class Auth {
 
   public async logout(username: string): Promise<void> {
     await (await this.getWorker()).logout(username);
-    Auth.#worker = undefined;
   }
 
   public async logoutAll(): Promise<void> {
     await (await this.getWorker()).logoutAll();
-    Auth.#worker = undefined;
   }
 
   public async setSessionEndCallback(

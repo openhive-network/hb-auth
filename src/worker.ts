@@ -390,7 +390,7 @@ export class AuthWorker {
   }
 
   private async getWallets(): Promise<IBeekeeperWallet[]> {
-    return this.#session.listWallets();
+    return this.#session.listCreatedWallets();
   }
 
   public async getAuthByUser(username: string): Promise<AuthUser | null> {

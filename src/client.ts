@@ -1,8 +1,15 @@
 import type { ApiTransaction, IHiveChainInterface, ITransaction, TTransactionPackType } from "@hiveio/wax";
 import { proxy, wrap, type Endpoint, type Remote, type Local } from "comlink";
-import { AuthorizationError, GenericError } from "./errors";
+import { AuthorizationError, GenericError, PasskeyError } from "./errors";
 import { isSupportSharedWorker, isSupportWebWorker } from "./environment";
 import { withTimeout, DEFAULT_INIT_TIMEOUT } from "./utils";
+import {
+  isPasskeySupported as checkPasskeySupport,
+  getPasskeyRecord,
+  registerPasskey as registerPasskeyCredential,
+  recoverPasswordWithPasskey,
+  removePasskeyRecord,
+} from "./passkey";
 import type {
   Auth,
   WorkerExpose,
@@ -10,7 +17,7 @@ import type {
   KeyAuthorityType,
   UserSettings,
 } from "./worker";
-export type { AuthUser, KeyAuthorityType, AuthorizationError };
+export type { AuthUser, KeyAuthorityType, AuthorizationError, PasskeyError };
 
 export interface AuthStatus {
   /**
@@ -500,6 +507,51 @@ abstract class Client {
   ): Promise<AuthUser | null> {
     return await this.#auth.getRegisteredUserByUsername(username);
   }
+
+  // -- Passkey / Biometric Unlock --
+
+  /**
+   * Check if the browser supports WebAuthn with PRF extension
+   * for biometric unlock.
+   */
+  public async isPasskeySupported(): Promise<boolean> {
+    return checkPasskeySupport();
+  }
+
+  /**
+   * Check if a passkey is registered for the given user.
+   */
+  public async hasPasskey(username: string): Promise<boolean> {
+    const record = await getPasskeyRecord(username);
+    return record !== null;
+  }
+
+  /**
+   * Register a passkey for biometric unlock. Encrypts the user's
+   * password with a PRF-derived key so future unlocks can use
+   * biometric instead of password entry.
+   *
+   * Should be called after a successful password authentication.
+   * Requires two authenticator touches (one for credential creation,
+   * one for PRF key derivation).
+   *
+   * @param username Username
+   * @param password The user's current beekeeper password
+   */
+  public async registerPasskey(
+    username: string,
+    password: string,
+  ): Promise<void> {
+    await registerPasskeyCredential(username, password);
+  }
+
+  /**
+   * Remove a registered passkey for the given user.
+   * The user will need to enter their password on next unlock.
+   */
+  public async removePasskey(username: string): Promise<void> {
+    await removePasskeyRecord(username);
+  }
 }
 
 /**
@@ -536,6 +588,14 @@ class OfflineClient extends Client {
     keyType: KeyAuthorityType,
   ): Promise<AuthStatus> {
     return await super.authenticate(username, password, keyType, true);
+  }
+
+  public async biometricUnlock(
+    username: string,
+    keyType: KeyAuthorityType,
+  ): Promise<AuthStatus> {
+    const password = await recoverPasswordWithPasskey(username);
+    return this.authenticate(username, password, keyType);
   }
 }
 
@@ -674,6 +734,25 @@ class OnlineClient extends Client {
       strict,
       false,
     );
+  }
+
+  /**
+   * Unlock using biometric authentication (WebAuthn PRF).
+   * Decrypts the stored password via passkey, then authenticates
+   * through the normal flow. Falls back with PasskeyError if
+   * biometric fails — caller should catch and show password dialog.
+   *
+   * @param username Username
+   * @param keyType Key authority type
+   * @returns {Promise<AuthStatus>}
+   * @throws {PasskeyError} If biometric fails or no passkey registered
+   */
+  public async biometricUnlock(
+    username: string,
+    keyType: KeyAuthorityType,
+  ): Promise<AuthStatus> {
+    const password = await recoverPasswordWithPasskey(username);
+    return this.authenticate(username, password, keyType);
   }
 }
 

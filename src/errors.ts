@@ -19,3 +19,12 @@ export class InternalError extends Error {
     this.name = "InternalError";
   }
 }
+
+export class PasskeyError extends Error {
+  readonly code: string;
+  constructor(message: string, code: string, options?: ErrorOptions) {
+    super(message, options);
+    this.name = "PasskeyError";
+    this.code = code;
+  }
+}

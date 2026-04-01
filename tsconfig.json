@@ -13,6 +13,7 @@
   "include": [
     "./src/index.ts",
     "./src/worker.ts",
+    "./src/passkey.ts",
     "./index.d.ts"
   ]
 }

@@ -34,8 +34,8 @@ const DEFAULT_RP_NAME = "Hive Safe Storage";
 
 // -- IndexedDB --
 
-function getDb(): Promise<IDBPDatabase> {
-  return openDB(DB_NAME, DB_VERSION, {
+async function getDb(): Promise<IDBPDatabase> {
+  return await openDB(DB_NAME, DB_VERSION, {
     upgrade(db) {
       if (!db.objectStoreNames.contains(STORE_NAME)) {
         db.createObjectStore(STORE_NAME, { keyPath: "username" });
@@ -71,11 +71,9 @@ export async function isPasskeySupported(): Promise<boolean> {
     if (typeof pk.getClientCapabilities === "function") {
       const caps = await pk.getClientCapabilities();
       // Check for 'extension:prf' capability
-      if (caps["extension:prf"] === false) {
-        return false;
-      }
-      if (caps["extension:prf"] === true) {
-        return true;
+      const prfSupported = caps["extension:prf"];
+      if (prfSupported !== undefined) {
+        return prfSupported;
       }
     }
   } catch {
@@ -139,6 +137,8 @@ export async function registerPasskey(
         residentKey: "preferred",
       },
       timeout: 120_000,
+      // PRF extension not yet in standard TS types
+      // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
       extensions: { prf: {} } as AuthenticationExtensionsClientInputs,
     },
   };
@@ -188,6 +188,8 @@ export async function registerPasskey(
       allowCredentials: [{ id: credentialId, type: "public-key" }],
       userVerification: "required",
       timeout: 120_000,
+      // PRF extension not yet in standard TS types
+      // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
       extensions: {
         prf: { eval: { first: prfSalt } },
       } as AuthenticationExtensionsClientInputs,
@@ -262,9 +264,16 @@ export async function registerPasskey(
 /**
  * Recover the user's password using biometric authentication.
  * Triggers WebAuthn assertion with PRF to derive the decryption key.
+ *
+ * @param username Username
+ * @param userVerification Level of user verification to require.
+ *   - "discouraged": minimal friction, just presence check (good for posting key / blog)
+ *   - "preferred": biometric if available, presence otherwise (default)
+ *   - "required": always biometric/PIN (good for active/owner key / wallet)
  */
 export async function recoverPasswordWithPasskey(
   username: string,
+  userVerification: UserVerificationRequirement = "preferred",
 ): Promise<string> {
   const record = await getPasskeyRecord(username);
   if (!record) {
@@ -281,9 +290,11 @@ export async function recoverPasswordWithPasskey(
       allowCredentials: [
         { id: record.credentialId, type: "public-key" },
       ],
-      userVerification: "required",
+      userVerification,
       timeout: 120_000,
       rpId: record.rpId,
+      // PRF extension not yet in standard TS types
+      // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
       extensions: {
         prf: { eval: { first: record.prfSalt } },
       } as AuthenticationExtensionsClientInputs,

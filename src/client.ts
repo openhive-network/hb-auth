@@ -1,6 +1,7 @@
 import type { ApiTransaction, IHiveChainInterface, ITransaction, TTransactionPackType } from "@hiveio/wax";
 import { proxy, wrap, type Endpoint, type Remote, type Local } from "comlink";
-import { AuthorizationError, GenericError, PasskeyError } from "./errors";
+import { AuthorizationError, GenericError } from "./errors";
+import type { PasskeyError } from "./errors";
 import { isSupportSharedWorker, isSupportWebWorker } from "./environment";
 import { withTimeout, DEFAULT_INIT_TIMEOUT } from "./utils";
 import {
@@ -593,8 +594,9 @@ class OfflineClient extends Client {
   public async biometricUnlock(
     username: string,
     keyType: KeyAuthorityType,
+    userVerification?: UserVerificationRequirement,
   ): Promise<AuthStatus> {
-    const password = await recoverPasswordWithPasskey(username);
+    const password = await recoverPasswordWithPasskey(username, userVerification);
     return this.authenticate(username, password, keyType);
   }
 }
@@ -744,14 +746,19 @@ class OnlineClient extends Client {
    *
    * @param username Username
    * @param keyType Key authority type
+   * @param userVerification Level of verification:
+   *   - "discouraged": minimal friction (blog/posting operations)
+   *   - "preferred": biometric if available (default)
+   *   - "required": always biometric/PIN (wallet/active/owner operations)
    * @returns {Promise<AuthStatus>}
    * @throws {PasskeyError} If biometric fails or no passkey registered
    */
   public async biometricUnlock(
     username: string,
     keyType: KeyAuthorityType,
+    userVerification?: UserVerificationRequirement,
   ): Promise<AuthStatus> {
-    const password = await recoverPasswordWithPasskey(username);
+    const password = await recoverPasswordWithPasskey(username, userVerification);
     return this.authenticate(username, password, keyType);
   }
 }

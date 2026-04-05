@@ -125,7 +125,14 @@ abstract class Client {
         let worker: SharedWorker | Worker;
 
         if (isSupportSharedWorker) {
-          worker = new SharedWorker(this.options.workerUrl, { type: "module" });
+          // extendedLifetime keeps the SharedWorker alive for 30s after all
+          // tabs disconnect, surviving single-tab refresh. Chrome 148+, no-op
+          // on browsers that don't support it.
+          worker = new SharedWorker(this.options.workerUrl, {
+            type: "module",
+            /* @ts-expect-error -- extendedLifetime not yet in TS SharedWorkerOptions */
+            extendedLifetime: true,
+          });
           worker.onerror = (event) => {
             reject(
               new GenericError(

@@ -71,6 +71,9 @@ pnpm lint
 # Run tests (requires built dist/)
 pnpm test
 
+# Run only the offline tests (no Hive API or test-account keys needed)
+pnpm test:offline
+
 # Clean build artifacts
 pnpm clean
 ```

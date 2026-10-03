@@ -3,9 +3,18 @@ stages:
   - test
   - publish
 
-# Run pipeline for branch pushes and merge requests, but not both for the same commit
+# Run pipeline for branch pushes and merge requests, but not both for the same commit,
+# except for AIDEV-driven development: ai/<issue>-..., session/<name> and
+# aidev/integration are verified by the suites in .aidev/project.yaml, not by CI.
+# A push to aidev/integration runs no pipeline; one started by hand or through the
+# API does (`glab ci run -b aidev/integration`), and so does the merge request
+# pipeline of its MR into develop.
 workflow:
   rules:
+    - if: $CI_COMMIT_BRANCH =~ /^(ai|session)\//
+      when: never
+    - if: $CI_COMMIT_BRANCH == "aidev/integration" && $CI_PIPELINE_SOURCE !~ /^(web|api)$/
+      when: never
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
     - if: $CI_COMMIT_BRANCH && $CI_OPEN_MERGE_REQUESTS
       when: never

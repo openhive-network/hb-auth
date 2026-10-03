@@ -25,6 +25,15 @@ HB-Auth is a browser-based authentication library for Hive blockchain applicatio
   - `comlink` - WebWorker RPC
   - `idb` - IndexedDB wrapper
 
+## Working in an AIDEV workflow
+When AIDEV runs you on an issue, no one is there to answer questions. GitLab CI doesn't run for AIDEV branches; the checks below are the verification.
+
+- **Check your change:** run `aidev test run --slot quick` once, after your last edit. It runs ESLint (`--max-warnings 0`), `tsc --noEmit`, the rollup build (plus a check that the files package.json `exports`/`types` name exist in `dist/`, and a typecheck of `packages/signers-hb-auth` against it) and the offline Playwright tests in headless Chromium.
+- **Iterate:** `.aidev/run-checks.sh dev lint` (or `typecheck` / `build` / `offline` / `docs`) runs one step.
+- **Online tests:** `src/__tests__/online.ts` needs the live Hive API and test-account keys, and no slot runs it. If you change the online client, say in the issue that those tests weren't run.
+- **Consumers:** hive/denser uses this package through its pnpm catalog. Keep the public API (`src/index.ts`) and the worker bundle (`dist/worker.js`) compatible, or say in the issue what consumers must change.
+- **Dependencies:** a change to `pnpm-lock.yaml`, `pnpm-workspace.yaml` (from the `common-ci-configuration` submodule), `.npmrc` or `packageManager` needs a new test image. Run `.aidev/runtime/build.sh --push` and put the printed reference in `.aidev/project.yaml` `environment.image` in the same commit (see `.aidev/README.md`).
+
 ## Directory Structure
 
 ```

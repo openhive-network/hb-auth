@@ -14,6 +14,8 @@
     "lint": "eslint src --ext .ts",
     "pretest": "playwright install chromium",
     "test": "unset CI && playwright test --workers 1 --max-failures 1 --project=hbauth_testsuite",
+    "pretest:offline": "playwright install chromium",
+    "test:offline": "unset CI && playwright test --workers 1 --max-failures 1 --project=hbauth_testsuite --grep \"HB Auth Offline Client\"",
     "prebuild": "pnpm run husky && pnpm run lint",
     "husky": "husky ./.husky"
   },

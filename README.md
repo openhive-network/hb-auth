@@ -331,6 +331,12 @@ Execute the test suite:
 pnpm test
 ```
 
+To run only the offline tests, which need neither the Hive API nor the `.env` test account, use:
+
+```bash
+pnpm test:offline
+```
+
 ---
 
 ## 📄 License

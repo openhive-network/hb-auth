@@ -25,6 +25,7 @@ suite="${1:?usage: $0 <suite> <step>...}"; shift
 out="test-results/aidev-$suite"
 rm -rf "$out"; mkdir -p "$out"
 cases="$out/cases.tsv"; : > "$cases"
+node --version | tee "$out/node-version.log" >&2
 
 source .aidev/junit-helpers.sh
 fail_setup() {

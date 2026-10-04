@@ -64,7 +64,7 @@
     "@rollup/plugin-node-resolve": "catalog:rollup-toolset",
     "@rollup/plugin-replace": "catalog:rollup-toolset",
     "@rollup/plugin-terser": "^0.4.3",
-    "@types/node": "^20.10.8",
+    "@types/node": "^24",
     "@typescript-eslint/eslint-plugin": "^5.62.0",
     "@web/rollup-plugin-import-meta-assets": "^2.2.1",
     "buffer": "^6.0.3",
@@ -76,6 +76,7 @@
     "eslint-plugin-import": "^2.28.0",
     "eslint-plugin-n": "^16.0.1",
     "eslint-plugin-promise": "^6.1.1",
+    "http-server": "catalog:playwright-toolset",
     "husky": "catalog:husky",
     "idb": "^7.1.1",
     "playwright": "catalog:playwright-toolset",
@@ -95,6 +96,6 @@
     "comlink": "^4.4.1"
   },
   "engines": {
-    "node": "^20.11 || >= 21.2"
+    "node": ">=24"
   }
 }

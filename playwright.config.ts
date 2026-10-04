@@ -17,7 +17,7 @@ export default defineConfig({
     ],
     // Run your local dev server before starting the tests
     webServer: {
-        command: 'npx http-server',
+        command: 'pnpm exec http-server',
         url: 'http://localhost:8080',
     }
 });

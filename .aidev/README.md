@@ -44,15 +44,14 @@ Not run by any slot:
 
 The suites run in a container with `--network none` and your uid. The image is CI's
 image, the shared `emsdk` image at the tag `common-ci-configuration`'s
-`npm_projects` template pins (5.0.2-2: Node 22.21.1, pnpm 10.0.0), plus:
+`npm_projects` template pins (5.0.2-4: Node 24.21.0, pnpm 10.0.0), plus:
 
 - pnpm from package.json `packageManager`, installed through corepack;
 - a pnpm store filled with `pnpm fetch`;
-- the Chromium build that the lockfile's Playwright version needs;
-- `http-server`, which `playwright.config.ts` starts with `npx`.
+- the Chromium build that the lockfile's Playwright version needs.
 
 `pnpm-deps.sh` installs `node_modules` offline from the store. The emsdk entrypoint
-is cleared, so emsdk's own Node doesn't shadow 22.21.1.
+is cleared, so emsdk's own Node doesn't shadow 24.21.0.
 
 When `pnpm-lock.yaml`, `pnpm-workspace.yaml` (a symlink into the
 `common-ci-configuration` submodule), `.npmrc`, `packageManager`,

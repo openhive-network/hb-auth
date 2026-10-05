@@ -24,6 +24,10 @@ variables:
   GIT_DEPTH: 0
   GIT_STRATEGY: clone
   GIT_SUBMODULE_STRATEGY: recursive
+  # The hive/hive hiveio_api_package helper below includes npm_projects.gitlab-ci.yml from an
+  # older common-ci-configuration ref, whose EMSCRIPTEN_IMAGE_TAG default (Node 22) would win
+  # over the one from the include above. Pin the Node 24 image from common-ci-configuration 7dffa23e.
+  EMSCRIPTEN_IMAGE_TAG: "5.0.2-4@sha256:966dd9e9da494d184fcc7f622bb24d93c41b8d58c814156aa79cd1d70f31d9ab"
 
 include:
   - template: Workflows/Branch-Pipelines.gitlab-ci.yml

@@ -771,3 +771,79 @@ test.describe("HB Auth Offline Client base tests", () => {
     await browser.close();
   });
 });
+
+test.describe("HB Auth Offline Client under a strict worker CSP", () => {
+  // No 'unsafe-eval': code that compiles strings (eval, new Function) is
+  // refused, while WebAssembly compilation stays allowed.
+  const workerCsp =
+    "script-src 'self' 'wasm-unsafe-eval'; report-uri /__csp-violation";
+
+  let cspBrowser: ChromiumBrowser;
+  let context: BrowserContext;
+  let page: Page;
+  const servedWorkers: string[] = [];
+  const violations: string[] = [];
+
+  test.beforeAll(async () => {
+    cspBrowser = await chromium.launch({ headless: true });
+    context = await cspBrowser.newContext();
+
+    await context.route("**/dist/worker.js", async (route) => {
+      const response = await route.fetch();
+      servedWorkers.push(route.request().url());
+      await route.fulfill({
+        response,
+        headers: {
+          ...response.headers(),
+          "content-security-policy": workerCsp,
+        },
+      });
+    });
+    await context.route("**/__csp-violation", async (route) => {
+      violations.push(route.request().postData() ?? "");
+      await route.fulfill({ status: 204 });
+    });
+
+    page = await context.newPage();
+    page.on("console", (msg: ConsoleMessage) => {
+      if (msg.text().includes("Content Security Policy"))
+        violations.push(msg.text());
+    });
+    await page.goto(`http://localhost:8080/src/__tests__/assets/offline.html`, {
+      waitUntil: "load",
+    });
+  });
+
+  test("Should register, unlock and sign with no CSP violation", async () => {
+    const signed = await page.evaluate(
+      async ({ username, password, keys, txs }) => {
+        const instance = new AuthOfflineClient({
+          workerUrl: "/dist/worker.js",
+        });
+        await instance.initialize(await chain);
+        await instance.register(
+          username,
+          password,
+          keys[0].private,
+          keys[0].type as KeyAuthorityType,
+        );
+        await instance.lock();
+        await instance.unlock(username, password);
+        return await instance.sign(
+          username,
+          txs[0].digest,
+          keys[0].type as KeyAuthorityType,
+        );
+      },
+      user,
+    );
+
+    expect(servedWorkers).toHaveLength(1);
+    expect(signed).toBe(user.txs[0].signed);
+    expect(violations).toEqual([]);
+  });
+
+  test.afterAll(async () => {
+    await cspBrowser.close();
+  });
+});

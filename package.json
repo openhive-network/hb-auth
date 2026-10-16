@@ -57,7 +57,7 @@
     "@babel/core": "^7.22.9",
     "@babel/preset-env": "^7.22.9",
     "@babel/preset-typescript": "^7.22.5",
-    "@hiveio/beekeeper": "1.28.6-rc10-stable.260317081625",
+    "@hiveio/beekeeper": "1.28.8-stable.261010174216",
     "@hiveio/wax": "1.28.8-rc3",
     "@playwright/test": "catalog:playwright-toolset",
     "@rollup/plugin-commonjs": "catalog:rollup-toolset",

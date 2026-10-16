@@ -30,6 +30,9 @@ environment:
   kind: "container"
   image: "registry.gitlab.syncad.com/hive/hb-auth/aidev-tests@sha256:33df78db08f9444a06c4752ab5274e0c4a178e5754ee77281969a53c8878d7e0"
   inputs: ["pnpm-lock.yaml"]
+  # Stopgap until aidev#16137 lands: with no declaration and no measured runs, pull hosts
+  # priced a full run at the host default and refused it on an idle host (hb-auth#19).
+  memory: "8g"
 
 issues:
   intake_label: todo

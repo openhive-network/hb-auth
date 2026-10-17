@@ -66,6 +66,7 @@ export class AuthWorker {
   private _intervals: Record<string, ReturnType<typeof setInterval>> = {};
   private readonly settingsStorage = `/settings_${IDB_VERSION}`;
   #loggedInUsers: LoggedInUsers = {};
+  #deletion: Promise<void> | undefined;
 
   private readonly sessionTimeout: number;
 
@@ -654,23 +655,37 @@ export class AuthWorker {
     }
   }
 
+  public hasLoggedInUsers(): boolean {
+    return Object.keys(this.#loggedInUsers).length > 0;
+  }
+
+  // Deletes the beekeeper instance and removes the alias. Concurrent calls
+  // share one deletion. Does not run the session-end callback; the caller
+  // does, once the instance is gone.
   public async unregister(
     username: string,
     keyType: KeyAuthorityType,
   ): Promise<void> {
+    this.#deletion ??= this.deleteInstance();
+    await this.#deletion;
     try {
-      // Deleting the instance locks and closes every user's wallet, so no
-      // session interval has anything left to watch.
-      this.clearAllSessionIntervals();
-      await this.#api.delete();
       await this.removeAlias(`${username}@${keyType}`);
     } catch (error) {
       throw new InternalError(error);
     }
+  }
 
-    const loggedOut = Object.keys(this.#loggedInUsers).length > 0;
+  private async deleteInstance(): Promise<void> {
+    // Deleting the instance locks and closes every user's wallet. Their
+    // sessions are dropped first, so that a failed deletion cannot leave any
+    // of them behind.
+    this.clearAllSessionIntervals();
     this.#loggedInUsers = {};
-    if (loggedOut) await this.sessionEndCallback();
+    try {
+      await this.#api.delete();
+    } catch (error) {
+      throw new InternalError(error);
+    }
   }
 
   private async addAlias(
@@ -715,11 +730,14 @@ export class AuthWorker {
 
   private async removeAlias(alias: string): Promise<void> {
     const db = await this.getAliasDb();
-    const tx = db.transaction(["aliases"], "readwrite");
-    const store = tx.objectStore("aliases");
-    await store.delete(alias);
-    await tx.done;
-    db.close();
+    try {
+      const tx = db.transaction(["aliases"], "readwrite");
+      const store = tx.objectStore("aliases");
+      await store.delete(alias);
+      await tx.done;
+    } finally {
+      db.close();
+    }
   }
 
   private async getAliasDb(): Promise<IDBPDatabase> {
@@ -824,8 +842,11 @@ class Auth {
   // Reapplied to a worker started after unregister replaced the previous one.
   static #sessionEndCallback: (() => Promise<void>) | undefined;
   // Settles once the beekeeper being deleted by unregister is gone; a new
-  // start waits for it so that two instances never share the storage root.
+  // start waits for it, within its start timeout, so that two instances never
+  // share the storage root.
   static #retiring: Promise<void> = Promise.resolve();
+  // The instance unregister is deleting, until it is gone.
+  static #retiringWorker: AuthWorker | undefined;
   private readonly sessionTimeout: number;
 
   constructor(sessionTimeout: number) {
@@ -834,8 +855,7 @@ class Auth {
 
   private async getWorker(): Promise<AuthWorker> {
     if (Auth.#worker === undefined) {
-      const starting: Promise<AuthWorker> = Auth.#retiring
-        .then(async () => await this.startWorker())
+      const starting: Promise<AuthWorker> = this.startWorker()
         .then((worker) => {
           worker.setSessionEndCallback(Auth.#sessionEndCallback);
           return worker;
@@ -851,25 +871,36 @@ class Auth {
   }
 
   private async startWorker(): Promise<AuthWorker> {
-    const authWorker = new AuthWorker(this.sessionTimeout);
+    let authWorker: AuthWorker | undefined;
+    let abandoned = false;
     let timer: ReturnType<typeof setTimeout> | undefined;
     const timedOut = new Promise<never>((_resolve, reject) => {
       timer = setTimeout(() => {
+        abandoned = true;
         reject(new Error("Beekeeper start timed out"));
         // Nothing will use the abandoned instance; delete it if its start
         // ever finishes, so it cannot run beside the next start's instance on
         // the same storage root. A failed start was already reported as the
         // timeout.
-        authWorker.Ready.then(async (worker) => {
+        authWorker?.Ready.then(async (worker) => {
           await worker.dispose();
         }, noop).catch((error) => {
           console.error("Failed to delete an abandoned beekeeper", error);
         });
       }, timing("beekeeperStartTimeout"));
     });
+    const ready = Auth.#retiring.then(async () => {
+      // A start abandoned while the previous instance was still retiring
+      // must not create an instance nobody would delete.
+      if (abandoned) throw new Error("Beekeeper start timed out");
+      authWorker = new AuthWorker(this.sessionTimeout);
+      return await authWorker.Ready;
+    });
+    // Rejections after the timeout has won the race were already reported.
+    ready.catch(noop);
 
     try {
-      return await Promise.race([authWorker.Ready, timedOut]);
+      return await Promise.race([ready, timedOut]);
     } finally {
       clearTimeout(timer);
     }
@@ -903,13 +934,21 @@ class Auth {
     username: string,
     keyType: KeyAuthorityType,
   ): Promise<void> {
+    // A concurrent unregister is already deleting the instance; this one
+    // shares that deletion and leaves ending the session to it.
+    const retiring = Auth.#retiringWorker;
+    if (retiring !== undefined) {
+      await retiring.unregister(username, keyType);
+      return;
+    }
+
     const worker = this.getWorker();
     // getWorker caches the start synchronously, before its first await.
     const starting = Auth.#worker;
     const current = await worker;
     if (Auth.#worker !== starting) {
-      // A concurrent unregister is already deleting this instance.
-      await this.unregister(username, keyType);
+      // Another unregister waiting on the same start got to it first.
+      await current.unregister(username, keyType);
       return;
     }
 
@@ -917,9 +956,18 @@ class Auth {
     // meanwhile start a new beekeeper (once this one is gone) instead of
     // reaching the deleted one.
     this.dropWorker(starting);
+    const loggedOut = current.hasLoggedInUsers();
+    Auth.#retiringWorker = current;
     const unregistering = current.unregister(username, keyType);
     Auth.#retiring = unregistering.then(noop, noop);
-    await unregistering;
+    try {
+      await unregistering;
+    } finally {
+      if (Auth.#retiringWorker === current) Auth.#retiringWorker = undefined;
+      // Outside #retiring: the callback may call back into Auth, or (from a
+      // closed tab of a SharedWorker) never settle.
+      if (loggedOut) await (Auth.#sessionEndCallback ?? noop)();
+    }
   }
 
   public async lock(): Promise<void> {

@@ -862,21 +862,40 @@ test.describe("HB Auth Offline Client beekeeper lifecycle", () => {
   let context: BrowserContext;
   let page: Page;
 
+  interface WasmCounts {
+    starts: number;
+    instantiations: number;
+  }
+
   // Talks to count-wasm-instantiations.js inside the worker.
-  async function countWasmInstantiations(
-    message: { failInstantiation?: boolean } = {},
-  ): Promise<number> {
+  async function queryWasm(
+    message: { failInstantiation?: boolean; hangInstantiation?: boolean } = {},
+  ): Promise<WasmCounts> {
     return await page.evaluate(
       async (message) =>
-        await new Promise<number>((resolve) => {
+        await new Promise<WasmCounts>((resolve) => {
           const channel = new BroadcastChannel("hb-auth-wasm-instantiations");
-          channel.onmessage = (event: MessageEvent<number>) => {
+          channel.onmessage = (event: MessageEvent<WasmCounts>) => {
             channel.close();
             resolve(event.data);
           };
           channel.postMessage(message);
         }),
       message,
+    );
+  }
+
+  async function countWasmInstantiations(): Promise<number> {
+    return (await queryWasm()).instantiations;
+  }
+
+  async function createLifecycleClient(sessionTimeout?: number): Promise<void> {
+    await page.evaluate(
+      async ({ workerUrl, sessionTimeout }) => {
+        lifecycleClient = new AuthOfflineClient({ workerUrl, sessionTimeout });
+        await lifecycleClient.initialize(await chain);
+      },
+      { workerUrl: countedWorkerUrl, sessionTimeout },
     );
   }
 
@@ -908,13 +927,10 @@ test.describe("HB Auth Offline Client beekeeper lifecycle", () => {
     await page.goto(`http://localhost:8080/src/__tests__/assets/offline.html`, {
       waitUntil: "load",
     });
-    await page.evaluate(async (workerUrl) => {
-      lifecycleClient = new AuthOfflineClient({ workerUrl });
-      await lifecycleClient.initialize(await chain);
-    }, countedWorkerUrl);
   });
 
   test("Should start one beekeeper for concurrent first calls and keep it across logout", async () => {
+    await createLifecycleClient();
     await fireConcurrentCalls();
     expect(await countWasmInstantiations()).toBe(1);
 
@@ -954,7 +970,8 @@ test.describe("HB Auth Offline Client beekeeper lifecycle", () => {
   });
 
   test("Should start beekeeper again after a failed start", async () => {
-    await countWasmInstantiations({ failInstantiation: true });
+    await createLifecycleClient();
+    await queryWasm({ failInstantiation: true });
     const failures = await page.evaluate(async ({ username }) => {
       const results = await Promise.allSettled([
         lifecycleClient.getRegisteredUsers(),
@@ -963,11 +980,163 @@ test.describe("HB Auth Offline Client beekeeper lifecycle", () => {
       return results.filter((result) => result.status === "rejected").length;
     }, user);
     expect(failures).toBe(2);
-    expect(await countWasmInstantiations()).toBe(0);
+    expect(await queryWasm()).toEqual({ starts: 1, instantiations: 0 });
 
-    await countWasmInstantiations({ failInstantiation: false });
+    await queryWasm({ failInstantiation: false });
     await fireConcurrentCalls();
+    expect(await queryWasm()).toEqual({ starts: 2, instantiations: 1 });
+  });
+
+  test("Should give up on a beekeeper start that never settles and start again", async () => {
+    test.setTimeout(120_000);
+    await createLifecycleClient();
+    await queryWasm({ hangInstantiation: true });
+    const errors = await page.evaluate(async ({ username }) => {
+      const results = await Promise.allSettled([
+        lifecycleClient.getRegisteredUsers(),
+        lifecycleClient.getAuthByUser(username),
+      ]);
+      return results.map((result) =>
+        result.status === "rejected" ? String(result.reason) : "fulfilled",
+      );
+    }, user);
+    expect(errors).toHaveLength(2);
+    for (const error of errors) expect(error).toContain("timed out");
+    expect(await queryWasm()).toEqual({ starts: 1, instantiations: 0 });
+
+    await queryWasm({ hangInstantiation: false });
+    await fireConcurrentCalls();
+    expect(await queryWasm()).toEqual({ starts: 2, instantiations: 1 });
+  });
+
+  test("Should reject a non-strict sign after logout on the kept beekeeper", async () => {
+    await createLifecycleClient();
+    const error = await page.evaluate(
+      async ({ username, password, keys, txs }) => {
+        await lifecycleClient.register(
+          username,
+          password,
+          keys[0].private,
+          keys[0].type as KeyAuthorityType,
+          false,
+        );
+        await lifecycleClient.logout(username);
+        try {
+          await lifecycleClient.sign(
+            username,
+            txs[0].digest,
+            keys[0].type as KeyAuthorityType,
+          );
+          return "signed";
+        } catch (error) {
+          return (error as Error).message;
+        }
+      },
+      user,
+    );
+    expect(error).toBe("Not authorized");
     expect(await countWasmInstantiations()).toBe(1);
+  });
+
+  test("Should register and singleSign after the kept beekeeper sat idle past the session timeout", async () => {
+    // Shorter than the worker's 2 s session health check, so the other user's
+    // expired wallet is still unlocked when singleSign refreshes the clock.
+    const sessionTimeout = 1;
+    const idle = sessionTimeout * 1000 + 500;
+    await createLifecycleClient(sessionTimeout);
+    const otherUser = `${user.username}.idle`;
+
+    await page.evaluate(async ({ username, password, keys }) => {
+      await lifecycleClient.register(
+        username,
+        password,
+        keys[0].private,
+        keys[0].type as KeyAuthorityType,
+      );
+      await lifecycleClient.logout(username);
+    }, user);
+    await page.waitForTimeout(idle);
+
+    const registered = await page.evaluate(
+      async ({ otherUser, user: { password, keys } }) => {
+        await lifecycleClient.register(
+          otherUser,
+          password,
+          keys[1].private,
+          keys[1].type as KeyAuthorityType,
+        );
+        return await lifecycleClient.getAuthByUser(otherUser);
+      },
+      { otherUser, user },
+    );
+    expect(registered?.authorized).toBe(true);
+    await page.waitForTimeout(idle);
+
+    const result = await page.evaluate(
+      async ({ otherUser, user: { username, keys, txs } }) => {
+        const signed = await lifecycleClient.singleSign(
+          username,
+          txs[1].digest,
+          keys[1].private,
+          keys[1].type as KeyAuthorityType,
+        );
+        let expiredSign = "signed";
+        try {
+          await lifecycleClient.sign(
+            otherUser,
+            txs[1].digest,
+            keys[1].type as KeyAuthorityType,
+          );
+        } catch (error) {
+          expiredSign = (error as Error).message;
+        }
+        return { signed, expiredSign };
+      },
+      { otherUser, user },
+    );
+    expect(result.signed).toBe(user.txs[1].signed);
+    // The idle time expired the other user's session; signing on the
+    // refreshed beekeeper must not revive it.
+    expect(result.expiredSign).toBe("Not authorized");
+    expect(await countWasmInstantiations()).toBe(1);
+  });
+
+  test("Should start a new beekeeper after unregister so the user can register again", async () => {
+    await createLifecycleClient();
+    const signed = await page.evaluate(
+      async ({ username, password, keys, txs }) => {
+        const keyType = keys[0].type as KeyAuthorityType;
+        await lifecycleClient.register(
+          username,
+          password,
+          keys[0].private,
+          keyType,
+        );
+        // unregister is not on the client API, only on the worker's Auth.
+        const auth = (
+          lifecycleClient as unknown as {
+            getAuthInstance: () => {
+              unregister: (
+                username: string,
+                keyType: KeyAuthorityType,
+              ) => Promise<void>;
+            };
+          }
+        ).getAuthInstance();
+        await auth.unregister(username, keyType);
+
+        await lifecycleClient.register(
+          username,
+          password,
+          keys[0].private,
+          keyType,
+        );
+        return await lifecycleClient.sign(username, txs[0].digest, keyType);
+      },
+      user,
+    );
+    expect(signed).toBe(user.txs[0].signed);
+    expect(await countWasmInstantiations()).toBe(2);
   });
 
   test.afterEach(async () => {

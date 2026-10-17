@@ -865,11 +865,16 @@ test.describe("HB Auth Offline Client beekeeper lifecycle", () => {
   interface WasmCounts {
     starts: number;
     instantiations: number;
+    storageCloses: number;
   }
 
   // Talks to count-wasm-instantiations.js inside the worker.
   async function queryWasm(
-    message: { failInstantiation?: boolean; hangInstantiation?: boolean } = {},
+    message: {
+      failInstantiation?: boolean;
+      hangInstantiation?: boolean;
+      timings?: { sessionHealthCheck?: number; beekeeperStartTimeout?: number };
+    } = {},
   ): Promise<WasmCounts> {
     return await page.evaluate(
       async (message) =>
@@ -980,17 +985,27 @@ test.describe("HB Auth Offline Client beekeeper lifecycle", () => {
       return results.filter((result) => result.status === "rejected").length;
     }, user);
     expect(failures).toBe(2);
-    expect(await queryWasm()).toEqual({ starts: 1, instantiations: 0 });
+    expect(await queryWasm()).toEqual({
+      starts: 1,
+      instantiations: 0,
+      storageCloses: 0,
+    });
 
     await queryWasm({ failInstantiation: false });
     await fireConcurrentCalls();
-    expect(await queryWasm()).toEqual({ starts: 2, instantiations: 1 });
+    expect(await queryWasm()).toEqual({
+      starts: 2,
+      instantiations: 1,
+      storageCloses: 0,
+    });
   });
 
-  test("Should give up on a beekeeper start that never settles and start again", async () => {
-    test.setTimeout(120_000);
+  test("Should give up on a hanging beekeeper start, start again and delete the abandoned one once it finishes", async () => {
     await createLifecycleClient();
-    await queryWasm({ hangInstantiation: true });
+    await queryWasm({
+      hangInstantiation: true,
+      timings: { beekeeperStartTimeout: 1000 },
+    });
     const errors = await page.evaluate(async ({ username }) => {
       const results = await Promise.allSettled([
         lifecycleClient.getRegisteredUsers(),
@@ -1002,11 +1017,36 @@ test.describe("HB Auth Offline Client beekeeper lifecycle", () => {
     }, user);
     expect(errors).toHaveLength(2);
     for (const error of errors) expect(error).toContain("timed out");
-    expect(await queryWasm()).toEqual({ starts: 1, instantiations: 0 });
+    expect(await queryWasm()).toEqual({
+      starts: 1,
+      instantiations: 0,
+      storageCloses: 0,
+    });
 
+    // Releases the abandoned start too, which then finishes late.
     await queryWasm({ hangInstantiation: false });
     await fireConcurrentCalls();
-    expect(await queryWasm()).toEqual({ starts: 2, instantiations: 1 });
+    await expect.poll(async () => await queryWasm()).toEqual({
+      starts: 2,
+      instantiations: 2,
+      storageCloses: 1,
+    });
+
+    const signed = await page.evaluate(
+      async ({ username, password, keys, txs }) => {
+        const keyType = keys[0].type as KeyAuthorityType;
+        await lifecycleClient.register(
+          username,
+          password,
+          keys[0].private,
+          keyType,
+        );
+        return await lifecycleClient.sign(username, txs[0].digest, keyType);
+      },
+      user,
+    );
+    expect(signed).toBe(user.txs[0].signed);
+    expect((await queryWasm()).storageCloses).toBe(1);
   });
 
   test("Should reject a non-strict sign after logout on the kept beekeeper", async () => {
@@ -1099,6 +1139,111 @@ test.describe("HB Auth Offline Client beekeeper lifecycle", () => {
     // refreshed beekeeper must not revive it.
     expect(result.expiredSign).toBe("Not authorized");
     expect(await countWasmInstantiations()).toBe(1);
+  });
+
+  test("Should not let another user's login revive an expired user's wallet", async () => {
+    const sessionTimeout = 1;
+    await createLifecycleClient(sessionTimeout);
+    // Keeps the session interval from locking the expired wallet first, so
+    // only the login can be what stops it from signing.
+    await queryWasm({ timings: { sessionHealthCheck: 3_600_000 } });
+    const otherUser = `${user.username}.other`;
+
+    await page.evaluate(
+      async ({ otherUser, user: { username, password, keys } }) => {
+        await lifecycleClient.register(
+          otherUser,
+          password,
+          keys[1].private,
+          keys[1].type as KeyAuthorityType,
+        );
+        await lifecycleClient.logout(otherUser);
+        await lifecycleClient.register(
+          username,
+          password,
+          keys[0].private,
+          keys[0].type as KeyAuthorityType,
+        );
+      },
+      { otherUser, user },
+    );
+    await page.waitForTimeout(sessionTimeout * 1000 + 500);
+
+    const result = await page.evaluate(
+      async ({ otherUser, user: { username, password, keys, txs } }) => {
+        await lifecycleClient.authenticate(
+          otherUser,
+          password,
+          keys[1].type as KeyAuthorityType,
+        );
+        let expiredSign = "signed";
+        try {
+          await lifecycleClient.sign(
+            username,
+            txs[0].digest,
+            keys[0].type as KeyAuthorityType,
+          );
+        } catch (error) {
+          expiredSign = (error as Error).message;
+        }
+        const otherSigned = await lifecycleClient.sign(
+          otherUser,
+          txs[1].digest,
+          keys[1].type as KeyAuthorityType,
+        );
+        return { expiredSign, otherSigned };
+      },
+      { otherUser, user },
+    );
+    expect(result.expiredSign).toBe("Not authorized");
+    expect(result.otherSigned).toBe(user.txs[1].signed);
+  });
+
+  test("Should serve a call made during unregister from a new beekeeper and end the session", async () => {
+    await createLifecycleClient();
+    const result = await page.evaluate(
+      async ({ username, password, keys, txs }) => {
+        const keyType = keys[0].type as KeyAuthorityType;
+        let sessionEnds = 0;
+        await lifecycleClient.setSessionEndCallback(async () => {
+          sessionEnds += 1;
+        });
+        await lifecycleClient.register(
+          username,
+          password,
+          keys[0].private,
+          keyType,
+        );
+        const auth = (
+          lifecycleClient as unknown as {
+            getAuthInstance: () => {
+              unregister: (
+                username: string,
+                keyType: KeyAuthorityType,
+              ) => Promise<void>;
+            };
+          }
+        ).getAuthInstance();
+        const [, signed] = await Promise.all([
+          auth.unregister(username, keyType),
+          lifecycleClient.singleSign(
+            username,
+            txs[1].digest,
+            keys[1].private,
+            keys[1].type as KeyAuthorityType,
+          ),
+        ]);
+        return { signed, sessionEnds };
+      },
+      user,
+    );
+    expect(result.signed).toBe(user.txs[1].signed);
+    expect(result.sessionEnds).toBe(1);
+    expect(await queryWasm()).toEqual({
+      starts: 2,
+      instantiations: 2,
+      storageCloses: 1,
+    });
   });
 
   test("Should start a new beekeeper after unregister so the user can register again", async () => {

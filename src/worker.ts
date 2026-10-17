@@ -12,9 +12,26 @@ import { AuthorizationError, GenericError, InternalError } from "./errors";
 const IDB_VERSION = "v3";
 
 const KEY_TYPES = ["active", "posting", "owner"] as const;
-const SESSION_HEALTH_CHECK = 2000;
-const BEEKEEPER_START_TIMEOUT = 30000;
 const noop = async (): Promise<void> => {};
+
+interface Timings {
+  sessionHealthCheck: number;
+  beekeeperStartTimeout: number;
+}
+
+const DEFAULT_TIMINGS: Timings = {
+  sessionHealthCheck: 2000,
+  beekeeperStartTimeout: 30000,
+};
+
+// Tests override these by setting `hbAuthTimings` on the worker's global
+// scope; it is read on every use, so it can change between calls.
+const timing = (name: keyof Timings): number => {
+  const value = (self as { hbAuthTimings?: Partial<Timings> }).hbAuthTimings?.[
+    name
+  ];
+  return typeof value === "number" ? value : DEFAULT_TIMINGS[name];
+};
 
 export type KeyAuthorityType = (typeof KEY_TYPES)[number];
 
@@ -84,6 +101,10 @@ export class AuthWorker {
     this.sessionEndCallback = callback;
   }
 
+  public async dispose(): Promise<void> {
+    await this.#api.delete();
+  }
+
   private isValidSession(): boolean {
     const { now, timeoutTime } = this.#session.getInfo();
     return new Date(now).getTime() < new Date(timeoutTime).getTime();
@@ -109,12 +130,14 @@ export class AuthWorker {
         // Clear interval after locking
         this.clearSessionInterval(username);
       }
-    }, SESSION_HEALTH_CHECK);
+    }, timing("sessionHealthCheck"));
   }
 
   // Locks every wallet once beekeeper's inactivity clock has run out, so that
   // refreshing the clock afterwards cannot revive an expired user's wallet
-  // before its session interval gets to lock it.
+  // before its session interval gets to lock it. Every beekeeper unlock() has
+  // to go through unlockWallet, since unlock() refreshes the clock shared by
+  // all wallets.
   private lockExpiredSession(): void {
     if (this.isValidSession()) return;
 
@@ -126,16 +149,23 @@ export class AuthWorker {
     this.clearAllSessionIntervals();
   }
 
+  private async unlockWallet(
+    wallet: IBeekeeperWallet,
+    password: string,
+  ): Promise<IBeekeeperUnlockedWallet> {
+    this.lockExpiredSession();
+    return await wallet.unlock(password);
+  }
+
   private async createTemporaryWallet(
     name: string,
     password: string,
   ): Promise<IBeekeeperUnlockedWallet> {
-    this.lockExpiredSession();
     const { wallet } = await this.#session.createWallet(name, password, true);
     // createWallet does not refresh beekeeper's inactivity clock, so on an
     // instance idle for longer than the session timeout the first key
     // operation would fail; unlock() refreshes it.
-    return await wallet.lock().unlock(password);
+    return await this.unlockWallet(wallet.lock(), password);
   }
 
   private clearSessionInterval(username: string): void {
@@ -249,7 +279,7 @@ export class AuthWorker {
       if (exist?.unlocked) {
         await this.importKey(exist.unlocked, wifKey, keyType);
       } else {
-        const unlocked = await exist.unlock(password);
+        const unlocked = await this.unlockWallet(exist, password);
         await this.importKey(unlocked, wifKey, keyType);
       }
     } else {
@@ -290,7 +320,7 @@ export class AuthWorker {
     }
 
     try {
-      const unlocked = await wallet.unlock(password);
+      const unlocked = await this.unlockWallet(wallet, password);
       const keys = unlocked.getPublicKeys();
       const alias = await this.getAlias(`${username}@${keyType}`);
 
@@ -590,6 +620,9 @@ export class AuthWorker {
 
   public async unlock(username: string, password: string): Promise<void> {
     try {
+      // An expired session has to authenticate again, even before its
+      // session interval has marked it unauthorized.
+      this.lockExpiredSession();
       const wallet = await this.getWallet(username);
 
       if (!this.#loggedInUsers[username]?.authorized) {
@@ -604,7 +637,7 @@ export class AuthWorker {
 
       // Add check for already unlocked wallet
       if (!wallet.unlocked) {
-        await wallet.unlock(password);
+        await this.unlockWallet(wallet, password);
         // Update user session state
         this.#loggedInUsers[username].unlocked = true;
       }
@@ -631,12 +664,13 @@ export class AuthWorker {
       this.clearAllSessionIntervals();
       await this.#api.delete();
       await this.removeAlias(`${username}@${keyType}`);
-      this.#loggedInUsers = Object.fromEntries(
-        Object.entries(this.#loggedInUsers).filter(([key]) => key !== username),
-      );
     } catch (error) {
       throw new InternalError(error);
     }
+
+    const loggedOut = Object.keys(this.#loggedInUsers).length > 0;
+    this.#loggedInUsers = {};
+    if (loggedOut) await this.sessionEndCallback();
   }
 
   private async addAlias(
@@ -789,6 +823,9 @@ class Auth {
   static #worker: Promise<AuthWorker> | undefined;
   // Reapplied to a worker started after unregister replaced the previous one.
   static #sessionEndCallback: (() => Promise<void>) | undefined;
+  // Settles once the beekeeper being deleted by unregister is gone; a new
+  // start waits for it so that two instances never share the storage root.
+  static #retiring: Promise<void> = Promise.resolve();
   private readonly sessionTimeout: number;
 
   constructor(sessionTimeout: number) {
@@ -797,16 +834,8 @@ class Auth {
 
   private async getWorker(): Promise<AuthWorker> {
     if (Auth.#worker === undefined) {
-      let timer: ReturnType<typeof setTimeout> | undefined;
-      const timedOut = new Promise<never>((_resolve, reject) => {
-        timer = setTimeout(() => {
-          reject(new Error("Beekeeper start timed out"));
-        }, BEEKEEPER_START_TIMEOUT);
-      });
-      const starting: Promise<AuthWorker> = Promise.race([
-        new AuthWorker(this.sessionTimeout).Ready,
-        timedOut,
-      ])
+      const starting: Promise<AuthWorker> = Auth.#retiring
+        .then(async () => await this.startWorker())
         .then((worker) => {
           worker.setSessionEndCallback(Auth.#sessionEndCallback);
           return worker;
@@ -814,14 +843,36 @@ class Auth {
         .catch((error) => {
           this.dropWorker(starting);
           throw new InternalError(error);
-        })
-        .finally(() => {
-          clearTimeout(timer);
         });
       Auth.#worker = starting;
     }
 
     return await Auth.#worker;
+  }
+
+  private async startWorker(): Promise<AuthWorker> {
+    const authWorker = new AuthWorker(this.sessionTimeout);
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const timedOut = new Promise<never>((_resolve, reject) => {
+      timer = setTimeout(() => {
+        reject(new Error("Beekeeper start timed out"));
+        // Nothing will use the abandoned instance; delete it if its start
+        // ever finishes, so it cannot run beside the next start's instance on
+        // the same storage root. A failed start was already reported as the
+        // timeout.
+        authWorker.Ready.then(async (worker) => {
+          await worker.dispose();
+        }, noop).catch((error) => {
+          console.error("Failed to delete an abandoned beekeeper", error);
+        });
+      }, timing("beekeeperStartTimeout"));
+    });
+
+    try {
+      return await Promise.race([authWorker.Ready, timedOut]);
+    } finally {
+      clearTimeout(timer);
+    }
   }
 
   private dropWorker(worker: Promise<AuthWorker> | undefined): void {
@@ -855,13 +906,20 @@ class Auth {
     const worker = this.getWorker();
     // getWorker caches the start synchronously, before its first await.
     const starting = Auth.#worker;
-    try {
-      await (await worker).unregister(username, keyType);
-    } finally {
-      // unregister deletes the beekeeper instance, so the next call has to
-      // start a new one.
-      this.dropWorker(starting);
+    const current = await worker;
+    if (Auth.#worker !== starting) {
+      // A concurrent unregister is already deleting this instance.
+      await this.unregister(username, keyType);
+      return;
     }
+
+    // Dropped before the instance is deleted, so that calls arriving
+    // meanwhile start a new beekeeper (once this one is gone) instead of
+    // reaching the deleted one.
+    this.dropWorker(starting);
+    const unregistering = current.unregister(username, keyType);
+    Auth.#retiring = unregistering.then(noop, noop);
+    await unregistering;
   }
 
   public async lock(): Promise<void> {

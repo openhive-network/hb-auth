@@ -13,6 +13,7 @@ const IDB_VERSION = "v3";
 
 const KEY_TYPES = ["active", "posting", "owner"] as const;
 const SESSION_HEALTH_CHECK = 2000;
+const BEEKEEPER_START_TIMEOUT = 30000;
 const noop = async (): Promise<void> => {};
 
 export type KeyAuthorityType = (typeof KEY_TYPES)[number];
@@ -111,6 +112,32 @@ export class AuthWorker {
     }, SESSION_HEALTH_CHECK);
   }
 
+  // Locks every wallet once beekeeper's inactivity clock has run out, so that
+  // refreshing the clock afterwards cannot revive an expired user's wallet
+  // before its session interval gets to lock it.
+  private lockExpiredSession(): void {
+    if (this.isValidSession()) return;
+
+    this.#session.lockAll();
+    for (const user of Object.values(this.#loggedInUsers)) {
+      user.unlocked = false;
+      user.authorized = false;
+    }
+    this.clearAllSessionIntervals();
+  }
+
+  private async createTemporaryWallet(
+    name: string,
+    password: string,
+  ): Promise<IBeekeeperUnlockedWallet> {
+    this.lockExpiredSession();
+    const { wallet } = await this.#session.createWallet(name, password, true);
+    // createWallet does not refresh beekeeper's inactivity clock, so on an
+    // instance idle for longer than the session timeout the first key
+    // operation would fail; unlock() refreshes it.
+    return await wallet.lock().unlock(password);
+  }
+
   private clearSessionInterval(username: string): void {
     if (this._intervals[username]) {
       clearInterval(this._intervals[username]);
@@ -156,15 +183,14 @@ export class AuthWorker {
     try {
       const timestamp = Date.now();
       const tempWalletName = `${username}_temp_${timestamp}`;
-      const registation = await this.#session.createWallet(
+      const tempWallet = await this.createTemporaryWallet(
         tempWalletName,
         password,
-        true,
       );
-      const pKey = await registation.wallet.importKey(wifKey);
-      const signed = await registation.wallet.signDigest(pKey, digest);
-      await registation.wallet.removeKey(pKey);
-      registation.wallet.close();
+      const pKey = await tempWallet.importKey(wifKey);
+      const signed = await tempWallet.signDigest(pKey, digest);
+      await tempWallet.removeKey(pKey);
+      tempWallet.close();
 
       // first yield signed transaction
       yield await Promise.resolve(signed);
@@ -458,15 +484,14 @@ export class AuthWorker {
       const timestamp = Date.now();
       const tempWalletName = `${username}_temp_${timestamp}`;
       const tempPassword = `${username}_${digest}_${timestamp}`;
-      const tempWallet = await this.#session.createWallet(
+      const tempWallet = await this.createTemporaryWallet(
         tempWalletName,
         tempPassword,
-        true,
       );
-      const pKey = await tempWallet.wallet.importKey(wifKey);
-      const signed = await tempWallet.wallet.signDigest(pKey, digest);
-      await tempWallet.wallet.removeKey(pKey);
-      tempWallet.wallet.close();
+      const pKey = await tempWallet.importKey(wifKey);
+      const signed = await tempWallet.signDigest(pKey, digest);
+      await tempWallet.removeKey(pKey);
+      tempWallet.close();
 
       return signed;
     } catch (error) {
@@ -601,12 +626,14 @@ export class AuthWorker {
     keyType: KeyAuthorityType,
   ): Promise<void> {
     try {
+      // Deleting the instance locks and closes every user's wallet, so no
+      // session interval has anything left to watch.
+      this.clearAllSessionIntervals();
       await this.#api.delete();
       await this.removeAlias(`${username}@${keyType}`);
       this.#loggedInUsers = Object.fromEntries(
         Object.entries(this.#loggedInUsers).filter(([key]) => key !== username),
       );
-      this.clearSessionInterval(username);
     } catch (error) {
       throw new InternalError(error);
     }
@@ -760,6 +787,8 @@ class Auth {
   // finishes share one beekeeper (one WASM instance) instead of each starting
   // their own.
   static #worker: Promise<AuthWorker> | undefined;
+  // Reapplied to a worker started after unregister replaced the previous one.
+  static #sessionEndCallback: (() => Promise<void>) | undefined;
   private readonly sessionTimeout: number;
 
   constructor(sessionTimeout: number) {
@@ -768,16 +797,35 @@ class Auth {
 
   private async getWorker(): Promise<AuthWorker> {
     if (Auth.#worker === undefined) {
-      const starting: Promise<AuthWorker> = new AuthWorker(
-        this.sessionTimeout,
-      ).Ready.catch((error) => {
-        if (Auth.#worker === starting) Auth.#worker = undefined;
-        throw new InternalError(error);
+      let timer: ReturnType<typeof setTimeout> | undefined;
+      const timedOut = new Promise<never>((_resolve, reject) => {
+        timer = setTimeout(() => {
+          reject(new Error("Beekeeper start timed out"));
+        }, BEEKEEPER_START_TIMEOUT);
       });
+      const starting: Promise<AuthWorker> = Promise.race([
+        new AuthWorker(this.sessionTimeout).Ready,
+        timedOut,
+      ])
+        .then((worker) => {
+          worker.setSessionEndCallback(Auth.#sessionEndCallback);
+          return worker;
+        })
+        .catch((error) => {
+          this.dropWorker(starting);
+          throw new InternalError(error);
+        })
+        .finally(() => {
+          clearTimeout(timer);
+        });
       Auth.#worker = starting;
     }
 
     return await Auth.#worker;
+  }
+
+  private dropWorker(worker: Promise<AuthWorker> | undefined): void {
+    if (Auth.#worker === worker) Auth.#worker = undefined;
   }
 
   public async register(
@@ -804,7 +852,16 @@ class Auth {
     username: string,
     keyType: KeyAuthorityType,
   ): Promise<void> {
-    await (await this.getWorker()).unregister(username, keyType);
+    const worker = this.getWorker();
+    // getWorker caches the start synchronously, before its first await.
+    const starting = Auth.#worker;
+    try {
+      await (await worker).unregister(username, keyType);
+    } finally {
+      // unregister deletes the beekeeper instance, so the next call has to
+      // start a new one.
+      this.dropWorker(starting);
+    }
   }
 
   public async lock(): Promise<void> {
@@ -854,6 +911,7 @@ class Auth {
   public async setSessionEndCallback(
     callback: () => Promise<void> = noop,
   ): Promise<void> {
+    Auth.#sessionEndCallback = callback;
     (await this.getWorker()).setSessionEndCallback(callback);
   }
 

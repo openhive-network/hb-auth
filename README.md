@@ -61,6 +61,8 @@ my-app/
           beekeeper_wasm.common-J4dPjPbz.wasm
 ```
 
+The worker starts one beekeeper (wallet manager) instance and keeps it until the worker exits; `logout` and `logoutAll` only lock wallets. Beekeeper reads the stored wallet files once, when it starts, so keys that a different worker on the same origin writes later are not visible to an already running worker. That worker could be another application using **hb-auth**, or a tab that fell back to a dedicated Worker. Logging out and in again does not reload them, and signing with such a key fails with `Not authorized, missing authority`. The worker sees the new files after it restarts, which happens once every tab using it has closed. If your application must pick up keys written elsewhere without waiting for that, change the worker URL (for example by adding a version query string, `/auth/worker.js?v=2`). The new URL starts a fresh SharedWorker, which reads the current wallet files.
+
 Differance between `OnlineClient` and `OfflineClient` is that `OnlineClient` connects to a given Hive node in order to verify that user actually has an ownership over the requested account (either direct or indirect via account auths).
 
 ## 💡 Example usage

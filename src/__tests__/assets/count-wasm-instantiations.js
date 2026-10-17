@@ -4,7 +4,9 @@
 // a BroadcastChannel with `{ starts, instantiations, storageCloses }`. A
 // message carrying a boolean `failInstantiation` or `hangInstantiation` first
 // switches forced instantiation failure, or instantiation held until hanging
-// is switched off again, on or off; one carrying `timings` sets the worker's
+// is switched off again, on or off; a boolean `failStorageWrites` makes
+// beekeeper's writes to its storage database fail, which fails the next
+// deletion of that beekeeper; one carrying `timings` sets the worker's
 // `hbAuthTimings` overrides.
 // Emscripten tries instantiateStreaming once per start and falls back to
 // instantiate when it fails, so starts count streaming calls and only resolved
@@ -16,6 +18,7 @@ let instantiations = 0;
 let storageCloses = 0;
 let failInstantiation = false;
 let hangInstantiation = false;
+let failStorageWrites = false;
 let releaseHung = () => {};
 let hung = Promise.resolve();
 
@@ -41,6 +44,14 @@ IDBDatabase.prototype.close = function (...args) {
   return originalClose.apply(this, args);
 };
 
+const originalPut = IDBObjectStore.prototype.put;
+IDBObjectStore.prototype.put = function (...args) {
+  if (failStorageWrites && this.transaction.db.name === STORAGE_DB) {
+    throw new DOMException("Storage writes disabled by test", "UnknownError");
+  }
+  return originalPut.apply(this, args);
+};
+
 const channel = new BroadcastChannel("hb-auth-wasm-instantiations");
 channel.onmessage = (event) => {
   if (typeof event.data?.failInstantiation === "boolean") {
@@ -55,6 +66,9 @@ channel.onmessage = (event) => {
       releaseHung();
     }
     hangInstantiation = event.data.hangInstantiation;
+  }
+  if (typeof event.data?.failStorageWrites === "boolean") {
+    failStorageWrites = event.data.failStorageWrites;
   }
   if (typeof event.data?.timings === "object") {
     self.hbAuthTimings = event.data.timings;

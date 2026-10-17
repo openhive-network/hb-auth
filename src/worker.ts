@@ -756,7 +756,10 @@ export class AuthWorker {
 }
 
 class Auth {
-  static #worker: AuthWorker | undefined;
+  // Holds the pending start too, so calls racing in before the first start
+  // finishes share one beekeeper (one WASM instance) instead of each starting
+  // their own.
+  static #worker: Promise<AuthWorker> | undefined;
   private readonly sessionTimeout: number;
 
   constructor(sessionTimeout: number) {
@@ -764,14 +767,17 @@ class Auth {
   }
 
   private async getWorker(): Promise<AuthWorker> {
-    try {
-      if (Auth.#worker !== undefined) return Auth.#worker;
-
-      Auth.#worker = await new AuthWorker(this.sessionTimeout).Ready;
-      return Auth.#worker;
-    } catch (error) {
-      throw new InternalError(error);
+    if (Auth.#worker === undefined) {
+      const starting: Promise<AuthWorker> = new AuthWorker(
+        this.sessionTimeout,
+      ).Ready.catch((error) => {
+        if (Auth.#worker === starting) Auth.#worker = undefined;
+        throw new InternalError(error);
+      });
+      Auth.#worker = starting;
     }
+
+    return await Auth.#worker;
   }
 
   public async register(
@@ -839,12 +845,10 @@ class Auth {
 
   public async logout(username: string): Promise<void> {
     await (await this.getWorker()).logout(username);
-    Auth.#worker = undefined;
   }
 
   public async logoutAll(): Promise<void> {
     await (await this.getWorker()).logoutAll();
-    Auth.#worker = undefined;
   }
 
   public async setSessionEndCallback(

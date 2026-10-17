@@ -12,6 +12,7 @@ import type { IHiveChainInterface } from "@hiveio/wax";
 
 declare const AuthOfflineClient: typeof OfflineClient;
 declare const chain: Promise<IHiveChainInterface>;
+declare let lifecycleClient: OfflineClient;
 
 let browser!: ChromiumBrowser;
 
@@ -845,5 +846,135 @@ test.describe("HB Auth Offline Client under a strict worker CSP", () => {
 
   test.afterAll(async () => {
     await cspBrowser.close();
+  });
+});
+
+test.describe("HB Auth Offline Client beekeeper lifecycle", () => {
+  // Served from a route rather than a file so the worker still resolves its
+  // WASM asset relative to /dist/.
+  const countedWorkerUrl = "/dist/counted-worker.js";
+  const countedWorker = [
+    'import "/src/__tests__/assets/count-wasm-instantiations.js";',
+    'import "./worker.js";',
+  ].join("\n");
+
+  let lifecycleBrowser: ChromiumBrowser;
+  let context: BrowserContext;
+  let page: Page;
+
+  // Talks to count-wasm-instantiations.js inside the worker.
+  async function countWasmInstantiations(
+    message: { failInstantiation?: boolean } = {},
+  ): Promise<number> {
+    return await page.evaluate(
+      async (message) =>
+        await new Promise<number>((resolve) => {
+          const channel = new BroadcastChannel("hb-auth-wasm-instantiations");
+          channel.onmessage = (event: MessageEvent<number>) => {
+            channel.close();
+            resolve(event.data);
+          };
+          channel.postMessage(message);
+        }),
+      message,
+    );
+  }
+
+  async function fireConcurrentCalls(): Promise<void> {
+    await page.evaluate(async ({ username }) => {
+      await Promise.all([
+        lifecycleClient.getRegisteredUsers(),
+        lifecycleClient.getAuthByUser(username),
+        lifecycleClient.getRegisteredUserByUsername(username),
+        lifecycleClient.getUserSettings(username),
+      ]);
+    }, user);
+  }
+
+  test.beforeAll(async () => {
+    lifecycleBrowser = await chromium.launch({ headless: true });
+  });
+
+  test.beforeEach(async () => {
+    context = await lifecycleBrowser.newContext();
+    await context.route(`**${countedWorkerUrl}`, async (route) => {
+      await route.fulfill({
+        contentType: "application/javascript",
+        body: countedWorker,
+      });
+    });
+
+    page = await context.newPage();
+    await page.goto(`http://localhost:8080/src/__tests__/assets/offline.html`, {
+      waitUntil: "load",
+    });
+    await page.evaluate(async (workerUrl) => {
+      lifecycleClient = new AuthOfflineClient({ workerUrl });
+      await lifecycleClient.initialize(await chain);
+    }, countedWorkerUrl);
+  });
+
+  test("Should start one beekeeper for concurrent first calls and keep it across logout", async () => {
+    await fireConcurrentCalls();
+    expect(await countWasmInstantiations()).toBe(1);
+
+    await page.evaluate(async ({ username, password, keys }) => {
+      await lifecycleClient.register(
+        username,
+        password,
+        keys[0].private,
+        keys[0].type as KeyAuthorityType,
+      );
+      await lifecycleClient.logout(username);
+    }, user);
+    await fireConcurrentCalls();
+    expect(await countWasmInstantiations()).toBe(1);
+
+    const signed = await page.evaluate(
+      async ({ username, password, keys, txs }) => {
+        await lifecycleClient.authenticate(
+          username,
+          password,
+          keys[0].type as KeyAuthorityType,
+        );
+        const signed = await lifecycleClient.sign(
+          username,
+          txs[0].digest,
+          keys[0].type as KeyAuthorityType,
+        );
+        await lifecycleClient.logoutAll();
+        return signed;
+      },
+      user,
+    );
+    expect(signed).toBe(user.txs[0].signed);
+
+    await fireConcurrentCalls();
+    expect(await countWasmInstantiations()).toBe(1);
+  });
+
+  test("Should start beekeeper again after a failed start", async () => {
+    await countWasmInstantiations({ failInstantiation: true });
+    const failures = await page.evaluate(async ({ username }) => {
+      const results = await Promise.allSettled([
+        lifecycleClient.getRegisteredUsers(),
+        lifecycleClient.getAuthByUser(username),
+      ]);
+      return results.filter((result) => result.status === "rejected").length;
+    }, user);
+    expect(failures).toBe(2);
+    expect(await countWasmInstantiations()).toBe(0);
+
+    await countWasmInstantiations({ failInstantiation: false });
+    await fireConcurrentCalls();
+    expect(await countWasmInstantiations()).toBe(1);
+  });
+
+  test.afterEach(async () => {
+    await context.close();
+  });
+
+  test.afterAll(async () => {
+    await lifecycleBrowser.close();
   });
 });

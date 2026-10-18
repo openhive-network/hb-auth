@@ -6,7 +6,9 @@
 // switches forced instantiation failure, or instantiation held until hanging
 // is switched off again, on or off; a boolean `failStorageWrites` makes
 // beekeeper's writes to its storage database fail, which fails the next
-// deletion of that beekeeper; one carrying `timings` sets the worker's
+// deletion of that beekeeper; a true `hangNextStorageWrite` makes the next
+// read-write transaction on that database never finish, and the deletion of
+// the beekeeper that started it waits for it forever; one carrying `timings` sets the worker's
 // `hbAuthTimings` overrides.
 // Emscripten tries instantiateStreaming once per start and falls back to
 // instantiate when it fails, so starts count streaming calls and only resolved
@@ -19,6 +21,7 @@ let storageCloses = 0;
 let failInstantiation = false;
 let hangInstantiation = false;
 let failStorageWrites = false;
+let hangNextStorageWrite = false;
 let releaseHung = () => {};
 let hung = Promise.resolve();
 
@@ -52,6 +55,26 @@ IDBObjectStore.prototype.put = function (...args) {
   return originalPut.apply(this, args);
 };
 
+// Accepts any use and never calls back, so whatever waits on it waits forever.
+const inert = new Proxy(function () {}, {
+  get: () => inert,
+  set: () => true,
+  apply: () => inert,
+});
+
+const originalTransaction = IDBDatabase.prototype.transaction;
+IDBDatabase.prototype.transaction = function (...args) {
+  if (
+    hangNextStorageWrite &&
+    this.name === STORAGE_DB &&
+    args[1] === "readwrite"
+  ) {
+    hangNextStorageWrite = false;
+    return inert;
+  }
+  return originalTransaction.apply(this, args);
+};
+
 const channel = new BroadcastChannel("hb-auth-wasm-instantiations");
 channel.onmessage = (event) => {
   if (typeof event.data?.failInstantiation === "boolean") {
@@ -69,6 +92,9 @@ channel.onmessage = (event) => {
   }
   if (typeof event.data?.failStorageWrites === "boolean") {
     failStorageWrites = event.data.failStorageWrites;
+  }
+  if (typeof event.data?.hangNextStorageWrite === "boolean") {
+    hangNextStorageWrite = event.data.hangNextStorageWrite;
   }
   if (typeof event.data?.timings === "object") {
     self.hbAuthTimings = event.data.timings;

@@ -874,7 +874,12 @@ test.describe("HB Auth Offline Client beekeeper lifecycle", () => {
       failInstantiation?: boolean;
       hangInstantiation?: boolean;
       failStorageWrites?: boolean;
-      timings?: { sessionHealthCheck?: number; beekeeperStartTimeout?: number };
+      hangNextStorageWrite?: boolean;
+      timings?: {
+        sessionHealthCheck?: number;
+        beekeeperStartTimeout?: number;
+        beekeeperDeleteTimeout?: number;
+      };
     } = {},
   ): Promise<WasmCounts> {
     return await page.evaluate(
@@ -1358,6 +1363,126 @@ test.describe("HB Auth Offline Client beekeeper lifecycle", () => {
     });
   });
 
+  test("Should delete each beekeeper once for concurrent unregisters waiting on the same start", async () => {
+    await createLifecycleClient();
+    const registeredKeyTypes = await page.evaluate(
+      async ({ username, password, keys }) => {
+        for (const key of keys.slice(0, 2)) {
+          await lifecycleClient.register(
+            username,
+            password,
+            key.private,
+            key.type as KeyAuthorityType,
+          );
+        }
+        const auth = (
+          lifecycleClient as unknown as {
+            getAuthInstance: () => {
+              unregister: (
+                username: string,
+                keyType: KeyAuthorityType,
+              ) => Promise<void>;
+            };
+          }
+        ).getAuthInstance();
+        // Leaves no beekeeper running, so both unregisters below start one.
+        await auth.unregister(username, "owner");
+        await Promise.all([
+          auth.unregister(username, keys[0].type as KeyAuthorityType),
+          auth.unregister(username, keys[1].type as KeyAuthorityType),
+        ]);
+        return (await lifecycleClient.getRegisteredUserByUsername(username))
+          ?.registeredKeyTypes;
+      },
+      user,
+    );
+    expect(registeredKeyTypes).toEqual([]);
+    expect(await queryWasm()).toEqual({
+      starts: 3,
+      instantiations: 3,
+      storageCloses: 2,
+    });
+  });
+
+  test("Should give up on a beekeeper deletion that never settles and start a new beekeeper with its own start timeout", async () => {
+    await createLifecycleClient();
+    // Register's wallet write never finishes, and deleting the beekeeper waits
+    // for it. The start below waits out the whole deletion timeout first,
+    // which is longer than its own start timeout.
+    await queryWasm({
+      hangNextStorageWrite: true,
+      timings: { beekeeperDeleteTimeout: 4000, beekeeperStartTimeout: 3000 },
+    });
+    await page.evaluate(async ({ username, password, keys }) => {
+      await lifecycleClient.register(
+        username,
+        password,
+        keys[0].private,
+        keys[0].type as KeyAuthorityType,
+      );
+    }, user);
+    const result = await page.evaluate(
+      async ({ username, password, keys, txs }) => {
+        const keyType = keys[0].type as KeyAuthorityType;
+        let sessionEnds = 0;
+        await lifecycleClient.setSessionEndCallback(async () => {
+          sessionEnds += 1;
+        });
+        const auth = (
+          lifecycleClient as unknown as {
+            getAuthInstance: () => {
+              unregister: (
+                username: string,
+                keyType: KeyAuthorityType,
+              ) => Promise<void>;
+            };
+          }
+        ).getAuthInstance();
+        const [unregistered, singleSigned] = await Promise.allSettled([
+          auth.unregister(username, keyType),
+          lifecycleClient.singleSign(
+            username,
+            txs[1].digest,
+            keys[1].private,
+            keys[1].type as KeyAuthorityType,
+          ),
+        ]);
+        // As after a failed deletion, the abandoned unregister has not
+        // removed the alias, so the other key type is registered.
+        const otherKeyType = keys[1].type as KeyAuthorityType;
+        await lifecycleClient.register(
+          username,
+          password,
+          keys[1].private,
+          otherKeyType,
+        );
+        const signed = await lifecycleClient.sign(
+          username,
+          txs[1].digest,
+          otherKeyType,
+        );
+        return {
+          unregisterError:
+            unregistered.status === "rejected"
+              ? String(unregistered.reason)
+              : "unregistered",
+          singleSigned:
+            singleSigned.status === "fulfilled"
+              ? singleSigned.value
+              : String(singleSigned.reason),
+          signed,
+          sessionEnds,
+        };
+      },
+      user,
+    );
+    expect(result.unregisterError).toContain("Beekeeper deletion timed out");
+    expect(result.singleSigned).toBe(user.txs[1].signed);
+    expect(result.signed).toBe(user.txs[1].signed);
+    expect(result.sessionEnds).toBe(1);
+    expect((await queryWasm()).starts).toBe(2);
+  });
+
   test("Should end the session and start a new beekeeper when deleting the old one fails", async () => {
     await createLifecycleClient();
     await queryWasm({ failStorageWrites: true });
@@ -1400,7 +1525,7 @@ test.describe("HB Auth Offline Client beekeeper lifecycle", () => {
       },
       user,
     );
-    expect(result.unregisterError).not.toBe("unregistered");
+    expect(result.unregisterError).toContain("Storage writes disabled by test");
     expect(result.sessionEnds).toBe(1);
     expect(result.signed).toBe(user.txs[1].signed);
     expect((await queryWasm()).starts).toBe(2);

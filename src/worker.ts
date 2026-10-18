@@ -17,11 +17,13 @@ const noop = async (): Promise<void> => {};
 interface Timings {
   sessionHealthCheck: number;
   beekeeperStartTimeout: number;
+  beekeeperDeleteTimeout: number;
 }
 
 const DEFAULT_TIMINGS: Timings = {
   sessionHealthCheck: 2000,
   beekeeperStartTimeout: 30000,
+  beekeeperDeleteTimeout: 30000,
 };
 
 // Tests override these by setting `hbAuthTimings` on the worker's global
@@ -841,12 +843,16 @@ class Auth {
   static #worker: Promise<AuthWorker> | undefined;
   // Reapplied to a worker started after unregister replaced the previous one.
   static #sessionEndCallback: (() => Promise<void>) | undefined;
-  // Settles once the beekeeper being deleted by unregister is gone; a new
-  // start waits for it, within its start timeout, so that two instances never
-  // share the storage root.
+  // Settles once the beekeeper being deleted by unregister is gone, or once
+  // its deletion timeout gives up on it; a new start waits for it so that two
+  // instances do not share the storage root.
   static #retiring: Promise<void> = Promise.resolve();
-  // The instance unregister is deleting, until it is gone.
-  static #retiringWorker: AuthWorker | undefined;
+  // The instance unregister is deleting, until it is gone or given up on, and
+  // the timeout that gives up on it.
+  static #retirement:
+    | { worker: AuthWorker; timedOut: Promise<never> }
+    | undefined;
+
   private readonly sessionTimeout: number;
 
   constructor(sessionTimeout: number) {
@@ -871,31 +877,24 @@ class Auth {
   }
 
   private async startWorker(): Promise<AuthWorker> {
-    let authWorker: AuthWorker | undefined;
-    let abandoned = false;
+    await Auth.#retiring;
+    const authWorker = new AuthWorker(this.sessionTimeout);
     let timer: ReturnType<typeof setTimeout> | undefined;
     const timedOut = new Promise<never>((_resolve, reject) => {
       timer = setTimeout(() => {
-        abandoned = true;
         reject(new Error("Beekeeper start timed out"));
         // Nothing will use the abandoned instance; delete it if its start
         // ever finishes, so it cannot run beside the next start's instance on
         // the same storage root. A failed start was already reported as the
         // timeout.
-        authWorker?.Ready.then(async (worker) => {
+        authWorker.Ready.then(async (worker) => {
           await worker.dispose();
         }, noop).catch((error) => {
           console.error("Failed to delete an abandoned beekeeper", error);
         });
       }, timing("beekeeperStartTimeout"));
     });
-    const ready = Auth.#retiring.then(async () => {
-      // A start abandoned while the previous instance was still retiring
-      // must not create an instance nobody would delete.
-      if (abandoned) throw new Error("Beekeeper start timed out");
-      authWorker = new AuthWorker(this.sessionTimeout);
-      return await authWorker.Ready;
-    });
+    const ready = authWorker.Ready;
     // Rejections after the timeout has won the race were already reported.
     ready.catch(noop);
 
@@ -936,9 +935,12 @@ class Auth {
   ): Promise<void> {
     // A concurrent unregister is already deleting the instance; this one
     // shares that deletion and leaves ending the session to it.
-    const retiring = Auth.#retiringWorker;
-    if (retiring !== undefined) {
-      await retiring.unregister(username, keyType);
+    const pending = Auth.#retirement;
+    if (pending !== undefined) {
+      await Promise.race([
+        pending.worker.unregister(username, keyType),
+        pending.timedOut,
+      ]);
       return;
     }
 
@@ -957,13 +959,28 @@ class Auth {
     // reaching the deleted one.
     this.dropWorker(starting);
     const loggedOut = current.hasLoggedInUsers();
-    Auth.#retiringWorker = current;
-    const unregistering = current.unregister(username, keyType);
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    // Gives up on a deletion that never settles: the instance is abandoned,
+    // as a timed-out start is, so that later starts can proceed.
+    const timedOut = new Promise<never>((_resolve, reject) => {
+      timer = setTimeout(() => {
+        reject(new InternalError("Beekeeper deletion timed out"));
+      }, timing("beekeeperDeleteTimeout"));
+    });
+    // Joiners race the same timeout; the rejection is reported to each.
+    timedOut.catch(noop);
+    const retirement = { worker: current, timedOut };
+    Auth.#retirement = retirement;
+    const unregistering = Promise.race([
+      current.unregister(username, keyType),
+      timedOut,
+    ]);
     Auth.#retiring = unregistering.then(noop, noop);
     try {
       await unregistering;
     } finally {
-      if (Auth.#retiringWorker === current) Auth.#retiringWorker = undefined;
+      clearTimeout(timer);
+      if (Auth.#retirement === retirement) Auth.#retirement = undefined;
       // Outside #retiring: the callback may call back into Auth, or (from a
       // closed tab of a SharedWorker) never settle.
       if (loggedOut) await (Auth.#sessionEndCallback ?? noop)();

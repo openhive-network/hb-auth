@@ -1,7 +1,7 @@
 # The image AIDEV runs this project's suites in (`environment.image` in
 # .aidev/project.yaml). It is CI's image: the shared emsdk image that
 # common-ci-configuration's npm_projects template pins (EMSCRIPTEN_IMAGE_TAG
-# 5.0.2-4 at the ref .gitlab-ci.yml includes), with Node 24.21.0, pnpm 10.0.0
+# 5.0.2-6 at the ref .gitlab-ci.yml includes), with Node 24.21.0, pnpm 10.33.0
 # through corepack and Playwright browsers in /home/emscripten/pw-browsers.
 # Suites run with `--network none` and the caller's uid, so this layer adds what
 # an install and a test run would otherwise download: pnpm (package.json's
@@ -9,7 +9,7 @@
 # of the Playwright version the lockfile pins (CI's `pretest` runs `playwright
 # install chromium`; the base image's browsers can be for another Playwright).
 # Build and pin it with .aidev/runtime/build.sh; see .aidev/README.md.
-FROM registry.gitlab.syncad.com/hive/common-ci-configuration/emsdk@sha256:966dd9e9da494d184fcc7f622bb24d93c41b8d58c814156aa79cd1d70f31d9ab
+FROM registry.gitlab.syncad.com/hive/common-ci-configuration/emsdk@sha256:9aec859476a9508693dba0d55c8637a2fcc572ec51dfcf87adaba21d6f64d67f
 
 USER root
 ENV PATH=/home/emscripten/.nvm/versions/node/v24.21.0/bin:$PATH \

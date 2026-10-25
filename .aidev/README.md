@@ -44,7 +44,7 @@ Not run by any slot:
 
 The suites run in a container with `--network none` and your uid. The image is CI's
 image, the shared `emsdk` image at the tag `common-ci-configuration`'s
-`npm_projects` template pins (5.0.2-4: Node 24.21.0, pnpm 10.0.0), plus:
+`npm_projects` template pins (5.0.2-6: Node 24.21.0, pnpm 10.33.0), plus:
 
 - pnpm from package.json `packageManager`, installed through corepack;
 - a pnpm store filled with `pnpm fetch`;

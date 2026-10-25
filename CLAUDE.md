@@ -15,7 +15,7 @@ HB-Auth is a browser-based authentication library for Hive blockchain applicatio
 
 - **Language**: TypeScript (strict mode, ES2022 target)
 - **Runtime**: Browser (WebWorker, IndexedDB)
-- **Package Manager**: pnpm 10.0.0+ (workspace monorepo)
+- **Package Manager**: pnpm 10.33.0+ (workspace monorepo)
 - **Build**: Rollup 4.x with esbuild
 - **Testing**: Playwright (browser E2E tests)
 - **Linting**: ESLint + Prettier

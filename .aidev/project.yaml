@@ -30,7 +30,9 @@ branches:
 environment:
   kind: "container"
   image: "registry.gitlab.syncad.com/hive/hb-auth/aidev-tests@sha256:97bfa66ef6c3d70bd0619fd63a8aad005b762dc3c892086dbf8a4b0f7e59a3c0"
-  inputs: ["pnpm-lock.yaml"]
+  # What the image is built from (.aidev/runtime/build.sh hashes the same files): a
+  # change to one is what lets a commit re-pin `image`.
+  inputs: ["pnpm-lock.yaml", ".aidev/runtime/Dockerfile", "package.json#packageManager"]
   # Stopgap until aidev#16137 lands: with no declaration and no measured runs, pull hosts
   # priced a full run at the host default and refused it on an idle host (hb-auth#19).
   memory: "8g"

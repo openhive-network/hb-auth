@@ -1,3 +1,4 @@
 [submodule "common-ci-configuration"]
 	path = common-ci-configuration
 	url = ../common-ci-configuration.git
+	branch = develop

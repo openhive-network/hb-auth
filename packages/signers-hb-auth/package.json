@@ -11,11 +11,11 @@
     "prepack": "jq --slurpfile source ../../package.json '.version = $source[0].version' package.json > package.json.tmp && mv package.json.tmp package.json"
   },
   "devDependencies": {
-    "@hiveio/wax": "workspace:../../node_modules/@hiveio/wax",
+    "@hiveio/wax": "catalog:hiveio-toolset",
     "typescript": "catalog:typescript-toolset"
   },
   "peerDependencies": {
-    "@hiveio/wax": ">= 2.0.0 < 2.1.0",
+    "@hiveio/wax": ">= 1.28.8-0 < 1.29.0",
     "@hiveio/hb-auth": "workspace:../.."
   },
   "files": [

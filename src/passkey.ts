@@ -16,10 +16,10 @@ import { PasskeyError } from "./errors";
 
 export interface PasskeyRecord {
   username: string;
-  credentialId: Uint8Array;
-  prfSalt: Uint8Array;
-  encryptedPassword: Uint8Array;
-  iv: Uint8Array;
+  credentialId: Uint8Array<ArrayBuffer>;
+  prfSalt: Uint8Array<ArrayBuffer>;
+  encryptedPassword: Uint8Array<ArrayBuffer>;
+  iv: Uint8Array<ArrayBuffer>;
   rpId: string;
   createdAt: number;
 }

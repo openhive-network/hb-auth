@@ -57,8 +57,8 @@
     "@babel/core": "^7.22.9",
     "@babel/preset-env": "^7.22.9",
     "@babel/preset-typescript": "^7.22.5",
-    "@hiveio/beekeeper": "1.28.8-stable.261010174216",
-    "@hiveio/wax": "1.28.8-rc3",
+    "@hiveio/beekeeper": "catalog:hiveio-toolset",
+    "@hiveio/wax": "catalog:hiveio-toolset",
     "@playwright/test": "catalog:playwright-toolset",
     "@rollup/plugin-commonjs": "catalog:rollup-toolset",
     "@rollup/plugin-node-resolve": "catalog:rollup-toolset",
@@ -90,7 +90,7 @@
     "typescript": "catalog:typescript-toolset"
   },
   "peerDependencies": {
-    "@hiveio/wax": ">= 2.0.0 < 2.1.0"
+    "@hiveio/wax": ">= 1.28.8-0 < 1.29.0"
   },
   "dependencies": {
     "comlink": "^4.4.1"

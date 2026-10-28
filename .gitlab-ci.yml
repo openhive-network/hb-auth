@@ -24,6 +24,7 @@ variables:
   GIT_DEPTH: 0
   GIT_STRATEGY: clone
   GIT_SUBMODULE_STRATEGY: recursive
+  GIT_SUBMODULE_UPDATE_FLAGS: --remote
 
 include:
   - template: Workflows/Branch-Pipelines.gitlab-ci.yml

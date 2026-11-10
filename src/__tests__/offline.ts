@@ -13,6 +13,7 @@ import type { IHiveChainInterface } from "@hiveio/wax";
 declare const AuthOfflineClient: typeof OfflineClient;
 declare const chain: Promise<IHiveChainInterface>;
 declare let lifecycleClient: OfflineClient;
+declare let tabClient: OfflineClient;
 
 let browser!: ChromiumBrowser;
 
@@ -846,6 +847,180 @@ test.describe("HB Auth Offline Client under a strict worker CSP", () => {
 
   test.afterAll(async () => {
     await cspBrowser.close();
+  });
+});
+
+test.describe("HB Auth Offline Client concurrent calls", () => {
+  // Every tab's client reaches the same SharedWorker, so the tabs' calls
+  // interleave on one beekeeper. Served from a route rather than a file so the
+  // worker still resolves its WASM asset relative to /dist/.
+  const slowWorkerUrl = "/dist/slow-decryption-worker.js";
+  const slowWorker = [
+    'import "/src/__tests__/assets/slow-decryption.js";',
+    'import "./worker.js";',
+  ].join("\n");
+
+  let concurrentBrowser: ChromiumBrowser;
+  let context: BrowserContext;
+  let tabs: Page[];
+  const otherUser = `${user.username}.other`;
+
+  async function openTab(): Promise<Page> {
+    const tab = await context.newPage();
+    await tab.goto(`http://localhost:8080/src/__tests__/assets/offline.html`, {
+      waitUntil: "load",
+    });
+    await tab.evaluate(async (workerUrl) => {
+      tabClient = new AuthOfflineClient({ workerUrl });
+      await tabClient.initialize(await chain);
+    }, slowWorkerUrl);
+    return tab;
+  }
+
+  // Settled results, as values or as the rejection's message.
+  type Outcome = { value: unknown } | { error: string };
+
+  test.beforeAll(async () => {
+    concurrentBrowser = await chromium.launch({ headless: true });
+  });
+
+  test.beforeEach(async () => {
+    context = await concurrentBrowser.newContext();
+    await context.route(`**${slowWorkerUrl}`, async (route) => {
+      await route.fulfill({
+        contentType: "application/javascript",
+        body: slowWorker,
+      });
+    });
+    tabs = [await openTab(), await openTab()];
+    // The user stays logged in with its posting key; the other user, with its
+    // active key, is logged out so that it can authenticate.
+    await tabs[0].evaluate(
+      async ({ otherUser, user: { username, password, keys } }) => {
+        await tabClient.register(
+          username,
+          password,
+          keys[0].private,
+          keys[0].type as KeyAuthorityType,
+        );
+        await tabClient.register(
+          otherUser,
+          password,
+          keys[1].private,
+          keys[1].type as KeyAuthorityType,
+        );
+        await tabClient.logout(otherUser);
+      },
+      { otherUser, user },
+    );
+  });
+
+  test("Should settle one tab's signs made while another tab authenticates", async () => {
+    // Authenticating unlocks a wallet, which beekeeper runs asynchronously and
+    // the slowed decryption keeps running; signing makes synchronous beekeeper
+    // calls. The signing tab keeps going until the authenticating tab is
+    // done, so that the two overlap.
+    const rounds = 5;
+    const [signing, authenticating] = await Promise.all([
+      tabs[0].evaluate(async ({ username, keys, txs }) => {
+        const keyType = keys[0].type as KeyAuthorityType;
+        const outcomes = [];
+        do {
+          const batch = await Promise.allSettled(
+            Array.from(
+              { length: 5 },
+              async () => await tabClient.sign(username, txs[0].digest, keyType),
+            ),
+          );
+          outcomes.push(
+            ...batch.map((result) =>
+              result.status === "fulfilled"
+                ? { value: result.value }
+                : { error: String(result.reason) },
+            ),
+          );
+        } while (localStorage.getItem("authenticated") === null);
+        return outcomes;
+      }, user),
+      tabs[1].evaluate(
+        async ({ rounds, otherUser, user: { password, keys, txs } }) => {
+          const keyType = keys[1].type as KeyAuthorityType;
+          const outcomes = [];
+          try {
+            for (let round = 0; round < rounds; round += 1) {
+              try {
+                await tabClient.authenticate(otherUser, password, keyType);
+                outcomes.push({
+                  value: await tabClient.sign(otherUser, txs[1].digest, keyType),
+                });
+                await tabClient.logout(otherUser);
+              } catch (error) {
+                outcomes.push({ error: String(error) });
+              }
+            }
+          } finally {
+            localStorage.setItem("authenticated", "true");
+          }
+          return outcomes;
+        },
+        { rounds, otherUser, user },
+      ),
+    ]);
+
+    expect(signing.length).toBeGreaterThan(0);
+    expect(signing).toEqual(
+      Array<Outcome>(signing.length).fill({ value: user.txs[0].signed }),
+    );
+    expect(authenticating).toEqual(
+      Array<Outcome>(rounds).fill({ value: user.txs[1].signed }),
+    );
+  });
+
+  test("Should reject only the failing call and run the calls queued after it", async () => {
+    const outcomes = await Promise.all([
+      tabs[0].evaluate(async ({ username, keys, txs }) => {
+        const keyType = keys[0].type as KeyAuthorityType;
+        const results = await Promise.allSettled([
+          tabClient.sign(username, txs[0].digest, keyType),
+          tabClient.singleSign(
+            username,
+            txs[0].digest,
+            "not-a-wif-key",
+            keyType,
+          ),
+          tabClient.sign(username, txs[0].digest, keyType),
+        ]);
+        return results.map((result) =>
+          result.status === "fulfilled"
+            ? { value: result.value }
+            : { error: String(result.reason) },
+        );
+      }, user),
+      tabs[1].evaluate(
+        async ({ otherUser, user: { keys, txs } }) =>
+          await tabClient.singleSign(
+            otherUser,
+            txs[1].digest,
+            keys[1].private,
+            keys[1].type as KeyAuthorityType,
+          ),
+        { otherUser, user },
+      ),
+    ]);
+
+    const [[first, failed, last], otherSigned] = outcomes;
+    expect(first).toEqual({ value: user.txs[0].signed });
+    expect(failed).toHaveProperty("error");
+    expect(last).toEqual({ value: user.txs[0].signed });
+    expect(otherSigned).toBe(user.txs[1].signed);
+  });
+
+  test.afterEach(async () => {
+    await context.close();
+  });
+
+  test.afterAll(async () => {
+    await concurrentBrowser.close();
   });
 });
 

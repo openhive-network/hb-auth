@@ -1829,17 +1829,22 @@ test.describe("HB Auth Offline Client beekeeper lifecycle", () => {
 
 test.describe("HB Auth Offline Client checks before active-key operations", () => {
   // Served from a route rather than a file so the worker still resolves its
-  // WASM asset relative to /dist/. The slowed decryption makes a full wallet
-  // unlock take over 200 ms, while beekeeper only compares a password in
-  // memory when some session holds the wallet unlocked; so a wrong password's
-  // timing shows whether a check left its session open.
+  // WASM asset relative to /dist/. The slowed key derivation makes checking a
+  // password against a wallet no session holds unlocked, a wrong one included,
+  // take at least 200 ms, while beekeeper only compares a password in memory
+  // when some session holds the wallet unlocked; so a wrong password's timing
+  // shows whether a check left its session open. Beekeeper rejects a wrong
+  // password before decrypting, so slowing decryption would not show it.
   const checkWorkerUrl = "/dist/check-worker.js";
   const checkWorker = [
     'import "/src/__tests__/assets/count-wasm-instantiations.js";',
-    'import "/src/__tests__/assets/slow-decryption.js";',
+    'import "/src/__tests__/assets/slow-key-derivation.js";',
     'import "./worker.js";',
   ].join("\n");
-  const fullUnlockMs = 200;
+  const keyDerivationMs = 200;
+  // Long enough for the expired-session tests to register a user before it
+  // runs out, also on a loaded host.
+  const shortSessionTimeoutS = 3;
   const maxFailedPasswordChecks = 5;
   const otherUser = `${user.username}.other`;
   const ownerKey = { ...user.keys[0], type: "owner" };
@@ -2003,7 +2008,9 @@ test.describe("HB Auth Offline Client checks before active-key operations", () =
     for (const credential of ["password", "wrong password", "passkey"]) {
       for (const state of Object.keys(states)) {
         test(`Should ${operation} with the ${credential} on an ${state} session and leave the session as it was`, async () => {
-          await createCheckClient(state === "expired" ? 1 : undefined);
+          await createCheckClient(
+            state === "expired" ? shortSessionTimeoutS : undefined,
+          );
           // Keeps the session interval from locking the expired wallet, so
           // that only the check can be what keeps it locked.
           await setTimings({ sessionHealthCheck: 3_600_000 });
@@ -2013,7 +2020,9 @@ test.describe("HB Auth Offline Client checks before active-key operations", () =
               await checkClient.lock();
             });
           }
-          if (state === "expired") await page.waitForTimeout(1500);
+          if (state === "expired") {
+            await page.waitForTimeout(shortSessionTimeoutS * 1000 + 500);
+          }
 
           const outcome = await page.evaluate(
             async ({
@@ -2067,7 +2076,7 @@ test.describe("HB Auth Offline Client checks before active-key operations", () =
           expect(await page.evaluate(() => sessionEnds)).toBe(0);
 
           // With the signing session's wallet locked, a wrong password costs
-          // a full unlock unless a check session still holds it unlocked.
+          // a key derivation unless a check session still holds it unlocked.
           const elapsed = await page.evaluate(
             async ({ state, username }) => {
               if (state === "unlocked") await checkClient.lock();
@@ -2079,7 +2088,7 @@ test.describe("HB Auth Offline Client checks before active-key operations", () =
             },
             { state, username: user.username },
           );
-          expect(elapsed).toBeGreaterThanOrEqual(fullUnlockMs);
+          expect(elapsed).toBeGreaterThanOrEqual(keyDerivationMs);
         });
       }
     }

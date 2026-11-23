@@ -1,15 +1,18 @@
 import type { ApiTransaction, IHiveChainInterface, ITransaction, TTransactionPackType } from "@hiveio/wax";
 import { proxy, wrap, type Endpoint, type Remote, type Local } from "comlink";
-import { AuthorizationError, GenericError } from "./errors";
+import { AuthorizationError, CheckRequiredError, GenericError } from "./errors";
 import type { PasskeyError } from "./errors";
 import { isSupportSharedWorker, isSupportWebWorker } from "./environment";
 import { withTimeout, DEFAULT_INIT_TIMEOUT } from "./utils";
 import {
   isPasskeySupported as checkPasskeySupport,
   getPasskeyRecord,
+  loadPasskeyRecord,
   registerPasskey as registerPasskeyCredential,
   recoverPasswordWithPasskey,
+  recoverPasswordWithRecord,
   removePasskeyRecord,
+  type PasskeyRecord,
 } from "./passkey";
 import type {
   Auth,
@@ -18,7 +21,47 @@ import type {
   KeyAuthorityType,
   UserSettings,
 } from "./worker";
-export type { AuthUser, KeyAuthorityType, AuthorizationError, PasskeyError };
+export type {
+  AuthUser,
+  KeyAuthorityType,
+  AuthorizationError,
+  CheckRequiredError,
+  PasskeyError,
+  PasskeyRecord,
+};
+
+export interface RegisterOptions {
+  /**
+   * Whether `sign` refuses active and owner keys for this wallet, so that each
+   * such signature needs {@link Client.signWithCheck}. Applies when the call
+   * creates the wallet; adding a key to an existing wallet keeps its setting.
+   * @defaultValue `false`
+   */
+  requireActiveCheck?: boolean;
+}
+
+/**
+ * What proves the user for a check: the wallet password, or a passkey
+ * registered with {@link Client.registerPasskey}. Read the passkey record with
+ * {@link Client.loadPasskey} before the user's gesture; the check then asks the
+ * authenticator first thing, as Safari needs. `userVerification` defaults to
+ * `"required"`, and an assertion without the user-verified flag is refused.
+ */
+export type CheckCredential =
+  | { password: string }
+  | {
+      passkey: PasskeyRecord;
+      userVerification?: UserVerificationRequirement;
+    };
+
+// Starts the authenticator synchronously, before anything else is awaited.
+async function passwordOf(credential: CheckCredential): Promise<string> {
+  if ("password" in credential) return credential.password;
+  return await recoverPasswordWithRecord(
+    credential.passkey,
+    credential.userVerification ?? "required",
+  );
+}
 
 export interface AuthStatus {
   /**
@@ -302,6 +345,7 @@ abstract class Client {
    * @param password Password
    * @param wifKey Private key
    * @param keyType Key authority type
+   * @param options Options for a wallet this call creates
    * @returns {Promise<AuthStatus>}
    */
   public async register(
@@ -310,6 +354,7 @@ abstract class Client {
     wifKey: string,
     keyType: KeyAuthorityType,
     strict: boolean = true,
+    options: RegisterOptions = {},
     offline?: boolean,
   ): Promise<AuthStatus> {
     const txBuilder = await this.getVerificationTx(username, keyType, offline);
@@ -320,6 +365,7 @@ abstract class Client {
       wifKey,
       keyType,
       strict,
+      options.requireActiveCheck ?? false,
     );
 
     txBuilder.addSignature(signature);
@@ -460,13 +506,100 @@ abstract class Client {
    * @param transactionDigest Transaction digest string
    * @param keyType Key authority type
    * @returns {Promise<string>} Signature
+   * @throws {CheckRequiredError} For an active or owner key while the user's
+   *   wallet requires a check before active-key operations; sign with
+   *   {@link Client.signWithCheck} instead.
    */
   public async sign(
     username: string,
     transactionDigest: string,
     keyType: KeyAuthorityType,
   ): Promise<string> {
-    return await this.#auth.sign(username, transactionDigest, keyType);
+    try {
+      return await this.#auth.sign(username, transactionDigest, keyType);
+    } catch (error) {
+      // Comlink delivers the worker's errors as plain Errors with their name.
+      if (error instanceof Error && error.name === "CheckRequiredError") {
+        throw new CheckRequiredError(error.message);
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * Checks the password or a passkey without changing the user's session:
+   * no logout, no session-end callback, and the wallet is not unlocked. Like
+   * every unlock it restarts the session's idle clock, but it does not revive
+   * an expired session. After a few wrong passwords in a row, through any call
+   * that checks one, the user's wallet is locked.
+   * @param username Username
+   * @param credential Password or passkey
+   * @throws {AuthorizationError} "Invalid credentials" for a wrong password
+   * @throws {PasskeyError} If the passkey assertion fails or lacks a required flag
+   */
+  public async checkCredential(
+    username: string,
+    credential: CheckCredential,
+  ): Promise<void> {
+    const password = await passwordOf(credential);
+    await this.#auth.checkPassword(username, password);
+  }
+
+  /**
+   * Checks the password or a passkey, as {@link Client.checkCredential} does,
+   * and signs one digest with the user's key of the given type, whether the
+   * user's wallet is unlocked, locked or expired. Nothing is remembered: the
+   * next operation needs its own check.
+   * @param username Username
+   * @param transactionDigest Transaction digest string
+   * @param keyType Key authority type
+   * @param credential Password or passkey
+   * @returns {Promise<string>} Signature
+   */
+  public async signWithCheck(
+    username: string,
+    transactionDigest: string,
+    keyType: KeyAuthorityType,
+    credential: CheckCredential,
+  ): Promise<string> {
+    const password = await passwordOf(credential);
+    return await this.#auth.signWithPassword(
+      username,
+      password,
+      transactionDigest,
+      keyType,
+    );
+  }
+
+  /**
+   * Whether the user's wallet requires a check before active-key operations.
+   * While the wallet is unlocked the stored setting is verified; otherwise it
+   * is reported as stored. A missing or tampered setting reads as `true`.
+   * @param username Username
+   */
+  public async getRequireActiveCheck(username: string): Promise<boolean> {
+    return await this.#auth.getRequireActiveCheck(username);
+  }
+
+  /**
+   * Turns the check before active-key operations on or off for the user's
+   * wallet. Either way it needs the password or a passkey; a failed check
+   * leaves the setting unchanged.
+   * @param username Username
+   * @param requireActiveCheck New setting
+   * @param credential Password or passkey
+   */
+  public async setRequireActiveCheck(
+    username: string,
+    requireActiveCheck: boolean,
+    credential: CheckCredential,
+  ): Promise<void> {
+    const password = await passwordOf(credential);
+    await this.#auth.setRequireActiveCheck(
+      username,
+      password,
+      requireActiveCheck,
+    );
   }
 
   /**
@@ -554,6 +687,15 @@ abstract class Client {
   }
 
   /**
+   * Read the user's passkey for a {@link CheckCredential}. Call it before the
+   * user's gesture, so that the check can ask the authenticator first thing.
+   * @throws {PasskeyError} NO_PASSKEY_REGISTERED if the user has none
+   */
+  public async loadPasskey(username: string): Promise<PasskeyRecord> {
+    return await loadPasskeyRecord(username);
+  }
+
+  /**
    * Remove a registered passkey for the given user.
    * The user will need to enter their password on next unlock.
    */
@@ -579,6 +721,7 @@ class OfflineClient extends Client {
     wifKey: string,
     keyType: KeyAuthorityType,
     strict: boolean = true,
+    options: RegisterOptions = {},
   ): Promise<AuthStatus> {
     return await super.register(
       username,
@@ -586,6 +729,7 @@ class OfflineClient extends Client {
       wifKey,
       keyType,
       strict,
+      options,
       true,
     );
   }
@@ -734,6 +878,7 @@ class OnlineClient extends Client {
     wifKey: string,
     keyType: KeyAuthorityType,
     strict: boolean = true,
+    options: RegisterOptions = {},
   ): Promise<AuthStatus> {
     return await super.register(
       username,
@@ -741,6 +886,7 @@ class OnlineClient extends Client {
       wifKey,
       keyType,
       strict,
+      options,
       false,
     );
   }

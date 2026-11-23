@@ -29,7 +29,7 @@ branches:
 # How this project's suites execute (#13892): one kind, stated once.
 environment:
   kind: "container"
-  image: "registry.gitlab.syncad.com/hive/hb-auth/aidev-tests@sha256:97bac048ed8f41385f01f2e1cd60914c2469ca44991262f851e9ceaf3aee5203"
+  image: "registry.gitlab.syncad.com/hive/hb-auth/aidev-tests@sha256:7cbfba2490ba6465626b4a9aff6a3379e6135de1fcaf387a8de9ec82b22a93d4"
   # What the image is built from (.aidev/runtime/build.sh hashes the same files): a
   # change to one is what lets a commit re-pin `image`.
   inputs: ["pnpm-lock.yaml", ".aidev/runtime/Dockerfile", "package.json#packageManager"]

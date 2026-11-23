@@ -7,13 +7,25 @@ import {
 } from "playwright";
 import { test, expect } from "@playwright/test";
 
-import type { KeyAuthorityType, OfflineClient } from "../../src";
+import type {
+  CheckCredential,
+  CheckRequiredError,
+  KeyAuthorityType,
+  OfflineClient,
+  PasskeyError,
+} from "../../src";
 import type { IHiveChainInterface } from "@hiveio/wax";
+import type createBeekeeper from "@hiveio/beekeeper";
 
 declare const AuthOfflineClient: typeof OfflineClient;
 declare const chain: Promise<IHiveChainInterface>;
 declare let lifecycleClient: OfflineClient;
 declare let tabClient: OfflineClient;
+declare let checkClient: OfflineClient;
+declare let sessionEnds: number;
+declare let passkeyFlags: number;
+declare const HbAuthCheckRequiredError: typeof CheckRequiredError;
+declare const beekeeperModule: Promise<{ default: typeof createBeekeeper }>;
 
 let browser!: ChromiumBrowser;
 
@@ -1015,6 +1027,68 @@ test.describe("HB Auth Offline Client concurrent calls", () => {
     expect(otherSigned).toBe(user.txs[1].signed);
   });
 
+  test("Should complete checks and checked signatures made from two tabs at once", async () => {
+    // Each check unlocks the wallet in a beekeeper session of its own, which
+    // the slowed decryption keeps open while the other tab's calls arrive.
+    const [first, second] = await Promise.all([
+      tabs[0].evaluate(async ({ username, password, keys, txs }) => {
+        const keyType = keys[0].type as KeyAuthorityType;
+        const results = await Promise.allSettled([
+          tabClient.checkCredential(username, { password }),
+          tabClient.signWithCheck(username, txs[0].digest, keyType, {
+            password,
+          }),
+          tabClient.sign(username, txs[0].digest, keyType),
+          tabClient.signWithCheck(username, txs[0].digest, keyType, {
+            password,
+          }),
+          tabClient.checkCredential(username, { password }),
+        ]);
+        const auth = await tabClient.getAuthByUser(username);
+        return {
+          results: results.map((result) =>
+            result.status === "fulfilled"
+              ? { value: result.value ?? "checked" }
+              : { error: String(result.reason) },
+          ),
+          unlocked: auth?.unlocked,
+          authorized: auth?.authorized,
+        };
+      }, user),
+      tabs[1].evaluate(
+        async ({ otherUser, user: { password, keys, txs } }) => {
+          const keyType = keys[1].type as KeyAuthorityType;
+          const results = await Promise.allSettled([
+            tabClient.signWithCheck(otherUser, txs[1].digest, keyType, {
+              password,
+            }),
+            tabClient.checkCredential(otherUser, { password }),
+            tabClient.signWithCheck(otherUser, txs[1].digest, keyType, {
+              password,
+            }),
+          ]);
+          return results.map((result) =>
+            result.status === "fulfilled"
+              ? { value: result.value ?? "checked" }
+              : { error: String(result.reason) },
+          );
+        },
+        { otherUser, user },
+      ),
+    ]);
+
+    const signed = { value: user.txs[0].signed };
+    const checked = { value: "checked" };
+    expect(first.results).toEqual([checked, signed, signed, signed, checked]);
+    expect(first.unlocked).toBe(true);
+    expect(first.authorized).toBe(true);
+    expect(second).toEqual([
+      { value: user.txs[1].signed },
+      checked,
+      { value: user.txs[1].signed },
+    ]);
+  });
+
   test.afterEach(async () => {
     await context.close();
   });
@@ -1750,5 +1824,689 @@ test.describe("HB Auth Offline Client beekeeper lifecycle", () => {
 
   test.afterAll(async () => {
     await lifecycleBrowser.close();
+  });
+});
+
+test.describe("HB Auth Offline Client checks before active-key operations", () => {
+  // Served from a route rather than a file so the worker still resolves its
+  // WASM asset relative to /dist/. The slowed decryption makes a full wallet
+  // unlock take over 200 ms, while beekeeper only compares a password in
+  // memory when some session holds the wallet unlocked; so a wrong password's
+  // timing shows whether a check left its session open.
+  const checkWorkerUrl = "/dist/check-worker.js";
+  const checkWorker = [
+    'import "/src/__tests__/assets/count-wasm-instantiations.js";',
+    'import "/src/__tests__/assets/slow-decryption.js";',
+    'import "./worker.js";',
+  ].join("\n");
+  const fullUnlockMs = 200;
+  const maxFailedPasswordChecks = 5;
+  const otherUser = `${user.username}.other`;
+  const ownerKey = { ...user.keys[0], type: "owner" };
+
+  let checkBrowser: ChromiumBrowser;
+  let context: BrowserContext;
+  let page: Page;
+
+  interface AuthState {
+    unlocked: boolean | undefined;
+    authorized: boolean | undefined;
+  }
+
+  // Talks to count-wasm-instantiations.js inside the worker.
+  async function setTimings(timings: {
+    sessionHealthCheck?: number;
+  }): Promise<void> {
+    await page.evaluate(
+      async (timings) =>
+        await new Promise<void>((resolve) => {
+          const channel = new BroadcastChannel("hb-auth-wasm-instantiations");
+          channel.onmessage = () => {
+            channel.close();
+            resolve();
+          };
+          channel.postMessage({ timings });
+        }),
+      timings,
+    );
+  }
+
+  async function createCheckClient(sessionTimeout?: number): Promise<void> {
+    await page.evaluate(
+      async ({ workerUrl, sessionTimeout }) => {
+        checkClient = new AuthOfflineClient(
+          sessionTimeout === undefined
+            ? { workerUrl }
+            : { workerUrl, sessionTimeout },
+        );
+        await checkClient.initialize(await chain);
+        sessionEnds = 0;
+        await checkClient.setSessionEndCallback(async () => {
+          sessionEnds += 1;
+        });
+      },
+      { workerUrl: checkWorkerUrl, sessionTimeout },
+    );
+  }
+
+  // A browser refuses userVerification "required" on an authenticator that
+  // cannot verify the user, so the page's WebAuthn is a stub: its assertions
+  // carry the authenticatorData flags byte in `passkeyFlags` and a fixed PRF
+  // output.
+  async function installPasskeyStub(): Promise<void> {
+    await page.evaluate(() => {
+      passkeyFlags = 0x05;
+      const prfOutput = new Uint8Array(32).fill(7).buffer;
+      Object.defineProperty(navigator.credentials, "create", {
+        value: async () => ({
+          rawId: new Uint8Array([1, 2, 3, 4]).buffer,
+          getClientExtensionResults: () => ({ prf: { enabled: true } }),
+        }),
+      });
+      Object.defineProperty(navigator.credentials, "get", {
+        value: async () => {
+          const authenticatorData = new Uint8Array(37);
+          authenticatorData[32] = passkeyFlags;
+          return {
+            response: { authenticatorData: authenticatorData.buffer },
+            getClientExtensionResults: () => ({
+              prf: { results: { first: prfOutput } },
+            }),
+          };
+        },
+      });
+    });
+  }
+
+  // Registers posting and active keys, and a passkey; the posting key creates
+  // the wallet, with the given setting.
+  async function registerUser(
+    username: string,
+    requireActiveCheck?: boolean,
+  ): Promise<void> {
+    await page.evaluate(
+      async ({ username, requireActiveCheck, user: { password, keys } }) => {
+        await checkClient.register(
+          username,
+          password,
+          keys[0].private,
+          keys[0].type as KeyAuthorityType,
+          true,
+          requireActiveCheck === undefined ? {} : { requireActiveCheck },
+        );
+        await checkClient.register(
+          username,
+          password,
+          keys[1].private,
+          keys[1].type as KeyAuthorityType,
+        );
+        await checkClient.registerPasskey(username, password);
+      },
+      { username, requireActiveCheck, user },
+    );
+  }
+
+  async function authState(username = user.username): Promise<AuthState> {
+    return await page.evaluate(async (username) => {
+      const auth = await checkClient.getAuthByUser(username);
+      return { unlocked: auth?.unlocked, authorized: auth?.authorized };
+    }, username);
+  }
+
+  // `sign`'s signature, or the error's name and message.
+  async function trySign(
+    keyType: KeyAuthorityType,
+    username = user.username,
+  ): Promise<string> {
+    return await page.evaluate(
+      async ({ username, keyType, txs }) => {
+        const digest = keyType === "active" ? txs[1].digest : txs[0].digest;
+        try {
+          return await checkClient.sign(username, digest, keyType);
+        } catch (error) {
+          return `${(error as Error).name}: ${(error as Error).message}`;
+        }
+      },
+      { username, keyType, txs: user.txs },
+    );
+  }
+
+  const checkRequired = expect.stringMatching(/^CheckRequiredError: /);
+  const notAuthorized = "AuthorizationError: Not authorized";
+
+  test.beforeAll(async () => {
+    checkBrowser = await chromium.launch({ headless: true });
+  });
+
+  test.beforeEach(async () => {
+    context = await checkBrowser.newContext();
+    await context.route(`**${checkWorkerUrl}`, async (route) => {
+      await route.fulfill({
+        contentType: "application/javascript",
+        body: checkWorker,
+      });
+    });
+    page = await context.newPage();
+    await page.goto(`http://localhost:8080/src/__tests__/assets/offline.html`, {
+      waitUntil: "load",
+    });
+    await installPasskeyStub();
+  });
+
+  const states: Record<string, AuthState> = {
+    unlocked: { unlocked: true, authorized: true },
+    locked: { unlocked: false, authorized: true },
+    expired: { unlocked: false, authorized: false },
+  };
+
+  for (const operation of ["checkCredential", "signWithCheck"] as const) {
+    for (const credential of ["password", "wrong password", "passkey"]) {
+      for (const state of Object.keys(states)) {
+        test(`Should ${operation} with the ${credential} on an ${state} session and leave the session as it was`, async () => {
+          await createCheckClient(state === "expired" ? 1 : undefined);
+          // Keeps the session interval from locking the expired wallet, so
+          // that only the check can be what keeps it locked.
+          await setTimings({ sessionHealthCheck: 3_600_000 });
+          await registerUser(user.username, true);
+          if (state === "locked") {
+            await page.evaluate(async () => {
+              await checkClient.lock();
+            });
+          }
+          if (state === "expired") await page.waitForTimeout(1500);
+
+          const outcome = await page.evaluate(
+            async ({
+              operation,
+              credential,
+              user: { username, password, txs },
+            }) => {
+              const check: CheckCredential =
+                credential === "passkey"
+                  ? { passkey: await checkClient.loadPasskey(username) }
+                  : {
+                      password: credential === "password" ? password : "abc",
+                    };
+              try {
+                if (operation === "checkCredential") {
+                  await checkClient.checkCredential(username, check);
+                  return { value: "checked" };
+                }
+                return {
+                  value: await checkClient.signWithCheck(
+                    username,
+                    txs[1].digest,
+                    "active",
+                    check,
+                  ),
+                };
+              } catch (error) {
+                return { error: (error as Error).message };
+              }
+            },
+            { operation, credential, user },
+          );
+          if (credential === "wrong password") {
+            expect(outcome).toEqual({ error: "Invalid credentials" });
+          } else if (operation === "checkCredential") {
+            expect(outcome).toEqual({ value: "checked" });
+          } else {
+            // The active key's known signature of the digest.
+            expect(outcome).toEqual({ value: user.txs[1].signed });
+          }
+
+          expect(await authState()).toEqual(states[state]);
+          if (state === "unlocked") {
+            expect(await trySign("posting")).toBe(user.txs[0].signed);
+            // The check did not carry over to the next operation.
+            expect(await trySign("active")).toEqual(checkRequired);
+          } else {
+            expect(await trySign("posting")).toBe(notAuthorized);
+            expect(await trySign("active")).toBe(notAuthorized);
+          }
+          expect(await page.evaluate(() => sessionEnds)).toBe(0);
+
+          // With the signing session's wallet locked, a wrong password costs
+          // a full unlock unless a check session still holds it unlocked.
+          const elapsed = await page.evaluate(
+            async ({ state, username }) => {
+              if (state === "unlocked") await checkClient.lock();
+              const start = performance.now();
+              await checkClient
+                .checkCredential(username, { password: "abc" })
+                .catch(() => undefined);
+              return performance.now() - start;
+            },
+            { state, username: user.username },
+          );
+          expect(elapsed).toBeGreaterThanOrEqual(fullUnlockMs);
+        });
+      }
+    }
+  }
+
+  const wrongPasswordCalls = {
+    checkCredential: ["checkCredential"],
+    signWithCheck: ["signWithCheck"],
+    setRequireActiveCheck: ["setRequireActiveCheck"],
+    "a mix of checking calls": [
+      "checkCredential",
+      "signWithCheck",
+      "setRequireActiveCheck",
+    ],
+  };
+
+  for (const [via, calls] of Object.entries(wrongPasswordCalls)) {
+    test(`Should lock only that user's wallet after ${maxFailedPasswordChecks} wrong passwords in a row through ${via}`, async () => {
+      await createCheckClient();
+      await registerUser(user.username);
+      await registerUser(otherUser);
+
+      const wrong = async (count: number): Promise<string[]> =>
+        await page.evaluate(
+          async ({ count, calls, user: { username, txs } }) => {
+            const errors = [];
+            for (let i = 0; i < count; i += 1) {
+              const call = calls[i % calls.length];
+              const password = "abc";
+              try {
+                if (call === "checkCredential") {
+                  await checkClient.checkCredential(username, { password });
+                } else if (call === "signWithCheck") {
+                  await checkClient.signWithCheck(
+                    username,
+                    txs[1].digest,
+                    "active",
+                    { password },
+                  );
+                } else {
+                  await checkClient.setRequireActiveCheck(username, true, {
+                    password,
+                  });
+                }
+                errors.push("accepted");
+              } catch (error) {
+                errors.push((error as Error).message);
+              }
+            }
+            return errors;
+          },
+          { count, calls, user },
+        );
+
+      expect(await wrong(maxFailedPasswordChecks - 1)).toEqual(
+        Array<string>(maxFailedPasswordChecks - 1).fill("Invalid credentials"),
+      );
+      expect(await authState()).toEqual(states.unlocked);
+
+      expect(await wrong(1)).toEqual(["Invalid credentials"]);
+      expect(await authState()).toEqual(states.locked);
+      expect(await trySign("posting")).toBe(notAuthorized);
+      expect(await authState(otherUser)).toEqual(states.unlocked);
+      expect(await trySign("posting", otherUser)).toBe(user.txs[0].signed);
+    });
+  }
+
+  test("Should count only wrong passwords in a row", async () => {
+    await createCheckClient();
+    await registerUser(user.username);
+    const errors = await page.evaluate(
+      async ({ count, user: { username, password } }) => {
+        const errors = [];
+        for (const check of [
+          ...Array<string>(count).fill("abc"),
+          password,
+          ...Array<string>(count).fill("abc"),
+        ]) {
+          try {
+            await checkClient.checkCredential(username, { password: check });
+            errors.push("accepted");
+          } catch (error) {
+            errors.push((error as Error).message);
+          }
+        }
+        return errors;
+      },
+      { count: maxFailedPasswordChecks - 1, user },
+    );
+    expect(errors.filter((error) => error === "accepted")).toHaveLength(1);
+    expect(await authState()).toEqual(states.unlocked);
+  });
+
+  for (const [flag, flags, code] of [
+    ["user-present", 0x04, "USER_NOT_PRESENT"],
+    ["user-verified", 0x01, "USER_NOT_VERIFIED"],
+  ] as const) {
+    test(`Should refuse a passkey assertion with the ${flag} flag clear when verification is required`, async () => {
+      await createCheckClient();
+      await registerUser(user.username);
+      const result = await page.evaluate(
+        async ({ flags, user: { username, txs } }) => {
+          passkeyFlags = flags;
+          const passkey = await checkClient.loadPasskey(username);
+          const errorOf = async (
+            call: () => Promise<unknown>,
+          ): Promise<string> => {
+            try {
+              await call();
+              return "accepted";
+            } catch (error) {
+              return `${(error as PasskeyError).name}: ${(error as PasskeyError).code}`;
+            }
+          };
+          return {
+            check: await errorOf(
+              async () =>
+                await checkClient.checkCredential(username, { passkey }),
+            ),
+            signWithCheck: await errorOf(
+              async () =>
+                await checkClient.signWithCheck(
+                  username,
+                  txs[1].digest,
+                  "active",
+                  { passkey, userVerification: "required" },
+                ),
+            ),
+            biometricUnlock: await errorOf(
+              async () =>
+                await checkClient.biometricUnlock(
+                  username,
+                  "posting",
+                  "required",
+                ),
+            ),
+            sessionEnds,
+          };
+        },
+        { flags, user },
+      );
+      const refused = `PasskeyError: ${code}`;
+      expect(result).toEqual({
+        check: refused,
+        signWithCheck: refused,
+        biometricUnlock: refused,
+        sessionEnds: 0,
+      });
+      expect(await authState()).toEqual(states.unlocked);
+    });
+  }
+
+  test("Should accept a passkey assertion without the user-verified flag when verification is only preferred", async () => {
+    await createCheckClient();
+    await registerUser(user.username);
+    const signed = await page.evaluate(async ({ username, txs }) => {
+      passkeyFlags = 0x01;
+      const passkey = await checkClient.loadPasskey(username);
+      return await checkClient.signWithCheck(username, txs[1].digest, "active", {
+        passkey,
+        userVerification: "preferred",
+      });
+    }, user);
+    expect(signed).toBe(user.txs[1].signed);
+  });
+
+  test("Should refuse active and owner keys in sign while the setting is on, and sign them with a check", async () => {
+    await createCheckClient();
+    await registerUser(user.username, true);
+    const result = await page.evaluate(
+      async ({ ownerKey, user: { username, password, txs } }) => {
+        await checkClient.register(
+          username,
+          password,
+          ownerKey.private,
+          ownerKey.type as KeyAuthorityType,
+        );
+        const refusal = async (keyType: KeyAuthorityType): Promise<string> => {
+          try {
+            await checkClient.sign(username, txs[1].digest, keyType);
+            return "signed";
+          } catch (error) {
+            return error instanceof HbAuthCheckRequiredError
+              ? "CheckRequiredError"
+              : String(error);
+          }
+        };
+        return {
+          setting: await checkClient.getRequireActiveCheck(username),
+          active: await refusal("active"),
+          owner: await refusal("owner"),
+          posting: await checkClient.sign(username, txs[0].digest, "posting"),
+          checkedActive: await checkClient.signWithCheck(
+            username,
+            txs[1].digest,
+            "active",
+            { password },
+          ),
+          // The owner key here is the posting key, so is its signature.
+          checkedOwner: await checkClient.signWithCheck(
+            username,
+            txs[0].digest,
+            "owner",
+            { password },
+          ),
+        };
+      },
+      { ownerKey, user },
+    );
+    expect(result).toEqual({
+      setting: true,
+      active: "CheckRequiredError",
+      owner: "CheckRequiredError",
+      posting: user.txs[0].signed,
+      checkedActive: user.txs[1].signed,
+      checkedOwner: user.txs[0].signed,
+    });
+  });
+
+  test("Should sign active keys in sign as before with the setting off, the default", async () => {
+    await createCheckClient();
+    await registerUser(user.username);
+    expect(
+      await page.evaluate(
+        async ({ username }) => await checkClient.getRequireActiveCheck(username),
+        user,
+      ),
+    ).toBe(false);
+    expect(await trySign("active")).toBe(user.txs[1].signed);
+  });
+
+  test("Should change the setting only with a passing check, in either direction", async () => {
+    await createCheckClient();
+    await registerUser(user.username, true);
+    const change = async (
+      requireActiveCheck: boolean,
+      credential: "password" | "wrong password" | "passkey",
+    ): Promise<{ error: string | undefined; setting: boolean; active: string }> => {
+      const { error, setting } = await page.evaluate(
+        async ({ requireActiveCheck, credential, user: { username, password } }) => {
+          const check: CheckCredential =
+            credential === "passkey"
+              ? { passkey: await checkClient.loadPasskey(username) }
+              : { password: credential === "password" ? password : "abc" };
+          let error;
+          try {
+            await checkClient.setRequireActiveCheck(
+              username,
+              requireActiveCheck,
+              check,
+            );
+          } catch (caught) {
+            error = (caught as Error).message;
+          }
+          return {
+            error,
+            setting: await checkClient.getRequireActiveCheck(username),
+          };
+        },
+        { requireActiveCheck, credential, user },
+      );
+      return { error, setting, active: await trySign("active") };
+    };
+
+    expect(await change(false, "wrong password")).toEqual({
+      error: "Invalid credentials",
+      setting: true,
+      active: checkRequired,
+    });
+    expect(await change(false, "password")).toEqual({
+      error: undefined,
+      setting: false,
+      active: user.txs[1].signed,
+    });
+    expect(await change(true, "wrong password")).toEqual({
+      error: "Invalid credentials",
+      setting: false,
+      active: user.txs[1].signed,
+    });
+    expect(await change(true, "passkey")).toEqual({
+      error: undefined,
+      setting: true,
+      active: checkRequired,
+    });
+  });
+
+  // Rewrites the user's setting record the way any script on the origin can.
+  async function tamperSetting(
+    tampering: "value flipped" | "another user's record" | "deleted",
+  ): Promise<void> {
+    await page.evaluate(
+      async ({ tampering, username, otherUser }) => {
+        const db = await new Promise<IDBDatabase>((resolve, reject) => {
+          const request = indexedDB.open("/protected_settings_v3");
+          request.onsuccess = () => {
+            resolve(request.result);
+          };
+          request.onerror = () => {
+            reject(request.error);
+          };
+        });
+        const run = async <T>(
+          mode: IDBTransactionMode,
+          use: (store: IDBObjectStore) => IDBRequest<T>,
+        ): Promise<T> =>
+          await new Promise<T>((resolve, reject) => {
+            const transaction = db.transaction("settings", mode);
+            const request = use(transaction.objectStore("settings"));
+            transaction.oncomplete = () => {
+              resolve(request.result);
+            };
+            transaction.onerror = () => {
+              reject(transaction.error);
+            };
+          });
+        if (tampering === "deleted") {
+          await run("readwrite", (store) => store.delete(username));
+        } else {
+          const source = tampering === "value flipped" ? username : otherUser;
+          const record = (await run("readonly", (store) =>
+            store.get(source),
+          )) as { requireActiveCheck: boolean };
+          await run("readwrite", (store) =>
+            store.put({ ...record, username, requireActiveCheck: false }),
+          );
+        }
+        db.close();
+      },
+      { tampering, username: user.username, otherUser },
+    );
+  }
+
+  for (const tampering of [
+    "value flipped",
+    "another user's record",
+    "deleted",
+  ] as const) {
+    test(`Should treat the setting as on when its record was tampered with: ${tampering}`, async () => {
+      await createCheckClient();
+      await registerUser(otherUser);
+      await registerUser(user.username, true);
+      await tamperSetting(tampering);
+
+      const setting = async (): Promise<boolean> =>
+        await page.evaluate(
+          async ({ username }) =>
+            await checkClient.getRequireActiveCheck(username),
+          user,
+        );
+      expect(await setting()).toBe(true);
+      expect(await trySign("active")).toEqual(checkRequired);
+
+      // A new login does not take the wallet for one from before the setting.
+      await page.evaluate(async ({ username, password }) => {
+        await checkClient.logout(username);
+        await checkClient.authenticate(username, password, "posting");
+      }, user);
+      expect(await setting()).toBe(true);
+      expect(await trySign("active")).toEqual(checkRequired);
+    });
+  }
+
+  test("Should treat a wallet from before the setting as off and give it a verified record at its next unlock", async () => {
+    // Writes the wallet and alias an earlier hb-auth would have, before the
+    // worker's beekeeper starts and loads the storage.
+    await page.evaluate(
+      async ({ username, password, keys }) => {
+        const { default: createBeekeeper } = await beekeeperModule;
+        const beekeeper = await createBeekeeper({
+          storageRoot: "/storage_root_v3",
+        });
+        const session = beekeeper.createSession(crypto.randomUUID());
+        const { wallet } = await session.createWallet(username, password);
+        const pubKey = await wallet.importKey(keys[1].private);
+        await beekeeper.delete();
+        await new Promise<void>((resolve, reject) => {
+          const request = indexedDB.open("/aliases_v3", 1);
+          request.onupgradeneeded = () => {
+            const store = request.result.createObjectStore("aliases", {
+              keyPath: "alias",
+            });
+            store.createIndex("alias", "alias", { unique: true });
+          };
+          request.onerror = () => {
+            reject(request.error);
+          };
+          request.onsuccess = () => {
+            const db = request.result;
+            const transaction = db.transaction("aliases", "readwrite");
+            transaction
+              .objectStore("aliases")
+              .put({ pubKey, alias: `${username}@active` });
+            transaction.oncomplete = () => {
+              db.close();
+              resolve();
+            };
+            transaction.onerror = () => {
+              reject(transaction.error);
+            };
+          };
+        });
+      },
+      user,
+    );
+    await createCheckClient();
+    await page.evaluate(async ({ username, password }) => {
+      await checkClient.authenticate(username, password, "active");
+    }, user);
+
+    expect(await trySign("active")).toBe(user.txs[1].signed);
+    expect(
+      await page.evaluate(
+        async ({ username }) => await checkClient.getRequireActiveCheck(username),
+        user,
+      ),
+    ).toBe(false);
+
+    // The record is verified now, and the wallet carries the marker.
+    await tamperSetting("deleted");
+    expect(await trySign("active")).toEqual(checkRequired);
+  });
+
+  test.afterEach(async () => {
+    await context.close();
+  });
+
+  test.afterAll(async () => {
+    await checkBrowser.close();
   });
 });

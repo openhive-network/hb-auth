@@ -6,13 +6,34 @@ import createBeekeeperApp, {
   type IBeekeeperWallet,
   type IBeekeeperUnlockedWallet,
 } from "@hiveio/beekeeper";
-import { AuthorizationError, GenericError, InternalError } from "./errors";
+import {
+  AuthorizationError,
+  CheckRequiredError,
+  GenericError,
+  InternalError,
+} from "./errors";
+import {
+  MARKER_PUBLIC_KEY,
+  deriveSettingKey,
+  getMarkerWif,
+  readStoredSetting,
+  readVerifiedSetting,
+  writeSetting,
+} from "./protected-settings";
 
 // adjust this when breaking changes are made
 const IDB_VERSION = "v3";
 
 const KEY_TYPES = ["active", "posting", "owner"] as const;
+// Key types `sign` refuses while a user's wallet requires a check first.
+const CHECKED_KEY_TYPES: readonly KeyAuthorityType[] = ["active", "owner"];
+// Wrong passwords in a row, across every call that checks one, after which
+// the user's wallet is locked.
+const MAX_FAILED_PASSWORD_CHECKS = 5;
 const noop = async (): Promise<void> => {};
+
+const isInvalidPassword = (error: unknown): boolean =>
+  String(error).toLowerCase().includes("invalid password");
 
 interface Timings {
   sessionHealthCheck: number;
@@ -71,6 +92,10 @@ export class AuthWorker {
   #deletion: Promise<void> | undefined;
   // Settles once every beekeeper call queued so far has settled.
   #beekeeperQueue: Promise<void> = Promise.resolve();
+  // Per user, the key that verifies the protected-setting record, derived from
+  // the password that last unlocked the user's wallet in the signing session.
+  #settingKeys: Record<string, CryptoKey> = {};
+  #failedPasswordChecks: Record<string, number> = {};
 
   private readonly sessionTimeout: number;
 
@@ -163,13 +188,19 @@ export class AuthWorker {
   // to go through unlockWallet, since unlock() refreshes the clock shared by
   // all wallets.
   private async lockExpiredSession(): Promise<void> {
-    const expired = await this.beekeeper(() => {
-      if (this.isValidSession()) return false;
-      this.#session.lockAll();
-      return true;
-    });
-    if (!expired) return;
+    if (await this.beekeeper(() => this.lockAllIfExpired())) {
+      this.markAllLocked();
+    }
+  }
 
+  // Only from inside a queued beekeeper call.
+  private lockAllIfExpired(): boolean {
+    if (this.isValidSession()) return false;
+    this.#session.lockAll();
+    return true;
+  }
+
+  private markAllLocked(): void {
     for (const user of Object.values(this.#loggedInUsers)) {
       user.unlocked = false;
       user.authorized = false;
@@ -183,6 +214,135 @@ export class AuthWorker {
   ): Promise<IBeekeeperUnlockedWallet> {
     await this.lockExpiredSession();
     return await this.beekeeper(async () => await wallet.unlock(password));
+  }
+
+  // unlockWallet in the signing session, counting a wrong password.
+  private async unlockWithPassword(
+    username: string,
+    wallet: IBeekeeperWallet,
+    password: string,
+  ): Promise<IBeekeeperUnlockedWallet> {
+    try {
+      const unlocked = await this.unlockWallet(wallet, password);
+      this.clearFailedPasswordChecks(username);
+      return unlocked;
+    } catch (error) {
+      if (isInvalidPassword(error)) await this.countFailedPasswordCheck(username);
+      throw error;
+    }
+  }
+
+  // Unlocks the user's wallet with `password` in a beekeeper session of its
+  // own, hands it to `use` and closes that session, after a failed unlock too.
+  // The signing session keeps its state, apart from beekeeper's inactivity
+  // clock, which every unlock restarts: an expired session is locked first,
+  // in the same queued call, so that the restart cannot revive it. `use` runs
+  // inside that call, so it must not queue a beekeeper call itself.
+  private async withCheckSession<T>(
+    username: string,
+    password: string,
+    use: (wallet: IBeekeeperUnlockedWallet) => Promise<T>,
+  ): Promise<T> {
+    let expired = false;
+    try {
+      const result = await this.beekeeper(async () => {
+        expired = this.lockAllIfExpired();
+        if (!this.#session.hasWallet(username)) {
+          throw new AuthorizationError("User not found");
+        }
+        const session = this.#api.createSession(self.crypto.randomUUID());
+        try {
+          return await use(await session.openWallet(username).unlock(password));
+        } finally {
+          session.close();
+        }
+      });
+      this.clearFailedPasswordChecks(username);
+      return result;
+    } catch (error) {
+      if (isInvalidPassword(error)) {
+        await this.countFailedPasswordCheck(username);
+        throw new AuthorizationError("Invalid credentials");
+      }
+      throw error;
+    } finally {
+      if (expired) this.markAllLocked();
+    }
+  }
+
+  private clearFailedPasswordChecks(username: string): void {
+    this.#failedPasswordChecks = Object.fromEntries(
+      Object.entries(this.#failedPasswordChecks).filter(
+        ([key]) => key !== username,
+      ),
+    );
+  }
+
+  // While another session has a wallet unlocked, beekeeper compares a password
+  // with the one it holds, without its KDF, so guesses would be cheap. After a
+  // few wrong ones the wallet is locked, and every further guess costs a full
+  // unlock.
+  private async countFailedPasswordCheck(username: string): Promise<void> {
+    const failed = (this.#failedPasswordChecks[username] ?? 0) + 1;
+    this.#failedPasswordChecks[username] = failed;
+    if (failed < MAX_FAILED_PASSWORD_CHECKS) return;
+
+    await this.lockWallet(username);
+    if (this.#loggedInUsers[username]) {
+      this.#loggedInUsers[username].unlocked = false;
+    }
+  }
+
+  // Puts the marker key into a wallet `password` has just unlocked and keeps
+  // the key that verifies its setting record. Returns whether the wallet had no
+  // marker yet, i.e. predates the setting.
+  private async markProtectedSettingWallet(
+    username: string,
+    password: string,
+    unlocked: IBeekeeperUnlockedWallet,
+  ): Promise<{ key: CryptoKey; legacy: boolean }> {
+    const key = await deriveSettingKey(username, password);
+    this.#settingKeys[username] = key;
+    const markerWif = await getMarkerWif();
+    const legacy = await this.beekeeper(async () => {
+      if (unlocked.getPublicKeys().includes(MARKER_PUBLIC_KEY)) return false;
+      await this.importMarkerKey(unlocked, markerWif);
+      return true;
+    });
+    return { key, legacy };
+  }
+
+  // Only from inside a queued beekeeper call.
+  private async importMarkerKey(
+    wallet: IBeekeeperUnlockedWallet,
+    markerWif: string,
+  ): Promise<void> {
+    if ((await wallet.importKey(markerWif)) !== MARKER_PUBLIC_KEY) {
+      throw new InternalError("Unexpected protected-setting marker key");
+    }
+  }
+
+  // After a successful unlock: a wallet from before the setting existed gets
+  // a record (off) unless it has a valid one already.
+  private async adoptProtectedSetting(
+    username: string,
+    password: string,
+    unlocked: IBeekeeperUnlockedWallet,
+  ): Promise<void> {
+    const { key, legacy } = await this.markProtectedSettingWallet(
+      username,
+      password,
+      unlocked,
+    );
+    if (legacy && (await readVerifiedSetting(key, username)) === undefined) {
+      await writeSetting(key, username, false);
+    }
+  }
+
+  private async requiresActiveCheck(username: string): Promise<boolean> {
+    const key = this.#settingKeys[username];
+    if (!key) return true;
+    return (await readVerifiedSetting(key, username)) ?? true;
   }
 
   private async createTemporaryWallet(
@@ -255,6 +415,7 @@ export class AuthWorker {
     wifKey: string,
     keyType: KeyAuthorityType,
     strict: boolean,
+    requireActiveCheck: boolean,
   ): AsyncGenerator<any> {
     try {
       const timestamp = Date.now();
@@ -273,7 +434,14 @@ export class AuthWorker {
       yield await Promise.resolve(signed);
 
       // later register new user
-      yield await this.saveUser(username, password, wifKey, keyType, strict);
+      yield await this.saveUser(
+        username,
+        password,
+        wifKey,
+        keyType,
+        strict,
+        requireActiveCheck,
+      );
     } catch (error: any) {
       if (error instanceof AuthorizationError) {
         throw new AuthorizationError(error.message);
@@ -294,6 +462,7 @@ export class AuthWorker {
     wifKey: string,
     keyType: KeyAuthorityType,
     strict: boolean = true,
+    requireActiveCheck: boolean = false,
   ): Promise<string> {
     if (!username || !password || !wifKey || !keyType) {
       throw new AuthorizationError("Empty field");
@@ -308,6 +477,7 @@ export class AuthWorker {
       wifKey,
       keyType,
       strict,
+      requireActiveCheck,
     );
 
     return (await this._generator.next()).value;
@@ -319,21 +489,34 @@ export class AuthWorker {
     wifKey: string,
     keyType: KeyAuthorityType,
     strict: boolean = true,
+    requireActiveCheck: boolean = false,
   ): Promise<string> {
     const exist = await this.getWallet(username);
 
     if (exist) {
+      // The setting is chosen when the wallet is created; adding a key keeps it.
       const unlocked = await this.getUnlocked(exist);
       if (unlocked) {
         await this.importKey(unlocked, wifKey, keyType);
       } else {
-        const unlocked = await this.unlockWallet(exist, password);
+        const unlocked = await this.unlockWithPassword(
+          username,
+          exist,
+          password,
+        );
+        await this.adoptProtectedSetting(username, password, unlocked);
         await this.importKey(unlocked, wifKey, keyType);
       }
     } else {
       const { wallet } = await this.beekeeper(
         async () => await this.#session.createWallet(username, password),
       );
+      const { key } = await this.markProtectedSettingWallet(
+        username,
+        password,
+        wallet,
+      );
+      await writeSetting(key, username, requireActiveCheck);
       await this.importKey(wallet, wifKey, keyType);
     }
 
@@ -370,7 +553,11 @@ export class AuthWorker {
     }
 
     try {
-      const unlocked = await this.unlockWallet(wallet, password);
+      const unlocked = await this.unlockWithPassword(
+        username,
+        wallet,
+        password,
+      );
       const keys = await this.beekeeper(() => unlocked.getPublicKeys());
       const alias = await this.getAlias(`${username}@${keyType}`);
 
@@ -384,6 +571,8 @@ export class AuthWorker {
         await this.beekeeper(() => unlocked.lock());
         throw new AuthorizationError("Not authorized, missing authority");
       }
+
+      await this.adoptProtectedSetting(username, password, unlocked);
 
       // Get all registered key types for this user
       const registeredKeyTypes = await this.getRegisteredKeyTypes(username);
@@ -400,7 +589,8 @@ export class AuthWorker {
       // Start session interval for this user
       this.startSessionInterval(username);
 
-      return await this.sign(username, digest, keyType);
+      // The password was just checked, so active keys sign too.
+      return await this.signInSession(username, digest, keyType);
     } catch (error) {
       if (error instanceof AuthorizationError) {
         throw error;
@@ -604,6 +794,37 @@ export class AuthWorker {
     digest: string,
     keyType: KeyAuthorityType,
   ): Promise<string> {
+    const signing = await this.findSigningKey(username, keyType);
+    if (
+      CHECKED_KEY_TYPES.includes(keyType) &&
+      (await this.requiresActiveCheck(username))
+    ) {
+      throw new CheckRequiredError(
+        `Signing with the '${keyType}' key requires a password or passkey check`,
+      );
+    }
+    return await this.beekeeper(
+      async () => await signing.unlocked.signDigest(signing.key, digest),
+    );
+  }
+
+  private async signInSession(
+    username: string,
+    digest: string,
+    keyType: KeyAuthorityType,
+  ): Promise<string> {
+    const { unlocked, key } = await this.findSigningKey(username, keyType);
+    return await this.beekeeper(
+      async () => await unlocked.signDigest(key, digest),
+    );
+  }
+
+  // The key of `keyType` in the user's wallet unlocked in the signing session,
+  // if the session may sign with it.
+  private async findSigningKey(
+    username: string,
+    keyType: KeyAuthorityType,
+  ): Promise<{ unlocked: IBeekeeperUnlockedWallet; key: string }> {
     const wallet = await this.getWallet(username);
     const unlocked = await this.getUnlocked(wallet);
     if (!wallet || !unlocked) throw new AuthorizationError("Not authorized");
@@ -627,9 +848,70 @@ export class AuthWorker {
       throw new AuthorizationError("Not authorized");
     }
 
-    return await this.beekeeper(
-      async () => await unlocked.signDigest(foundKey, digest),
-    );
+    return { unlocked, key: foundKey };
+  }
+
+  /**
+   * Checks `password` against the user's wallet without touching the signing
+   * session's state. Throws AuthorizationError("Invalid credentials") for a
+   * wrong password.
+   */
+  public async checkPassword(
+    username: string,
+    password: string,
+  ): Promise<void> {
+    await this.withCheckSession(username, password, noop);
+  }
+
+  /**
+   * Checks `password` and signs `digest` with the user's key of `keyType`,
+   * whether or not the wallet is unlocked in the signing session, which keeps
+   * its state.
+   */
+  public async signWithPassword(
+    username: string,
+    password: string,
+    digest: string,
+    keyType: KeyAuthorityType,
+  ): Promise<string> {
+    this.checkKeyType(keyType);
+    const alias = await this.getAlias(`${username}@${keyType}`);
+    return await this.withCheckSession(username, password, async (wallet) => {
+      if (!alias || !wallet.getPublicKeys().includes(alias.pubKey)) {
+        throw new AuthorizationError("Not authorized, missing authority");
+      }
+      return await wallet.signDigest(alias.pubKey, digest);
+    });
+  }
+
+  /**
+   * Whether `sign` refuses active and owner keys for the user. Verified while
+   * the user's wallet is unlocked in the signing session; otherwise the stored
+   * value, unverified. A missing or invalid record reads as true.
+   */
+  public async getRequireActiveCheck(username: string): Promise<boolean> {
+    const key = this.#settingKeys[username];
+    if (key) return (await readVerifiedSetting(key, username)) ?? true;
+    return (await readStoredSetting(username)) ?? true;
+  }
+
+  /**
+   * Changes the setting after checking `password`; a failed check leaves it
+   * unchanged.
+   */
+  public async setRequireActiveCheck(
+    username: string,
+    password: string,
+    requireActiveCheck: boolean,
+  ): Promise<void> {
+    const markerWif = await getMarkerWif();
+    await this.withCheckSession(username, password, async (wallet) => {
+      if (!wallet.getPublicKeys().includes(MARKER_PUBLIC_KEY)) {
+        await this.importMarkerKey(wallet, markerWif);
+      }
+    });
+    const key = await deriveSettingKey(username, password);
+    await writeSetting(key, username, requireActiveCheck);
   }
 
   public async logout(username: string): Promise<void> {
@@ -639,6 +921,9 @@ export class AuthWorker {
     // Remove from logged in users
     this.#loggedInUsers = Object.fromEntries(
       Object.entries(this.#loggedInUsers).filter(([key]) => key !== username),
+    );
+    this.#settingKeys = Object.fromEntries(
+      Object.entries(this.#settingKeys).filter(([key]) => key !== username),
     );
 
     // Clear interval for this specific user
@@ -657,6 +942,7 @@ export class AuthWorker {
 
     // Clear all logged in users
     this.#loggedInUsers = {};
+    this.#settingKeys = {};
 
     // Clear all session intervals
     this.clearAllSessionIntervals();
@@ -709,7 +995,12 @@ export class AuthWorker {
 
       // Add check for already unlocked wallet
       if (!(await this.getUnlocked(wallet))) {
-        await this.unlockWallet(wallet, password);
+        const unlocked = await this.unlockWithPassword(
+          username,
+          wallet,
+          password,
+        );
+        await this.adoptProtectedSetting(username, password, unlocked);
         // Update user session state
         this.#loggedInUsers[username].unlocked = true;
       }
@@ -717,7 +1008,7 @@ export class AuthWorker {
       if (error instanceof AuthorizationError) {
         throw error;
       } else {
-        if (String(error).toLowerCase().includes("invalid password")) {
+        if (isInvalidPassword(error)) {
           throw new AuthorizationError("Invalid credentials");
         } else {
           throw new InternalError(error);
@@ -752,6 +1043,7 @@ export class AuthWorker {
     // of them behind.
     this.clearAllSessionIntervals();
     this.#loggedInUsers = {};
+    this.#settingKeys = {};
     try {
       await this.beekeeper(async () => {
         await this.#api.delete();
@@ -987,10 +1279,19 @@ class Auth {
     wifKey: string,
     keyType: KeyAuthorityType,
     strict: boolean = true,
+    requireActiveCheck: boolean = false,
   ): Promise<string> {
     return await (
       await this.getWorker()
-    ).registerUser(username, password, digest, wifKey, keyType, strict);
+    ).registerUser(
+      username,
+      password,
+      digest,
+      wifKey,
+      keyType,
+      strict,
+      requireActiveCheck,
+    );
   }
 
   public async onAuthComplete(
@@ -1136,6 +1437,38 @@ class Auth {
     return await (
       await this.getWorker()
     ).singleSign(username, digest, wifKey, keyType);
+  }
+
+  public async checkPassword(
+    username: string,
+    password: string,
+  ): Promise<void> {
+    await (await this.getWorker()).checkPassword(username, password);
+  }
+
+  public async signWithPassword(
+    username: string,
+    password: string,
+    digest: string,
+    keyType: KeyAuthorityType,
+  ): Promise<string> {
+    return await (
+      await this.getWorker()
+    ).signWithPassword(username, password, digest, keyType);
+  }
+
+  public async getRequireActiveCheck(username: string): Promise<boolean> {
+    return await (await this.getWorker()).getRequireActiveCheck(username);
+  }
+
+  public async setRequireActiveCheck(
+    username: string,
+    password: string,
+    requireActiveCheck: boolean,
+  ): Promise<void> {
+    await (
+      await this.getWorker()
+    ).setRequireActiveCheck(username, password, requireActiveCheck);
   }
 
   public async getAuthByUser(username: string): Promise<AuthUser | null> {

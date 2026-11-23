@@ -19,7 +19,7 @@ one case per test, in `playwright-junit.xml` beside it.
 | `build` | the published artifact: `rollup -c` |
 | `dist-exports` | (after `build`) the files package.json `exports`/`types` name exist in `dist/` |
 | `signers-typecheck` | (after `build`) `tsc --noEmit` for `packages/signers-hb-auth`, which imports the built `dist/hb-auth.d.ts` |
-| `offline` | the Playwright suite's "HB Auth Offline Client" tests in headless Chromium against `dist/` (29 tests, 2 skipped in the source); builds first when `dist/` is missing |
+| `offline` | the Playwright suite's "HB Auth Offline Client" tests in headless Chromium against `dist/` (79 tests, 2 skipped in the source); builds first when `dist/` is missing |
 | `docs` | `scripts/generate_api_docs.sh` (typedoc, CI's `generate_docs` job) into the suite's directory |
 
 | Slot | Steps |

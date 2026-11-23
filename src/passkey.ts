@@ -31,6 +31,10 @@ const DB_VERSION = 1;
 const STORE_NAME = "credentials";
 const DEFAULT_RP_ID = globalThis.location?.hostname ?? "localhost";
 const DEFAULT_RP_NAME = "Hive Safe Storage";
+// authenticatorData flags byte and its bits (WebAuthn section 6.1).
+const FLAGS_OFFSET = 32;
+const FLAG_USER_PRESENT = 0x01;
+const FLAG_USER_VERIFIED = 0x04;
 
 // -- IndexedDB --
 
@@ -275,6 +279,19 @@ export async function recoverPasswordWithPasskey(
   username: string,
   userVerification: UserVerificationRequirement = "preferred",
 ): Promise<string> {
+  return await recoverPasswordWithRecord(
+    await loadPasskeyRecord(username),
+    userVerification,
+  );
+}
+
+/**
+ * The user's passkey record, for {@link recoverPasswordWithRecord}.
+ * @throws {PasskeyError} NO_PASSKEY_REGISTERED if there is none
+ */
+export async function loadPasskeyRecord(
+  username: string,
+): Promise<PasskeyRecord> {
   const record = await getPasskeyRecord(username);
   if (!record) {
     throw new PasskeyError(
@@ -282,7 +299,45 @@ export async function recoverPasswordWithPasskey(
       "NO_PASSKEY_REGISTERED",
     );
   }
+  return record;
+}
 
+// Rejects an assertion whose authenticator did not report the user present,
+// or not verified when verification was required (WebAuthn section 7.2).
+function checkAssertionFlags(
+  assertion: PublicKeyCredential,
+  userVerification: UserVerificationRequirement,
+): void {
+  const { authenticatorData } =
+    assertion.response as AuthenticatorAssertionResponse;
+  const flags =
+    authenticatorData?.byteLength > FLAGS_OFFSET
+      ? new Uint8Array(authenticatorData)[FLAGS_OFFSET]
+      : 0;
+  if ((flags & FLAG_USER_PRESENT) === 0) {
+    throw new PasskeyError(
+      "The authenticator did not confirm user presence",
+      "USER_NOT_PRESENT",
+    );
+  }
+  if (userVerification === "required" && (flags & FLAG_USER_VERIFIED) === 0) {
+    throw new PasskeyError(
+      "The authenticator did not verify the user",
+      "USER_NOT_VERIFIED",
+    );
+  }
+}
+
+/**
+ * Recovers the password with a passkey record read beforehand.
+ * `navigator.credentials.get` is its first await: Safari releases without
+ * WebKit's fix for bug 264444 need the user's gesture for Face ID and Touch ID,
+ * so call it directly from the gesture's handler.
+ */
+export async function recoverPasswordWithRecord(
+  record: PasskeyRecord,
+  userVerification: UserVerificationRequirement = "preferred",
+): Promise<string> {
   // Trigger biometric with PRF evaluation
   const getOptions: CredentialRequestOptions = {
     publicKey: {
@@ -329,6 +384,8 @@ export async function recoverPasswordWithPasskey(
       "DECRYPTION_FAILED",
     );
   }
+
+  checkAssertionFlags(assertion, userVerification);
 
   const prfResults = (
     assertion.getClientExtensionResults() as {

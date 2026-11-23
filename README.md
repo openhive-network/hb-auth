@@ -269,6 +269,57 @@ try {
 }
 ```
 
+### Ask before active-key operations
+
+Once a wallet is unlocked, `sign` signs with any key it holds, active and owner included. A user who wants more protection can choose, when the wallet is created, to be asked for the password or a passkey before every active-key operation. The setting is off by default.
+
+```typescript
+import { OnlineClient, CheckRequiredError } from "@hiveio/hb-auth";
+import { createHiveChain } from "@hiveio/wax";
+
+const authInstance = new OnlineClient();
+
+await authInstance.initialize(await createHiveChain());
+
+// The choice is made when register creates the wallet; adding a key to an
+// existing wallet keeps the wallet's setting.
+await authInstance.register("guest4test", "password", postingWif, "posting", true, {
+  requireActiveCheck: true,
+});
+await authInstance.importKey("guest4test", activeWif, "active");
+
+await authInstance.getRequireActiveCheck("guest4test"); // true
+
+try {
+  await authInstance.sign("guest4test", sigDigest, "active");
+} catch (error) {
+  if (error instanceof CheckRequiredError) {
+    // Ask the user, then check and sign this one digest. Posting signatures
+    // are not affected.
+    const signature = await authInstance.signWithCheck("guest4test", sigDigest, "active", {
+      password: "password",
+    });
+  }
+}
+
+// Read a registered passkey ahead of the user's gesture (Safari needs the
+// gesture for Face ID and Touch ID), then use it in the gesture's handler.
+const passkey = await authInstance.loadPasskey("guest4test");
+button.onclick = async () => {
+  const signature = await authInstance.signWithCheck("guest4test", sigDigest, "active", { passkey });
+};
+
+// Turning the setting off, or on, needs a passing check too.
+await authInstance.setRequireActiveCheck("guest4test", false, { password: "password" });
+```
+
+- **`CheckRequiredError`** is what `sign` throws for an `active` or `owner` key while the setting is on. With the setting off, `sign` signs as before.
+- **`signWithCheck(username, digest, keyType, credential)`** checks the password or passkey and signs one digest with the given key type, whether the user's session is unlocked, locked or expired. Nothing is remembered; the next operation needs its own check.
+- **`checkCredential(username, credential)`** only checks. Neither call logs the user out, fires the session-end callback, or unlocks the wallet; they restart the session's idle clock, as every unlock does, but do not revive an expired session.
+- **Wrong passwords:** after 5 in a row for a user, through any call that checks a password, that user's wallet is locked (as `lock` locks it), and the user has to `unlock` it.
+- **Passkeys:** a credential `{ passkey, userVerification }` defaults to `userVerification: "required"`. An assertion is refused (`PasskeyError` with code `USER_NOT_PRESENT` or `USER_NOT_VERIFIED`) unless the authenticator reports the user present, and verified when verification was required. `biometricUnlock` applies the same rule.
+- **Storage:** the setting is kept in IndexedDB with an HMAC under a key derived from the wallet password, and the worker enforces it, so a script on the page cannot switch it off: a setting record that is missing or fails verification counts as on. `getRequireActiveCheck` verifies the record while the user's wallet is unlocked, and otherwise reports it as stored. Wallets created before this setting existed count as off, and get a verified record at their next `authenticate` or `unlock`.
+
 ### Sign without registering (one-time signing)
 
 ```typescript

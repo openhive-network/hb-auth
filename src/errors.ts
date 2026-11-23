@@ -20,6 +20,15 @@ export class InternalError extends Error {
   }
 }
 
+// Thrown by `sign` for an active or owner key while the user's wallet requires a
+// check before active-key operations; the signature needs `signWithCheck`.
+export class CheckRequiredError extends Error {
+  constructor(message: unknown, options?: ErrorOptions) {
+    super(message instanceof Error ? message.message : String(message), options);
+    this.name = "CheckRequiredError";
+  }
+}
+
 export class PasskeyError extends Error {
   readonly code: string;
   constructor(message: string, code: string, options?: ErrorOptions) {
